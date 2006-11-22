@@ -22,25 +22,29 @@ loadUnits <- function(db, batch) {
                  paste('"', names(batch), '"', sep="", collapse=","),
                  ")")
     batchIds <- dbGetQuery(db, sql)[[1]]
-    ## XXX: We divide batchLens by 2 because of the stacked pm/mm
-    ##      format of the data.  Within a unit (element of batch above)
-    ##      everything has the same featureSet name and half are pm,
-    ##      half mm.  The data gets "stacked" and for efficiency
-    ##      reasons, we don't unstack it here.  So we div by 2.
-    batchIds <- rep(batchIds, batchLens/2)
+    batchIds <- rep(batchIds, batchLens)
     batchMat <- cbind(batchMat, fsetid=batchIds)
 
     ## Insert pm and mm into respective tables
-    pmCols <- c(seq.int(1, 12, by=2), 13:13)
-    mmCols <- c(seq.int(2, 12, by=2), 13:13)
+    isPm <- as.logic(batchmat[, "ispm"])
     values <- "(:indices, :strand, :allele, :fsetid, :expos, :x, :y)"
-    sql <- paste("insert into pmfeature values", values)
+    sql <- paste("insert into pmfeature_tmp values", values)
     dbBeginTransaction(db)
-    rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[, pmCols]))
+    rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
     dbClearResult(rset)
 
-    sql <- paste("insert into mmfeature values", values)
-    rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[, mmCols]))
+    sql <- paste("insert into mmfeature_tmp values", values)
+    rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[!isPm, ]))
+    dbClearResult(rset)
+    dbCommit(db)
+
+    ## Insert pm <--> mm link
+    values <- "(:pmi, :mmi)"
+    sql <- paste("insert into pm_mm values", values)
+    dbBeginTransaction(db)
+    rset <- dbSendPreparedQuery(db, sql,
+                                data.frame(pmi=batchMat[isPm, "indices"],
+                                           mmi=batchMat[!isPm, "indices"]))
     dbClearResult(rset)
     dbCommit(db)
 }
@@ -63,8 +67,8 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
           done <- TRUE
         wanted <- seq.int(offset, end)
         offset <- offset + batch_size + 1
-        vvunits <- readCdfUnits(cdfFile, units=wanted, stratifyBy="pmmm",
-                                readIndices=TRUE)
+        vvunits <- readCdf(cdfFile, units=wanted, readGroupDirection=TRUE,
+                           readIndices=TRUE, readIsPm=TRUE)
         loadUnits(db, vvunits)
     }
 }
@@ -118,4 +122,6 @@ buildPdInfoDb <- function(cdfFile, csvFile, dbFile) {
     db <- initDb(dbFile)
     loadUnitsByBatch(db, cdfFile)
     loadAffyCsv(db, csvFile)
+    createIndicesDb(db)
+    closeDb(db)
 }

@@ -36,3 +36,9 @@ create table %s (
     y integer,
     UNIQUE("fid"))
 ')
+
+createPm_MmSql <- ('
+create table pm_mm (
+    pm_fid integer primary key references "pmfeature" ("fid"),
+    mm_fid integer references "mmfeature" ("fid"))
+')
