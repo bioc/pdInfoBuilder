@@ -10,10 +10,10 @@ loadUnitNames <- function(db, unames) {
 }
 
 loadUnits <- function(db, batch) {
-    batchMat <- do.call(rbind, lapply(batch, pmmmBlockToMat))
+    batchMat <- do.call(rbind, lapply(batch, readCdfUnitToMat))
 
     loadUnitNames(db, names(batch))
-    
+
     ## Find internal featureSet IDs for these features
     batchLens <- sapply(batch, function(x)
                         sum(sapply(x$groups, function(y)
@@ -26,8 +26,8 @@ loadUnits <- function(db, batch) {
     batchMat <- cbind(batchMat, fsetid=batchIds)
 
     ## Insert pm and mm into respective tables
-    isPm <- as.logic(batchmat[, "ispm"])
-    values <- "(:indices, :strand, :allele, :fsetid, :expos, :x, :y)"
+    isPm <- as.logical(batchMat[, "ispm"])
+    values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y)"
     sql <- paste("insert into pmfeature_tmp values", values)
     dbBeginTransaction(db)
     rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
@@ -83,10 +83,10 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
                      na.strings="---", header=TRUE)[, wantedCols]
     header <- gsub(".", "_", names(df), fixed=TRUE)
     names(df) <- header
-    
+
     db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
                  "physical_pos", "strand", "allele_a", "allele_b")
-    
+
     val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
                      ":Physical_Position", ":Strand", ":Allele_A",
                      ":Allele_B")
@@ -118,10 +118,52 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
 }
 
 
-buildPdInfoDb <- function(cdfFile, csvFile, dbFile) {
+loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
+    cdfHeader <- readCdfHeader(cdfFile)
+    ncol <- cdfHeader$ncol
+    xy2i <- function(x, y) x + 1 + y * ncol
+
+    con <- file(csvFile, open="r")
+    on.exit(close(con))
+    header <- c("fset.name", "x", "y", "offset", "seq", "tstrand", "type",
+                "tallele")
+    done <- FALSE
+    while (!done) {
+        pmdf <- read.table(con, sep="\t", stringsAsFactors=FALSE,
+                           nrows=batch_size, na.strings="---",
+                           header=FALSE)
+        if (nrow(pmdf) < batch_size) {
+            done <- TRUE
+            if (nrow(pmdf) == 0)
+              break
+        }
+        names(pmdf) <- header
+        pmdf[["fid"]] <- xy2i(pmdf[["x"]], pmdf[["y"]])
+        N <- nrow(pmdf)
+        ## process MMs
+        mmSql <- paste("select mm_fid, pm_fid from pm_mm where pm_fid in (",
+                       paste(pmdf[["fid"]], collapse=","), ")")
+        pairedIds <- dbGetQuery(db, mmSql)
+        foundIdIdx <- match(pmdf[["fid"]], pairedIds[["pm_fid"]], 0)
+        mmdf <- pmdf[foundIdIdx, ]
+        mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
+        ## FIXME: manipulate MM sequences here!!!
+        values <- "(:fid, :offset, :tstrand, :tallele, :type, :seq)"
+        sql <- paste("insert into sequence values", values)
+        dbBeginTransaction(db)
+        dbGetPreparedQuery(db, sql, bind.data=pmdf)
+        dbGetPreparedQuery(db, sql, bind.data=mmdf)
+        dbCommit(db)
+    }
+
+}
+
+
+buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile) {
     db <- initDb(dbFile)
     loadUnitsByBatch(db, cdfFile)
     loadAffyCsv(db, csvFile)
+    loadAffySeqCsv(db, csvSeqFile, cdfFile)
     createIndicesDb(db)
     closeDb(db)
 }

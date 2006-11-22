@@ -13,6 +13,8 @@ initDb <- function(dbname) {
 
     dbGetQuery(db, createPm_MmSql)
 
+    dbGetQuery(db, createSequenceSql)
+
     ## Create index
     ## NOTE: might be more efficient to create this after loading,
     ## but current perf is ok.

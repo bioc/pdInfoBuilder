@@ -12,3 +12,4 @@ LazyLoad: yes
 Depends: R (>= 2.4.0), methods, RSQLite, affxparser
 License: The Artistic License 2.0
 Collate: schema.R initDb.R pmmmBlockToMat.R loaders.R
+         parseAffySeqFasta.R

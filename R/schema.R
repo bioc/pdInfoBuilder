@@ -42,3 +42,14 @@ create table pm_mm (
     pm_fid integer primary key references "pmfeature" ("fid"),
     mm_fid integer references "mmfeature" ("fid"))
 ')
+
+createSequenceSql <- ('
+create table sequence (
+    fid integer primary key,
+    offset integer,
+    tstrand text,
+    tallele text,
+    ispm integer,
+    seq text)
+')
+
