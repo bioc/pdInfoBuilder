@@ -25,13 +25,14 @@ setMethod(Biobase::makeDataPackage,
                 stop("invalid email address")
 
               extdataDir <- file.path(filePath, packageName, "inst", "extdata")
-              dbFile <- file.path(extdataDir, paste(packageName, "sqlite", sep="."))
+              dbFileName <- paste(packageName, "sqlite", sep=".")
+              dbFilePath <- file.path(extdataDir, dbFileName)
               syms <- list(MANUF=object@manufacturer,
                            VERSION=packageVersion,
                            AUTHOR=author,
                            AUTHOREMAIL=email,
                            LIC=license,
-                           DBFILE=dbFile,
+                           DBFILE=dbFileName,
                            CHIPNAME=object@chipName,
                            PKGNAME=packageName,
                            PDINFONAME=object@pdInfoObjectName,
@@ -44,5 +45,5 @@ setMethod(Biobase::makeDataPackage,
                             symbolValues=syms, quiet=quiet)
               dir.create(extdataDir, recursive=TRUE)
               buildPdInfoDb(object@cdfFile, object@csvAnnoFile,
-                            object@csvSeqFile, dbFile)
+                            object@csvSeqFile, dbFilePath)
           })
