@@ -27,6 +27,7 @@ setMethod(Biobase::makeDataPackage,
               extdataDir <- file.path(filePath, packageName, "inst", "extdata")
               dbFileName <- paste(packageName, "sqlite", sep=".")
               dbFilePath <- file.path(extdataDir, dbFileName)
+              seqMatFile <- file.path(extdataDir, "seqMat.rda")
               syms <- list(MANUF=object@manufacturer,
                            VERSION=packageVersion,
                            AUTHOR=author,
@@ -45,5 +46,5 @@ setMethod(Biobase::makeDataPackage,
                             symbolValues=syms, quiet=quiet)
               dir.create(extdataDir, recursive=TRUE)
               buildPdInfoDb(object@cdfFile, object@csvAnnoFile,
-                            object@csvSeqFile, dbFilePath)
+                            object@csvSeqFile, dbFilePath, seqMatFile)
           })

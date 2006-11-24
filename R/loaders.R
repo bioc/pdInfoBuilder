@@ -159,11 +159,13 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 }
 
 
-buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile) {
+buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile) {
     db <- initDb(dbFile)
     loadUnitsByBatch(db, cdfFile)
     loadAffyCsv(db, csvFile)
     loadAffySeqCsv(db, csvSeqFile, cdfFile)
     createIndicesDb(db)
+    seqMat <- createSeqMat(db)
+    save(seqMat, file=matFile, compress=TRUE)
     closeDb(db)
 }
