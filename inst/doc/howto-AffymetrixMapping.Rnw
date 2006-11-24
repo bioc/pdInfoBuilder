@@ -1,0 +1,72 @@
+%\VignetteIndexEntry{PDInfo Package Building Affymetrix Mapping Chips}
+%\VignetteKeywords{SNP, Mapping}
+%\VignettePackage{pdInfoBuilder}
+\documentclass{article}
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textsf{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+
+\begin{document}
+\title{Building a PDInfo Package for an Affymetrix Mapping Chip}
+\date{November, 2006}
+\author{Seth Falcon \and Benilton Carvalho}
+\maketitle
+
+<<setup, echo=FALSE, results=hide>>=
+options(width=60)
+options(continue=" ")
+options(prompt="R> ")
+@ 
+
+\section{What you will need}
+
+At the time of this writing (26 Novermber, 2006), you will need to
+obtain special versions of \Rpackage{RSQLite} and
+\Rpackage{affxparser}.  You will also need to install
+\Rpackage{pdInfoBuilder} and its other dependencies.
+
+This document demonstrates building a ``PDInfo'' package for the
+Affymetrix Mapping 250K NSP chip.  To follow along, you will need the
+following files:
+
+\begin{itemize}
+\item \verb+Mapping250K_Nsp.cdf+: The binary CDF file from Affymetrix
+  containing feature-level annotation.
+
+\item \verb+Mapping250K_Nsp_annot.csv+: Delimited text file from
+  Affymetrix containing featureSet-level annotation.
+
+\item \verb+Mapping250K_Nsp_probe_tab+: Delimited text file from
+  Affymetrix containing probe sequence information for all PM probes.
+\end{itemize}
+
+\section{Building a PDInfo package}
+
+Assuming the source files described above are in your current working
+directory, the following commands will produce a PDInfo package.
+
+<<build1, eval=FALSE>>=
+library("pdInfoBuilder")
+cdfFile <- "Mapping250K_Nsp.cdf"
+csvAnno <- "Mapping250K_Nsp_annot.csv"
+csvSeq <- "Mapping250K_Nsp_probe_tab"
+
+pkg <- new("PDInfoAffySNPPkg", chipName="Mapping250nsp",
+           manufacturer="Affymetrix", pdInfoObjectName="map250nsp",
+           cdfFile=cdfFile, csvAnnoFile=csvAnno, csvSeqFile=csvSeq)
+
+makeDataPackage(pkg, "Seth Falcon", "sfalcon@fhcrc.org", "pd.Map250nsp",
+                "0.0.7", biocViews="AnnotationData", filePath=".")
+@ 
+
+We are able to complete the above step on a dual-CPU dual-core 3GHz
+Xeon box with 8GB RAM in about 20 minutes.  The only step that
+requires a significant amount of RAM is generating the coded sequence
+matrix.  I haven't yet looked carefully at it, but I think it should
+run on a 4GB system.
+
+\end{document}
