@@ -56,3 +56,18 @@ base in s.
     do.call(c, tmp)
 }
 
+naiveSeqMatrix <- function(db) {
+    df <- dbGetQuery(db, "select fid, seq from sequence")
+    createSeqMatrixHelper(df[["fid"]], df[["seq"]])
+}
+
+createSeqMatrixHelper <- function(fid, seq) {
+    m <- do.call(rbind, lapply(strsplit(seq, ""), encodeSeq))
+    rowanames(m) <- fid
+    m
+}
+
+seqToMat <- function(seq) {
+    .Call("PIB_25mers_to_mat", seq, PACKAGE="pdInfoBuilder")
+}
+

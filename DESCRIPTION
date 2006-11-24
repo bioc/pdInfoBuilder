@@ -5,7 +5,7 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
   annotation data.
-Version: 0.0.5
+Version: 0.0.6
 Author: Seth Falcon
 Maintainer: Seth Falcon <sfalcon@fhcrc.org>
 LazyLoad: yes
@@ -14,3 +14,4 @@ Depends: R (>= 2.4.0), methods, Biobase (>= 1.13.17),
 License: The Artistic License 2.0
 Collate: schema.R initDb.R pmmmBlockToMat.R loaders.R
          parseAffySeqFasta.R makeDataPackage-methods.R
+         zzz.R
