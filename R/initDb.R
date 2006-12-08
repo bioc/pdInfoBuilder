@@ -5,6 +5,7 @@ initDb <- function(dbname) {
     dbGetQuery(db, setPageSizeSql)
     
     ## Create tables
+    ## BC: Soon we need to add a table for the control probes
     dbGetQuery(db, createFeatureSetSql)
     
     dbGetQuery(db, sprintf(createFeatureSql, "pmfeature_tmp"))

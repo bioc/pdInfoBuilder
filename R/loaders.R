@@ -123,6 +123,13 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
     ncol <- cdfHeader$ncol
     xy2i <- function(x, y) x + 1 + y * ncol
 
+    complementBase <- function(x, special=FALSE){
+      bases <- c("A", "C", "G", "T")
+      if (!special) comp <- c("T", "G", "C", "A")
+      else comp <- c("G", "T", "A", "C")
+      comp[match(x, bases)]
+    }
+
     con <- file(csvFile, open="r")
     on.exit(close(con))
     header <- c("fset.name", "x", "y", "offset", "seq", "tstrand", "type",
@@ -147,7 +154,22 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         foundIdIdx <- match(pmdf[["fid"]], pairedIds[["pm_fid"]], 0)
         mmdf <- pmdf[foundIdIdx, ]
         mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
+
         ## FIXME: manipulate MM sequences here!!!
+        ## BC: Assuming 25mers
+        midbase <- substr(mmdf$seq, 13, 13)
+        types <- aggregate(mmdf$tallele, by=list(mmdf$fset.name),
+                             FUN=function(v) paste(sort(unique(v)), collapse=""))[,2]
+        types <- rep(types, as.integer(table(mmdf$fset.name)))
+        isSpecial <- (types == "AT" | types == "AG") & mmdf$offset == 0
+        rm(types)
+        midbase[isSpecial] <- complementBase(midbase[isSpecial], T)
+        midbase[!isSpecial] <- complementBase(midbase[!isSpecial])
+        rm(isSpecial)
+        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 13, 25), sep="")
+        rm(midbase)
+        ## end MM seq
+        
         values <- "(:fid, :offset, :tstrand, :tallele, :type, :seq)"
         sql <- paste("insert into sequence values", values)
         dbBeginTransaction(db)

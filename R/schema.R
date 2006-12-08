@@ -10,6 +10,10 @@ pragma page_size = 8192;
 ## dbsnp_rs_id could be integer if we strip the leading 'rs' Also, chrom could
 ## be integer and we could have a separate mapping tabel to the cromosome label
 ## (so that names are more meaningful).
+##
+## BC: Seth, I think the below should be something like "createSnpFeatureSetSql"
+##     b/c later we want to have pdInfo's for TIling, Exon arrays... thoughts?
+
 createFeatureSetSql <- ('
 create table featureSet (
     fsetid integer primary key not null,
@@ -53,3 +57,5 @@ create table sequence (
     seq text)
 ')
 
+## BC: We'll also need a table for the control probes
+##     Examples of control probes are those with AFFX-12345
