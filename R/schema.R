@@ -10,13 +10,10 @@ pragma page_size = 8192;
 ## dbsnp_rs_id could be integer if we strip the leading 'rs' Also, chrom could
 ## be integer and we could have a separate mapping tabel to the cromosome label
 ## (so that names are more meaningful).
-##
-## BC: Seth, I think the below should be something like "createSnpFeatureSetSql"
-##     b/c later we want to have pdInfo's for TIling, Exon arrays... thoughts?
 
-createFeatureSetSql <- ('
+createSnpFeatureSetSql <- ('
 create table featureSet (
-    fsetid integer primary key not null,
+    fsetid integer primary key,
     man_fsetid text,
     affy_snp_id integer,
     dbsnp_rs_id text,
@@ -24,30 +21,28 @@ create table featureSet (
     physical_pos integer,
     strand integer,
     allele_a text,
-    allele_b text,
-    UNIQUE("fsetid"))
+    allele_b text)
 ')
 
 
-createFeatureSql <- ('
+createSnpFeatureSql <- ('
 create table %s (
-    fid integer not null,
+    fid integer primary key,
     strand integer,
     allele integer,
     fsetid integer not null references "featureSet" ("fsetid"),
     pos integer,
     x integer,
-    y integer,
-    UNIQUE("fid"))
+    y integer)
 ')
 
-createPm_MmSql <- ('
-create table pm_mm (
+createSnpPm_MmSql <- ('
+create table %s (
     pm_fid integer primary key references "pmfeature" ("fid"),
     mm_fid integer references "mmfeature" ("fid"))
 ')
 
-createSequenceSql <- ('
+createSnpSequenceSql <- ('
 create table sequence (
     fid integer primary key,
     offset integer,
@@ -56,6 +51,3 @@ create table sequence (
     ispm integer,
     seq text)
 ')
-
-## BC: We'll also need a table for the control probes
-##     Examples of control probes are those with AFFX-12345

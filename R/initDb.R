@@ -6,15 +6,19 @@ initDb <- function(dbname) {
     
     ## Create tables
     ## BC: Soon we need to add a table for the control probes
-    dbGetQuery(db, createFeatureSetSql)
+    dbGetQuery(db, createSnpFeatureSetSql)
     
-    dbGetQuery(db, sprintf(createFeatureSql, "pmfeature_tmp"))
+    dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature_tmp"))
     
-    dbGetQuery(db, sprintf(createFeatureSql, "mmfeature_tmp"))
+    dbGetQuery(db, sprintf(createSnpFeatureSql, "mmfeature_tmp"))
 
-    dbGetQuery(db, createPm_MmSql)
+    dbGetQuery(db, sprintf(createSnpFeatureSql, "qcpmfeature"))
+    dbGetQuery(db, sprintf(createSnpFeatureSql, "qcmmfeature"))
 
-    dbGetQuery(db, createSequenceSql)
+    dbGetQuery(db, sprintf(createSnpPm_MmSql, "pm_mm"))
+    dbGetQuery(db, sprintf(createSnpPm_MmSql, "qcpm_qcmm"))
+
+    dbGetQuery(db, createSnpSequenceSql)
 
     ## Create index
     ## NOTE: might be more efficient to create this after loading,
@@ -32,8 +36,8 @@ createIndicesDb <- function(db) {
     }
     
     ## Create DB indices and fix ordering
-    dbGetQuery(db, sprintf(createFeatureSql, "pmfeature"))
-    dbGetQuery(db, sprintf(createFeatureSql, "mmfeature"))
+    dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature"))
+    dbGetQuery(db, sprintf(createSnpFeatureSql, "mmfeature"))
 
     ## Reorder XXfeature tables
     fillSql <- paste("insert into %s select * from %s order by",

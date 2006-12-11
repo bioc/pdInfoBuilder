@@ -9,7 +9,15 @@ loadUnitNames <- function(db, unames) {
     dbCommit(db)
 }
 
-loadUnits <- function(db, batch) {
+loadUnits <- function(db, batch, isQc=FALSE) {
+    pmfeature <- "pmfeature_tmp"
+    mmfeature <- "mmfeature_tmp"
+    pmmm <- "pm_mm"
+    if (isQc) {
+        pmfeature <- "qcpmfeature"
+        mmfeature <- "qcmmfeature"
+        pmmm <- "qcpm_qcmm"
+    }
     batchMat <- do.call(rbind, lapply(batch, readCdfUnitToMat))
 
     loadUnitNames(db, names(batch))
@@ -28,19 +36,19 @@ loadUnits <- function(db, batch) {
     ## Insert pm and mm into respective tables
     isPm <- as.logical(batchMat[, "ispm"])
     values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y)"
-    sql <- paste("insert into pmfeature_tmp values", values)
+    sql <- paste("insert into", pmfeature, "values", values)
     dbBeginTransaction(db)
     rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
     dbClearResult(rset)
 
-    sql <- paste("insert into mmfeature_tmp values", values)
+    sql <- paste("insert into", mmfeature, "values", values)
     rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[!isPm, ]))
     dbClearResult(rset)
     dbCommit(db)
 
     ## Insert pm <--> mm link
     values <- "(:pmi, :mmi)"
-    sql <- paste("insert into pm_mm values", values)
+    sql <- paste("insert into", pmmm, "values", values)
     dbBeginTransaction(db)
     rset <- dbSendPreparedQuery(db, sql,
                                 data.frame(pmi=batchMat[isPm, "indices"],
@@ -54,6 +62,14 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
                              max_units=NULL, verbose=FALSE) {
     unames <- readCdfUnitNames(cdfFile)
     offset <- 1
+    whQc <- grep("^AFFX", unames)
+    if (length(whQc)) {                 # load all QC at once
+        qcunits <- readCdf(cdfFile, units=whQc, readGroupDirection=TRUE,
+                           readIndices=TRUE, readIsPm=TRUE)
+        loadUnits(db, qcunits, isQc=TRUE)
+        unames <- unames[-whQc]
+        offset <- max(whQc) + 1
+    }
     extra <- length(unames) %% batch_size
     num_batches <- length(unames) %/% batch_size
     if (extra != 0)
@@ -155,8 +171,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         mmdf <- pmdf[foundIdIdx, ]
         mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
 
-        ## FIXME: manipulate MM sequences here!!!
-        ## BC: Assuming 25mers
+        ## Assuming 25mers
         midbase <- substr(mmdf$seq, 13, 13)
         types <- aggregate(mmdf$tallele, by=list(mmdf$fset.name),
                              FUN=function(v) paste(sort(unique(v)), collapse=""))[,2]
