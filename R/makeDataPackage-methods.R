@@ -2,6 +2,7 @@ setClass("PDInfoPkgSeed",
          representation=representation(
            chipName="character",
            manufacturer="character",
+           genomebuild="character",
            pdInfoObjectName="character"))
 
 setClass("AffySNPPDInfoPkgSeed",
@@ -31,6 +32,7 @@ setMethod(Biobase::makeDataPackage,
               seqMatFile <- file.path(extdataDir, "seqMat.rda")
               syms <- list(MANUF=object@manufacturer,
                            VERSION=packageVersion,
+                           GENOMEBUILD=object@genomebuild,
                            AUTHOR=author,
                            AUTHOREMAIL=email,
                            LIC=license,
