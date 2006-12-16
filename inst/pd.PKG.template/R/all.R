@@ -22,6 +22,7 @@ getDb  <- function() {
 
 closeDb <- function() {
     ## FIXME: check for valid connection?
+    sapply(dbListResults(globals$dbCon), dbClearResult)
     dbDisconnect(globals$dbCon)
     remove(dbCon, envir=globals)
 }
@@ -49,5 +50,7 @@ closeDb <- function() {
     closeDb()
 }
 
-@PDINFONAME@ <- new("@PDINFOCLASS@", get_db=getDb)
+@PDINFONAME@ <- new("@PDINFOCLASS@",
+                    genomebuild="@GENOMEBUILD@",
+                    getdb=getDb)
 
