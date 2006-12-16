@@ -184,7 +184,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 13, 25), sep="")
         rm(midbase)
         ## end MM seq
-        
+
         values <- "(:fid, :offset, :tstrand, :tallele, :type, :seq)"
         sql <- paste("insert into sequence values", values)
         dbBeginTransaction(db)
@@ -198,10 +198,16 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 
 buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile) {
     db <- initDb(dbFile)
+
     loadUnitsByBatch(db, cdfFile)
     loadAffyCsv(db, csvFile)
     loadAffySeqCsv(db, csvSeqFile, cdfFile)
+
+    sortFeatureTables(db)
     createIndicesDb(db)
+    createTableInfoTable(db)
+    createFeatureTableInfo(db)
+
     seqMat <- createSeqMat(db)
     save(seqMat, file=matFile, compress=TRUE)
     closeDb(db)

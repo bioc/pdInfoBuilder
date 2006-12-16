@@ -3,13 +3,13 @@ initDb <- function(dbname) {
 
     ## Set page size
     dbGetQuery(db, setPageSizeSql)
-    
+
     ## Create tables
     ## BC: Soon we need to add a table for the control probes
     dbGetQuery(db, createSnpFeatureSetSql)
-    
+
     dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature_tmp"))
-    
+
     dbGetQuery(db, sprintf(createSnpFeatureSql, "mmfeature_tmp"))
 
     dbGetQuery(db, sprintf(createSnpFeatureSql, "qcpmfeature"))
@@ -28,14 +28,7 @@ initDb <- function(dbname) {
     db
 }
 
-createIndicesDb <- function(db) {
-    makeIndex <- function(name, t, cols) {
-        sql <- paste("create index", name, "on", t,
-                     paste("(", paste(cols, collapse=","), ")"))
-        dbGetQuery(db, sql)
-    }
-    
-    ## Create DB indices and fix ordering
+sortFeatureTables <- function(db) {
     dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature"))
     dbGetQuery(db, sprintf(createSnpFeatureSql, "mmfeature"))
 
@@ -47,14 +40,52 @@ createIndicesDb <- function(db) {
     dbGetQuery(db, sprintf(fillSql, "mmfeature", "mmfeature_tmp"))
     dbCommit(db)
     ## drop temp tables
+    dbBeginTransaction(db)
     dbGetQuery(db, "drop table pmfeature_tmp")
     dbGetQuery(db, "drop table mmfeature_tmp")
+    dbCommit(db)
+}
 
+
+createIndicesDb <- function(db) {
+    makeIndex <- function(name, t, cols) {
+        sql <- paste("create index", name, "on", t,
+                     paste("(", paste(cols, collapse=","), ")"))
+        dbGetQuery(db, sql)
+    }
+
+    ## Create DB indices and fix ordering
     makeIndex("pmf_idx_fsetid", "pmfeature", "fsetid")
     makeIndex("mmf_idx_fsetid", "mmfeature", "fsetid")
 
     makeIndex("fset_idx_chrom", "featureSet", "chrom")
-    
+
+    ## finally, run analyze (SQLite specific?)
+    dbGetQuery(db, "analyze")
 }
+
+
+createTableInfoTable <- function(db, verbose=FALSE) {
+    tables <- dbListTables(db)
+    counts <- integer(length(tables))
+    sql <- "select count(*) from %s"
+    for (i in seq(along=counts)) {
+        if (verbose)
+          cat("counting rows in ", tables[i], "\n")
+        counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
+    }
+
+    df <- data.frame(tbl=tables, row_count=counts,
+                     stringsAsFactors=FALSE)
+    dbWriteTable(db, "table_info", df, row.names=FALSE)
+}
+
+
+createFeatureTableInfo <- function(db, tname) {
+    return(FALSE)
+    ## FIXME: add code to determine offsets of sorted
+    ## strand and allele
+}
+
 
 closeDb <- function(db) dbDisconnect(db)

@@ -1,22 +1,23 @@
-setClass("PDInfoPkg",
+setClass("PDInfoPkgSeed",
          representation=representation(
            chipName="character",
            manufacturer="character",
            pdInfoObjectName="character"))
 
-setClass("PDInfoAffySNPPkg",
-         contains="PDInfoPkg",
+setClass("AffySNPPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
          representation=representation(
            cdfFile="character",
            csvAnnoFile="character",
            csvSeqFile="character"
-           ))
+           ),
+         prototype=list(manufacturer="Affymetrix"))
 
-##pkg <- new("PDInfoAffySNPPkg", chipName="Mapping250nsp", manufacturer="Affymetrix", pdInfoObjectName="map250nsp", cdfFile="", csvAnnoFile="", csvSeqFile="")
-##makeDataPackage(pkg, "Seth Falcon", "sfalcon@fhcrc.org", "pd.Map250nsp", "0.0.7", biocViews="AnnotationData", filePath=".")
+##pkg <- new("AffySNPPDInfoPkgSeed", chipName="Mapping250K_Nsp", pdInfoObjectName="mapping250k.nsp", cdfFile="", csvAnnoFile="", csvSeqFile="")
+##makeDataPackage(pkg, "Seth Falcon", "sfalcon@fhcrc.org", "pd.Mapping250K.Nsp", "0.0.9", biocViews="AnnotationData", filePath=".")
 
 setMethod(Biobase::makeDataPackage,
-          signature(object="PDInfoAffySNPPkg"),
+          signature(object="AffySNPPDInfoPkgSeed"),
           function(object, author, email, packageName, packageVersion, license, biocViews,
                    filePath, quiet=FALSE) {
 
@@ -37,7 +38,7 @@ setMethod(Biobase::makeDataPackage,
                            CHIPNAME=object@chipName,
                            PKGNAME=packageName,
                            PDINFONAME=object@pdInfoObjectName,
-                           PDINFOCLASS="SNPPDInfo")
+                           PDINFOCLASS="AffySNPPDInfo")
 
               templateDir <- system.file("pd.PKG.template",
                                          package="pdInfoBuilder")
