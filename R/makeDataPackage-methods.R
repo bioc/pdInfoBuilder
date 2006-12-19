@@ -17,6 +17,9 @@ setClass("AffySNPPDInfoPkgSeed",
 ##pkg <- new("AffySNPPDInfoPkgSeed", chipName="Mapping250K_Nsp", pdInfoObjectName="mapping250k.nsp", cdfFile="", csvAnnoFile="", csvSeqFile="")
 ##makeDataPackage(pkg, "Seth Falcon", "sfalcon@fhcrc.org", "pd.Mapping250K.Nsp", "0.0.9", biocViews="AnnotationData", filePath=".")
 
+## FIXME: we should offer to determine packageName based on header of
+## CDF file and oligo::cleanPlatformName.
+
 setMethod(Biobase::makeDataPackage,
           signature(object="AffySNPPDInfoPkgSeed"),
           function(object, author, email, packageName, packageVersion, license, biocViews,
