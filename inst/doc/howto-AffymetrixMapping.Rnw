@@ -24,14 +24,9 @@ options(prompt="R> ")
 
 \section{What you will need}
 
-At the time of this writing (26 Novermber, 2006), you will need to
-obtain special versions of \Rpackage{RSQLite} and
-\Rpackage{affxparser}.  You will also need to install
-\Rpackage{pdInfoBuilder} and its other dependencies.
-
-This document demonstrates building a ``PDInfo'' package for the
-Affymetrix Mapping 250K NSP chip.  To follow along, you will need the
-following files:
+Aside from the \Rpackage{pdInfoBuilder} package and its dependencies,
+you will need the following files in order to follow along and build a
+``PDInfo'' package for the Affymetrix Mapping 250K NSP chip.
 
 \begin{itemize}
 \item \verb+Mapping250K_Nsp.cdf+: The binary CDF file from Affymetrix
@@ -55,12 +50,15 @@ cdfFile <- "Mapping250K_Nsp.cdf"
 csvAnno <- "Mapping250K_Nsp_annot.csv"
 csvSeq <- "Mapping250K_Nsp_probe_tab"
 
-pkg <- new("PDInfoAffySNPPkg", chipName="Mapping250nsp",
-           manufacturer="Affymetrix", pdInfoObjectName="map250nsp",
+pkg <- new("AffySNPPDInfoPkgSeed", 
+           version="0.1.5",
+           author="Seth Falcon", email="sfalcon@fhcrc.org",
+           biocViews="AnnotationData",
+           genomebuild="NCBI Build 35, May 2004",
            cdfFile=cdfFile, csvAnnoFile=csvAnno, csvSeqFile=csvSeq)
 
-makeDataPackage(pkg, "Seth Falcon", "sfalcon@fhcrc.org", "pd.Map250nsp",
-                "0.0.7", biocViews="AnnotationData", filePath=".")
+makePdInfoPackage(pkg, destDir=".")
+
 @ 
 
 We are able to complete the above step on a dual-CPU dual-core 3GHz
