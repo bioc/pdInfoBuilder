@@ -34,7 +34,7 @@ sortFeatureTables <- function(db) {
 
     ## Reorder XXfeature tables
     fillSql <- paste("insert into %s select * from %s order by",
-                     "strand, allele, fsetid")
+                     "fsetid, allele, strand, pos")
     dbBeginTransaction(db)
     dbGetQuery(db, sprintf(fillSql, "pmfeature", "pmfeature_tmp"))
     dbGetQuery(db, sprintf(fillSql, "mmfeature", "mmfeature_tmp"))
