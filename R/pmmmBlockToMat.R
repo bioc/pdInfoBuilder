@@ -35,12 +35,37 @@ readCdfUnitToMat <- function(u, verify.pmmm=TRUE) {
     ## XXX: we rely on the probes always being given in alleleA, alleleB
     ##      order.
     cols <- c("x", "y", "indices", "atom", "indexpos", "ispm")
+    nGroups <- length(u$groups)
+
+    ## BEGIN: Benilton's modification
+    
+    ## The 2 lines below added by Benilton to fix the bug on the alleles
+    ## Assuming either 2 or 4 groups. Need to keep in mind that if:
+    ## 2 groups: Group 1 is all ALLELE A and Group 2 is all ALLELE B
+    ## 4 groups: Group 1 (Allele A Sense) Group 2 (Allele B Sense)
+    ##           Group 3 (Allele A Antisense) Group 4 (Allele B Antisense)
+    allele <- rep(c(ALLELE_A, ALLELE_B), nGroups/2)
+    for (i in 1:nGroups) u$groups[[i]]$allele=as.integer(allele[i])
+
+    ## The code below is the original by Seth (commented uot)
+    ## mat <- do.call(rbind, lapply(u$groups, function(g) {
+    ##     dir <- groupDirectionToInt(g$groupdirection)
+    ##      N <- length(g$x)
+    ##     cbind(do.call(cbind, g[cols]), strand=rep(dir, N),
+    ##           allele=rep(c(ALLELE_A, ALLELE_B), each=2, length=N))
+    ## }))
+
+    ## The code below is the replacement for the above
+    ## maybe there's a better way of doing this, that's
+    ## why I left all the original code.
     mat <- do.call(rbind, lapply(u$groups, function(g) {
-        dir <- groupDirectionToInt(g$groupdirection)
-         N <- length(g$x)
-        cbind(do.call(cbind, g[cols]), strand=rep(dir, N),
-              allele=rep(c(ALLELE_A, ALLELE_B), each=2, length=N))
-    }))
+      dir <- groupDirectionToInt(g$groupdirection)
+      N <- length(g$x)
+      cbind(do.call(cbind, g[cols]), strand=rep(dir, N),
+            allele=rep(g$allele, length=N))}))
+
+    ## End of Benilton's modifications
+    
     if (verify.pmmm) {
         ## verify pm/mm match
         ispm <- as.logical(mat[, "ispm"])

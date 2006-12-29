@@ -31,11 +31,11 @@ loadUnits <- function(db, batch, isQc=FALSE) {
                  ")")
     batchIds <- dbGetQuery(db, sql)[[1]]
     batchIds <- rep(batchIds, batchLens)
-    batchMat <- cbind(batchMat, fsetid=batchIds)
+    batchMat <- cbind(batchMat, fsetid=batchIds, offset=NA)
 
     ## Insert pm and mm into respective tables
     isPm <- as.logical(batchMat[, "ispm"])
-    values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y)"
+    values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y, :offset)"
     sql <- paste("insert into", pmfeature, "values", values)
     dbBeginTransaction(db)
     rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
@@ -94,18 +94,27 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     con <- file(csvFile, open="r")
     on.exit(close(con))
 
-    wantedCols <- c(1,2,3,4,7,8,12,13)
+    getLength <- function(v){
+      tmp <- sapply(strsplit(v, "//"), function(obj) obj[[1]])
+      tmp[tmp == "---"] <- NA
+      as.integer(tmp)
+    }
+    
+    ## BC: Added column 17 (need fragment length)
+    wantedCols <- c(1,2,3,4,7,8,12,13,17)
     df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
                      na.strings="---", header=TRUE)[, wantedCols]
+    df[,9] <- getLength(df[,9])
     header <- gsub(".", "_", names(df), fixed=TRUE)
     names(df) <- header
 
     db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
-                 "physical_pos", "strand", "allele_a", "allele_b")
+                 "physical_pos", "strand", "allele_a",
+                 "allele_b", "fragment_length")
 
     val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
                      ":Physical_Position", ":Strand", ":Allele_A",
-                     ":Allele_B")
+                     ":Allele_B", ":Fragment_Length_Start_Stop")
 
     exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
     sql <- paste("update featureSet set ", exprs,
@@ -121,6 +130,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
         df <- read.table(con, sep=",", stringsAsFactors=FALSE,
                          nrows=batch_size, na.strings="---",
                          header=FALSE)[, wantedCols]
+        df[,9] <- getLength(df[,9])
         if (nrow(df) < batch_size) {
             done <- TRUE
             if (nrow(df) == 0)
@@ -163,6 +173,13 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         names(pmdf) <- header
         pmdf[["fid"]] <- xy2i(pmdf[["x"]], pmdf[["y"]])
         N <- nrow(pmdf)
+
+        ## BC: adding offset to pmfeature
+        offsetSql <- paste("update pmfeature_tmp set offset = :offset where pmfeature_tmp.fid = :fid")
+        dbBeginTransaction(db)
+        dbGetPreparedQuery(db, offsetSql, bind.data=pmdf)
+        dbCommit(db)
+        
         ## process MMs
         mmSql <- paste("select mm_fid, pm_fid from pm_mm where pm_fid in (",
                        paste(pmdf[["fid"]], collapse=","), ")")
@@ -171,6 +188,13 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         mmdf <- pmdf[foundIdIdx, ]
         mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
 
+        ## BC: adding offset to mmfeature
+        offsetSql <- paste("update mmfeature_tmp set offset = :offset where mmfeature_tmp.fid = :fid")
+        dbBeginTransaction(db)
+        dbGetPreparedQuery(db, offsetSql, bind.data=mmdf)
+        dbCommit(db)
+
+        
         ## Assuming 25mers
         midbase <- substr(mmdf$seq, 13, 13)
         types <- aggregate(mmdf$tallele, by=list(mmdf$fset.name),
@@ -181,7 +205,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         midbase[isSpecial] <- complementBase(midbase[isSpecial], T)
         midbase[!isSpecial] <- complementBase(midbase[!isSpecial])
         rm(isSpecial)
-        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 13, 25), sep="")
+        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 14, 25), sep="")
         rm(midbase)
         ## end MM seq
 
@@ -199,9 +223,9 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile) {
     db <- initDb(dbFile)
 
-    loadUnitsByBatch(db, cdfFile)
-    loadAffyCsv(db, csvFile)
-    loadAffySeqCsv(db, csvSeqFile, cdfFile)
+    loadUnitsByBatch(db, cdfFile, batch_size=600000)
+    loadAffyCsv(db, csvFile, batch_size=300000)
+    loadAffySeqCsv(db, csvSeqFile, cdfFile, batch_size=300000)
 
     sortFeatureTables(db)
     createIndicesDb(db)
