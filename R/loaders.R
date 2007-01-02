@@ -61,6 +61,8 @@ loadUnits <- function(db, batch, isQc=FALSE) {
 loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
                              max_units=NULL, verbose=FALSE) {
     unames <- readCdfUnitNames(cdfFile)
+    if (is.null(max_units))
+      max_units <- length(unames)
     offset <- 1
     whQc <- grep("^AFFX", unames)
     if (length(whQc)) {                 # load all QC at once
@@ -75,8 +77,6 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
     if (extra != 0)
       num_batches <- num_batches + 1
     done <- FALSE
-    if (is.null(max_units))
-      max_units <- length(unames)
     while (!done) {
         end <- min(offset + batch_size, max_units)
         if (end == max_units)
