@@ -213,12 +213,13 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 }
 
 
-buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile) {
+buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile,
+                          batch_size=10000) {
     db <- initDb(dbFile)
 
-    loadUnitsByBatch(db, cdfFile, batch_size=600000)
-    loadAffyCsv(db, csvFile, batch_size=300000)
-    loadAffySeqCsv(db, csvSeqFile, cdfFile, batch_size=300000)
+    loadUnitsByBatch(db, cdfFile, batch_size=batch_size)
+    loadAffyCsv(db, csvFile, batch_size=batch_size)
+    loadAffySeqCsv(db, csvSeqFile, cdfFile, batch_size=batch_size)
 
     sortFeatureTables(db)
     createIndicesDb(db)
