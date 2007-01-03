@@ -152,8 +152,10 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 
     complementBase <- function(x, special=FALSE){
       bases <- c("A", "C", "G", "T")
-      if (!special) comp <- c("T", "G", "C", "A")
-      else comp <- c("G", "T", "A", "C")
+      if (!special)
+        comp <- c("T", "G", "C", "A")
+      else
+        comp <- c("G", "T", "A", "C")
       comp[match(x, bases)]
     }
 
