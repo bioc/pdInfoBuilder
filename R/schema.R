@@ -11,8 +11,6 @@ pragma page_size = 8192;
 ## be integer and we could have a separate mapping tabel to the cromosome label
 ## (so that names are more meaningful).
 
-## BC: Added fragment_length
-
 createSnpFeatureSetSql <- ('
 create table featureSet (
     fsetid integer primary key,
@@ -27,8 +25,6 @@ create table featureSet (
     fragment_length integer)
 ')
 
-## BC: Added offset (SNP Location)
-
 createSnpFeatureSql <- ('
 create table %s (
     fid integer primary key,
@@ -37,8 +33,7 @@ create table %s (
     fsetid integer not null references "featureSet" ("fsetid"),
     pos integer,
     x integer,
-    y integer,
-    offset integer)
+    y integer)
 ')
 
 createSnpPm_MmSql <- ('

@@ -31,11 +31,11 @@ loadUnits <- function(db, batch, isQc=FALSE) {
                  ")")
     batchIds <- dbGetQuery(db, sql)[[1]]
     batchIds <- rep(batchIds, batchLens)
-    batchMat <- cbind(batchMat, fsetid=batchIds, offset=NA)
+    batchMat <- cbind(batchMat, fsetid=batchIds)
 
     ## Insert pm and mm into respective tables
     isPm <- as.logical(batchMat[, "ispm"])
-    values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y, :offset)"
+    values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y)"
     sql <- paste("insert into", pmfeature, "values", values)
     dbBeginTransaction(db)
     rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
@@ -174,12 +174,6 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         pmdf[["fid"]] <- xy2i(pmdf[["x"]], pmdf[["y"]])
         N <- nrow(pmdf)
 
-        ## BC: adding offset to pmfeature
-        offsetSql <- paste("update pmfeature_tmp set offset = :offset where pmfeature_tmp.fid = :fid")
-        dbBeginTransaction(db)
-        dbGetPreparedQuery(db, offsetSql, bind.data=pmdf)
-        dbCommit(db)
-        
         ## process MMs
         mmSql <- paste("select mm_fid, pm_fid from pm_mm where pm_fid in (",
                        paste(pmdf[["fid"]], collapse=","), ")")
@@ -188,13 +182,6 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         mmdf <- pmdf[foundIdIdx, ]
         mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
 
-        ## BC: adding offset to mmfeature
-        offsetSql <- paste("update mmfeature_tmp set offset = :offset where mmfeature_tmp.fid = :fid")
-        dbBeginTransaction(db)
-        dbGetPreparedQuery(db, offsetSql, bind.data=mmdf)
-        dbCommit(db)
-
-        
         ## Assuming 25mers
         midbase <- substr(mmdf$seq, 13, 13)
         types <- aggregate(mmdf$tallele, by=list(mmdf$fset.name),
@@ -205,7 +192,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         midbase[isSpecial] <- complementBase(midbase[isSpecial], T)
         midbase[!isSpecial] <- complementBase(midbase[!isSpecial])
         rm(isSpecial)
-        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 14, 25), sep="")
+        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 13, 25), sep="")
         rm(midbase)
         ## end MM seq
 

@@ -5,7 +5,7 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
   annotation data.
-Version: 0.1.9
+Version: 0.1.10
 Author: Seth Falcon
 Maintainer: Seth Falcon <sfalcon@fhcrc.org>
 LazyLoad: yes
