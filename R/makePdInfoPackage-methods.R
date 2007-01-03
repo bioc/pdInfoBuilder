@@ -48,7 +48,7 @@ setGeneric("makePdInfoPackage", signature=c("object"),
 
 
 setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
-          function(object, destDir=".", quiet=FALSE) {
+          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
               chip <- chipName(object)
               pkgName <- cleanPlatformName(chip)
               extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
@@ -74,7 +74,8 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
                             quiet=quiet)
               dir.create(extdataDir, recursive=TRUE)
               buildPdInfoDb(object@cdfFile, object@csvAnnoFile,
-                            object@csvSeqFile, dbFilePath, seqMatFile)
+                            object@csvSeqFile, dbFilePath, seqMatFile,
+                            batch_size=batch_size)
           })
 
 
