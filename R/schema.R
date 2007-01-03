@@ -48,6 +48,5 @@ create table sequence (
     offset integer,
     tstrand text,
     tallele text,
-    ispm integer,
     seq text)
 ')
