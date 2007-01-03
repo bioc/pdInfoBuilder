@@ -94,19 +94,20 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     con <- file(csvFile, open="r")
     on.exit(close(con))
 
-    getLength <- function(v){
+    getFragLength <- function(v){
       tmp <- sapply(strsplit(v, "//"), function(obj) obj[[1]])
       tmp[tmp == "---"] <- NA
       as.integer(tmp)
     }
     
-    ## BC: Added column 17 (need fragment length)
     wantedCols <- c(1,2,3,4,7,8,12,13,17)
     df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
                      na.strings="---", header=TRUE)[, wantedCols]
-    df[,9] <- getLength(df[,9])
     header <- gsub(".", "_", names(df), fixed=TRUE)
     names(df) <- header
+
+    FRAG_COL <- "Fragment_Length_Start_Stop"
+    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
 
     db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
                  "physical_pos", "strand", "allele_a",
@@ -130,13 +131,13 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
         df <- read.table(con, sep=",", stringsAsFactors=FALSE,
                          nrows=batch_size, na.strings="---",
                          header=FALSE)[, wantedCols]
-        df[,9] <- getLength(df[,9])
         if (nrow(df) < batch_size) {
             done <- TRUE
             if (nrow(df) == 0)
               break
         }
         names(df) <- header
+        df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
         dbBeginTransaction(db)
         dbGetPreparedQuery(db, sql, bind.data=df)
         dbCommit(db)
@@ -185,14 +186,17 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         ## Assuming 25mers
         midbase <- substr(mmdf$seq, 13, 13)
         types <- aggregate(mmdf$tallele, by=list(mmdf$fset.name),
-                             FUN=function(v) paste(sort(unique(v)), collapse=""))[,2]
+                           FUN=function(v) {
+                               paste(sort(unique(v)), collapse="")
+                           })[,2]
         types <- rep(types, as.integer(table(mmdf$fset.name)))
         isSpecial <- (types == "AT" | types == "AG") & mmdf$offset == 0
         rm(types)
         midbase[isSpecial] <- complementBase(midbase[isSpecial], T)
         midbase[!isSpecial] <- complementBase(midbase[!isSpecial])
         rm(isSpecial)
-        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase, substr(mmdf$seq, 13, 25), sep="")
+        mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase,
+                          substr(mmdf$seq, 13, 25), sep="")
         rm(midbase)
         ## end MM seq
 
