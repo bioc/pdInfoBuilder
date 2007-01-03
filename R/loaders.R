@@ -197,6 +197,8 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         rm(isSpecial)
         mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase,
                           substr(mmdf$seq, 13, 25), sep="")
+        ## fixup PM/MM type.  FIXME: do we even need this column at all?
+        mmdf$type <- rep("MM", nrow(mmdf))
         rm(midbase)
         ## end MM seq
 
