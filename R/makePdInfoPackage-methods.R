@@ -42,7 +42,7 @@ setMethod("chipName", "AffySNPPDInfoPkgSeed",
 
 
 setGeneric("makePdInfoPackage", signature=c("object"),
-           function(object, destDir, quiet=FALSE) {
+           function(object, destDir, batch_size=10000, quiet=FALSE) {
                standardGeneric("makePdInfoPackage")
            })
 
