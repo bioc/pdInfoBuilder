@@ -214,19 +214,36 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 
 
 buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile,
-                          batch_size=10000) {
+                          batch_size=10000, verbose=FALSE) {
+
+    ST <- system.time
+    printTime <- function(msg, t) {
+        if (verbose) {
+            m <- paste(msg, "took %.2f sec\n")
+            cat(sprintf(m, t))
+        }
+    }
+
     db <- initDb(dbFile)
 
-    loadUnitsByBatch(db, cdfFile, batch_size=batch_size)
-    loadAffyCsv(db, csvFile, batch_size=batch_size)
-    loadAffySeqCsv(db, csvSeqFile, cdfFile, batch_size=batch_size)
+    t <- ST(loadUnitsByBatch(db, cdfFile, batch_size=batch_size))
+    printTime("loadUnitsByBatch", t[3])
+    t <- ST(loadAffyCsv(db, csvFile, batch_size=batch_size))
+    printTime("loadAffyCsv", t[3])
+    t <- ST(loadAffySeqCsv(db, csvSeqFile, cdfFile, batch_size=batch_size))
+    printTime("loadAffySeqCsv", t[3])
+    t <- ST({
+        sortFeatureTables(db)
+        createIndicesDb(db)
+        createTableInfoTable(db)
+        createFeatureTableInfo(db)
+    })
+    printTime("DB sort, index creation", t[3])
 
-    sortFeatureTables(db)
-    createIndicesDb(db)
-    createTableInfoTable(db)
-    createFeatureTableInfo(db)
-
-    seqMat <- createSeqMat(db)
-    save(seqMat, file=matFile, compress=TRUE)
+    t <- ST({
+        seqMat <- createSeqMat(db)
+        save(seqMat, file=matFile, compress=TRUE)
+    })
+    printTime("sequence matrix", t[3])
     closeDb(db)
 }

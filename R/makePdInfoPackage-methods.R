@@ -75,7 +75,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
               dir.create(extdataDir, recursive=TRUE)
               buildPdInfoDb(object@cdfFile, object@csvAnnoFile,
                             object@csvSeqFile, dbFilePath, seqMatFile,
-                            batch_size=batch_size)
+                            batch_size=batch_size, verbose=!quiet)
           })
 
 
