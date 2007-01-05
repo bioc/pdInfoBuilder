@@ -187,10 +187,8 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 
         ## Assuming 25mers
         midbase <- substr(mmdf$seq, 13, 13)
-        types <- aggregate(mmdf$tallele, by=list(mmdf$fset.name),
-                           FUN=function(v) {
-                               paste(sort(unique(v)), collapse="")
-                           })[,2]
+        types <- apply(table(mmdf$fset.name, mmdf$tallele)>0, 1,
+                       function(v) paste(c("A", "C", "G", "T")[v], collapse=""))
         types <- rep(types, as.integer(table(mmdf$fset.name)))
         isSpecial <- (types == "AT" | types == "AG") & mmdf$offset == 0
         rm(types)
