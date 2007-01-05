@@ -198,7 +198,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         midbase[!isSpecial] <- complementBase(midbase[!isSpecial])
         rm(isSpecial)
         mmdf$seq <- paste(substr(mmdf$seq, 1, 12), midbase,
-                          substr(mmdf$seq, 13, 25), sep="")
+                          substr(mmdf$seq, 14, 25), sep="")
         rm(midbase)
         ## end MM seq
 
