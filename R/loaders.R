@@ -95,7 +95,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     on.exit(close(con))
 
     getFragLength <- function(v){
-      tmp <- sapply(strsplit(v, "//"), function(obj) obj[[1]])
+      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[1]])
       tmp[tmp == "---"] <- NA
       as.integer(tmp)
     }
