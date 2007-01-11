@@ -28,7 +28,7 @@ loadUnits <- function(db, batch, isQc=FALSE) {
                                    length(y$indices))))
     sql <- paste("select fsetid from featureSet where man_fsetid in (",
                  paste('"', names(batch), '"', sep="", collapse=","),
-                 ")")
+                 ") order by fsetid")
     batchIds <- dbGetQuery(db, sql)[[1]]
     batchIds <- rep(batchIds, batchLens)
     batchMat <- cbind(batchMat, fsetid=batchIds)
@@ -69,11 +69,11 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
         qcunits <- readCdf(cdfFile, units=whQc, readGroupDirection=TRUE,
                            readIndices=TRUE, readIsPm=TRUE)
         loadUnits(db, qcunits, isQc=TRUE)
-        unames <- unames[-whQc]
+##        unames <- unames[-whQc]
         offset <- max(whQc) + 1
     }
-    extra <- length(unames) %% batch_size
-    num_batches <- length(unames) %/% batch_size
+    extra <- (length(unames)-length(whQc)) %% batch_size
+    num_batches <- (length(unames)-length(whQc)) %/% batch_size
     if (extra != 0)
       num_batches <- num_batches + 1
     done <- FALSE
