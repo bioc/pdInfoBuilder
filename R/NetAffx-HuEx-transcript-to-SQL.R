@@ -1,0 +1,328 @@
+### =========================================================================
+### Utilities for converting a NetAffx HuEx transcript CSV file to SQL
+### 
+### ... work in progress ... (nothing from this file is exported)
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### General purpose low-level SQL helper functions (should probably go
+### somewhere else).
+###
+
+### 'conn' must be a DBIConnection object, a filename or a file object
+.dbSendQuery <- function(conn, sql)
+{
+    if (is(conn, "DBIConnection"))
+        dbSendQuery(conn, sql)
+    else
+        cat(sql, ";\n", file=conn, sep="", append=TRUE)
+}
+
+### 'vals' must be a character vector with NAs for the SQL NULL.
+### Return a character vector of the same length as 'vals' (and with the
+### same names if 'vals' has names).
+toSQLValues <- function(vals, col2type)
+{
+    lv <- length(vals)
+    if (lv == 0)
+        stop("'vals' is empty")
+    cols <- names(vals)
+    if (is.null(cols)) {
+        if (lv != length(col2type)) {
+            cat("          vals  = ", vals, "\n", sep="|")
+            cat("names(col2type) = ", names(col2type), "\n", sep="|")
+            cat("      col2type  = ", col2type, "\n", sep="|")
+            stop("when unamed, 'vals' must be of the same length as 'col2type'")
+        }
+    } else {
+        col2type <- col2type[cols]
+        if (any(is.na(col2type)))
+            stop("no type found for some of the values in 'vals'")
+    }
+    ## From now, vals and col2type have the same length
+    ## and the mapping between them is positional.
+    for (i in 1:lv) {
+        val <- vals[i]
+        if (is.na(val)) {
+            vals[i] <- "NULL"
+            next
+        }
+        if (col2type[i] == "INTEGER") {
+            x <- as.integer(val)
+            if (is.na(x) || x != val)
+                stop("vals[", i, "]=\"", val, "\" not an integer")
+            vals[i] <- x
+            next
+        }
+        vals[i] <- paste("'", gsub("'", "''", val, fixed=TRUE), "'", sep="")
+    }
+    vals
+}
+
+dbCreateTable <- function(conn, tablename, col2type, col2key)
+{
+    col2type[names(col2key)] <- paste(col2type[names(col2key)], col2key, sep=" ")
+    sql <- paste(names(col2type), col2type, sep=" ")
+    sql <- paste(sql, collapse=", ")
+    sql <- paste("CREATE TABLE ", tablename, " (", sql, ")", sep="")
+    .dbSendQuery(conn, sql)
+}
+
+### 
+dbInsertRow <- function(conn, tablename, row, col2type)
+{
+    sqlvals <- toSQLValues(row, col2type)
+    sql <- paste(sqlvals, collapse=", ")
+    sql <- paste("VALUES (", sql, ")", sep="")
+    cols <- names(sqlvals)
+    if (!is.null(cols)) {
+        cols <- paste(cols, collapse=", ")
+        sql <- paste("(", cols, ") ", sql, sep="")
+    }
+    sql <- paste("INSERT INTO ", tablename, " ", sql, sep="")
+    .dbSendQuery(conn, sql)
+}
+
+### return NULL if 'row' is not found in 'tablename'
+### Note that it wouldn't make sense to pass a row such that 'row[unique_col]' is NA
+dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
+{
+    sqlval <- toSQLValues(row[unique_col], col2type[unique_col])
+    sql <- paste("SELECT * FROM ", tablename, " WHERE ", unique_col, "=", sqlval, " LIMIT 1", sep="")
+    data <- dbGetQuery(conn, sql)
+    if (nrow(data) == 0)
+        return(NULL)
+    row0 <- unlist(data)
+    for (col in names(row)) {
+        if (is.na(row[col]))
+            next
+        if (row[col] != row0[col]) {
+            cat("row = ", row, "\n", sep="|")
+            cat("row0 = ", row0, "\n", sep="|")
+            stop("row in table ", tablename, " has different values")
+        }
+    }
+    row0
+}
+    
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### An R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema
+###
+
+### The "probeset" table
+###
+### TODO: Rename this table "featureSet" (Seth, if you read this, FYI this
+### naming style is maybe part of the R culture but certainly not of the SQL
+### culture. When I see featureSet, I think function or method, not SQL table ;-)
+### Also rename cols: "probeset_id" -> "fsetid" and "seqname" -> "chrom".
+###
+probeset_desc <- list(
+    col2type=c(
+        probeset_id="INTEGER",      # PRIMARY KEY
+        seqname="TEXT",
+        strand="CHAR(1)",
+        start="INTEGER",
+        stop="INTEGER",
+        total_probes="INTEGER"
+    ),
+    col2key=c(
+        probeset_id="PRIMARY KEY"
+    )
+)
+
+### The "gene_assignment" table
+gene_assignment_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        gene_symbol="TEXT",
+        gene_title="TEXT",
+        cytoband="TEXT",
+        entrez_gene_id="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "mrna_assignment" table
+mrna_assignment_desc <- list(
+    col2type=c(
+        accession="TEXT", 
+        source_name="TEXT",
+        description="TEXT",
+        assignment_seqname="TEXT",
+        assignment_score="INTEGER",
+        assignment_coverage="INTEGER",
+        direct_probes="INTEGER",
+        possible_probes="INTEGER",
+        xhyb="INTEGER",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "swissprot" table
+swissprot_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        swissprot_accession="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "unigene" table
+unigene_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        unigene_id="TEXT",
+        unigene_expr="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "GO_biological_process" table
+GO_biological_process_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        GO_id="TEXT",
+        GO_term="TEXT",
+        GO_evidence="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "pathway" table
+pathway_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        source="TEXT",
+        pathway_name="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "protein_domains" table
+protein_domains_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        source="TEXT",
+        accession_or_domain_name="TEXT",
+        domain_description="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### The "protein_families" table
+protein_families_desc <- list(
+    col2type=c(
+        accession="TEXT",
+        source="TEXT",
+        family_accession="TEXT",
+        family_description="TEXT",
+        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+    ),
+    col2key=c(
+        probeset_id="REFERENCES probeset(probeset_id)"
+    )
+)
+
+### Global schema (11 tables)
+NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
+    probeset=probeset_desc,
+    gene_assignment=gene_assignment_desc,
+    mrna_assignment=mrna_assignment_desc,
+    swissprot=swissprot_desc,
+    unigene=unigene_desc,
+    GO_biological_process=GO_biological_process_desc,
+    GO_cellular_component=GO_biological_process_desc,
+    GO_molecular_function=GO_biological_process_desc,
+    pathway=pathway_desc,
+    protein_domains=protein_domains_desc,
+    protein_families=protein_families_desc
+)
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Create the "transcript" tables and insert the "transcript" data into them
+###
+
+create_NetAffx_HuEx_transcript_tables <- function(conn)
+{
+    for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)) {
+        col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
+        col2key <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2key
+        dbCreateTable(conn, tablename, col2type, col2key)
+    }
+}
+
+### Return the number of parts in the multipart field which should always be
+### the number of rows that are inserted in tablename.
+insert_NetAffx_multipart_field <- function(conn, tablename, multipart_val, probeset_id)
+{
+    if (is.na(multipart_val))
+        return(0)
+    col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
+    vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
+    for (val in vals) {
+        row <- strsplit(val, " // ", fixed=TRUE)[[1]]
+        row[row == "---"] <- NA
+        if (tablename %in% c("unigene", "protein_domains")
+         && length(row) == length(col2type) - 2)
+            row <- c(row, NA)
+        row <- c(row, probeset_id)
+        #names(row) <- names(col2type)
+        dbInsertRow(conn, tablename, row, col2type)
+    }
+    return(length(vals))
+}
+
+insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
+{
+    for (i in 1:nrow(transcript)) {
+        if (is(conn, "SQLiteConnection"))
+            dbBeginTransaction(conn)
+        row <- unlist(transcript[i, ])
+        probeset_id <- row[["probeset_id"]] # instead of [ ] to get rid of the name
+        if (!is(conn, "DBIConnection"))
+            .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
+        row[row == "---"] <- NA
+        probeset_row <- row[names(probeset_desc$col2type)]
+        names(probeset_row) <- NULL # should make dbInsertRow() slightly faster
+        dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
+        for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)[-1]) {
+            multipart_val <- row[tablename]
+            insert_NetAffx_multipart_field(conn, tablename, multipart_val, probeset_id)
+        }
+        if (is(conn, "SQLiteConnection"))
+            dbCommit(conn)
+    }
+}
+
+build_NetAffx_HuEx_transcript_SQL <- function(csv_file, sql_file)
+{
+    data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    conn <- dbConnect(dbDriver("SQLite"), dbname=sql_file)
+    create_NetAffx_HuEx_transcript_tables(conn)
+    insert_NetAffx_HuEx_transcript_data(conn, data)
+    dbDisconnect(conn)
+}
+
