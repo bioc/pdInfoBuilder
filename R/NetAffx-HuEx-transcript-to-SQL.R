@@ -168,7 +168,7 @@ protein_families_subfields <- c(
     "accession",
     "source",
     "family_accession",
-    "family_description
+    "family_description"
 )
 
 
