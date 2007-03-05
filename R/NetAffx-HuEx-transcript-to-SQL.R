@@ -161,7 +161,7 @@ protein_domains_subfields <- c(
     "accession",
     "source",
     "accession_or_domain_name",
-    "domain_description
+    "domain_description"
 )
 
 protein_families_subfields <- c(
