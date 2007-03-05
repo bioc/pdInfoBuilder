@@ -92,6 +92,7 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
     sql <- paste("SELECT * FROM ", tablename, " WHERE ",
                  unique_col, "=", sqlval, " LIMIT 1", sep="")
     data <- dbGetQuery(conn, sql)
+    ## 'data' data frame can only have 0 or 1 row
     if (nrow(data) == 0)
         return(NULL)
     row0 <- unlist(data)
@@ -106,6 +107,69 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
     }
     row0
 }
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### CSV sub-fields of the multipart fields.
+###
+
+gene_assignment_subfields <- c(
+    "accession",
+    "gene_symbol",
+    "gene_title",
+    "cytoband",
+    "entrez_gene_id"
+)
+
+mrna_assignment_subfields <- c(
+    "accession",
+    "source_name",
+    "description",
+    "assignment_seqname",
+    "assignment_score",
+    "assignment_coverage",
+    "direct_probes",
+    "possible_probes",
+    "xhyb"
+)
+
+swissprot_subfields <- c(
+    "accession",
+    "swissprot_accession"
+)
+
+unigene_subfields <- c(
+    "accession",
+    "unigene_id",
+    "unigene_expr"
+)
+
+GO_biological_process_subfields <- c(
+    "accession",
+    "GO_id",
+    "GO_term",
+    "GO_evidence"
+)
+
+pathway_subfields <- c(
+    "accession",
+    "source",
+    "pathway_name"
+)
+
+protein_domains_subfields <- c(
+    "accession",
+    "source",
+    "accession_or_domain_name",
+    "domain_description
+)
+
+protein_families_subfields <- c(
+    "accession",
+    "source",
+    "family_accession",
+    "family_description
+)
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -289,20 +353,27 @@ create_NetAffx_HuEx_transcript_tables <- function(conn)
     }
 }
 
-multipartToMatrix <- function(multipart_val, ncol, min.nsubfields=ncol)
+multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
 {
-    vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
-    rows <- strsplit(vals, " // ", fixed=TRUE)
-    for (i in seq_len(length(rows))) {
-        nsubfields <- length(rows[[i]])
-        if (nsubfields < min.nsubfields || nsubfields > ncol)
-            stop("bad number of subfields")
-        if (nsubfields < ncol)
-            length(rows[[i]]) <- ncol
+    ncol <- length(subfields)
+    if (is.na(multipart_val)) {
+        mat <- matrix(data=character(0), ncol=ncol)
+    } else {
+        vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
+        rows <- strsplit(vals, " // ", fixed=TRUE)
+        for (i in seq_len(length(rows))) {
+            nsubfields <- length(rows[[i]])
+            if (nsubfields < min.nsubfields || nsubfields > ncol)
+                stop("bad number of subfields")
+            if (nsubfields < ncol)
+                length(rows[[i]]) <- ncol
+        }
+        data <- unlist(rows)
+        data[data == "---"] <- NA
+        mat <- matrix(data=data, ncol=ncol, byrow=TRUE)
     }
-    data <- unlist(rows)
-    data[data == "---"] <- NA
-    matrix(data=data, ncol=ncol, byrow=TRUE)
+    dimnames(mat) <- list(mat[ , 1], subfields)
+    mat
 }
 
 ### Return the number of parts in the multipart field (should always be equal
@@ -328,6 +399,7 @@ insert_NetAffx_multipart_field <- function(conn, tablename, multipart_val, probe
 
 insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
 {
+    .mrna.id <- 0
     for (i in 1:nrow(transcript)) {
         if (is(conn, "SQLiteConnection"))
             dbBeginTransaction(conn)
@@ -336,23 +408,49 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
         if (!is(conn, "DBIConnection"))
             .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
         row[row == "---"] <- NA
+
+        ## Extract simple fields
         probeset_row <- row[names(probeset_desc$col2type)]
         names(probeset_row) <- NULL # should make dbInsertRow() slightly faster
         dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
-        genes <- row["gene_assignment"]
-        if (is.na(genes))
-            genes <- matrix(data=character(0), nrow=0, ncol=5)
-        else {
-            genes <- strsplit(genes, " // ", fixed=TRUE)
-            genes[genes == "---"] <- NA
-        }
 
-        
-
-        for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)[-1]) {
-            multipart_val <- row[tablename]
-            insert_NetAffx_multipart_field(conn, tablename, multipart_val, probeset_id)
+        ## Extract multipart fields
+        gene_assignment <- multipartToMatrix(row["gene_assignment"], gene_assignment_subfields)
+        mrna_assignment <- multipartToMatrix(row["mrna_assignment"], mrna_assignment_subfields)
+        for (i in nrow(mrna_assignment)) {
+            accession <- mrna_assignment[i, "accession"]
+            i2 <- which(gene_assignment[ , "accession"] %in% accession)
+            if (length(i2) >= 2)
+                stop("in CSV line for probeset_id=", probeset_id, ": ",
+                     "\"gene_assignment\" has more than 1 gene linked to ", accession)
+            if (length(i2) == 1) {
+                gene_row <- gene_assignment[i2, names(gene_desc$col2key)]
+                row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", gene_row, gene_desc$col2key)
+                if (is.null(row0))
+                    dbInsertRow(conn, "gene", gene_row, gene_desc$col2key)
+                gene_assignment <- gene_assignment[-i2, ]
+                entrez_gene_id <- gene_row["entrez_gene_id"]
+            } else {
+                entrez_gene_id <- NA
+            }
+            mrna_row <- c(NA, accession, entrez_gene_id)
+            row0 <- dbGetThisRow(conn, "mrna", "accession", mrna_row, mrna_desc$col2type)
+            if (is.null(row0)) {
+                mrna_id0 <- .mrna.id <- .mrna.id + 1
+                mrna_row[1] <- .mrna.id
+                dbInsertRow(conn, "mrna", mrna_row, mrna_desc$col2key)
+            } else {
+                mrna_id0 <- row0[1]
+            }
         }
+        if (nrow(gene_assignment) != 0)
+            stop("in CSV line for probeset_id=", probeset_id, ": ",
+                 "\"gene_assignment\" has unlinked genes")
+
+        #for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)[-1]) {
+        #    multipart_val <- row[tablename]
+        #    insert_NetAffx_multipart_field(conn, tablename, multipart_val, probeset_id)
+        #}
         if (is(conn, "SQLiteConnection"))
             dbCommit(conn)
     }
