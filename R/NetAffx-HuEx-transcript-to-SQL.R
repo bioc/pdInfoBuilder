@@ -89,7 +89,8 @@ dbInsertRow <- function(conn, tablename, row, col2type)
 dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 {
     sqlval <- toSQLValues(row[unique_col], col2type[unique_col])
-    sql <- paste("SELECT * FROM ", tablename, " WHERE ", unique_col, "=", sqlval, " LIMIT 1", sep="")
+    sql <- paste("SELECT * FROM ", tablename, " WHERE ",
+                 unique_col, "=", sqlval, " LIMIT 1", sep="")
     data <- dbGetQuery(conn, sql)
     if (nrow(data) == 0)
         return(NULL)
@@ -105,7 +106,7 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
     }
     row0
 }
-    
+
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### An R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema.
@@ -132,25 +133,40 @@ probeset_desc <- list(
     )
 )
 
-### The "gene_assignment" table.
-gene_assignment_desc <- list(
+### The "gene" table.
+gene_desc <- list(
     col2type=c(
-        accession="TEXT",
+        #`_gene_id`="INTEGER",       # internal id (PRIMARY KEY)
+        entrez_gene_id="INTEGER",   # if can't be "INTEGER" then use _gene_id as prim key
         gene_symbol="TEXT",
         gene_title="TEXT",
-        cytoband="TEXT",
-        entrez_gene_id="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        cytoband="TEXT"
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        #`_gene_id`="PRIMARY KEY",
+        # entrez_gene_id="UNIQUE",
+        entrez_gene_id="PRIMARY KEY",
+        gene_symbol="UNIQUE"
+    )
+)
+
+### The "mrna" table.
+mrna_desc <- list(
+    col2type=c(
+        `_mrna_id`="INTEGER",       # internal id (PRIMARY KEY)
+        accession="TEXT",
+        entrez_gene_id="INTEGER"    # REFERENCES gene(entrez_gene_id)
+    ),
+    col2key=c(
+        `_mrna_id`="PRIMARY KEY",
+        accession="UNIQUE",
+        entrez_gene_id="REFERENCES gene(entrez_gene_id)"
     )
 )
 
 ### The "mrna_assignment" table.
 mrna_assignment_desc <- list(
     col2type=c(
-        accession="TEXT", 
         source_name="TEXT",
         description="TEXT",
         assignment_seqname="TEXT",
@@ -159,97 +175,94 @@ mrna_assignment_desc <- list(
         direct_probes="INTEGER",
         possible_probes="INTEGER",
         xhyb="INTEGER",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        probeset_id="INTEGER",      # REFERENCES probeset(probeset_id)
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        probeset_id="NOT NULL REFERENCES probeset(probeset_id)",
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
 ### The "swissprot" table.
 swissprot_desc <- list(
     col2type=c(
-        accession="TEXT",
-        swissprot_accession="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        swissprot_accession="TEXT", 
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
 ### The "unigene" table.
 unigene_desc <- list(
     col2type=c(
-        accession="TEXT",
         unigene_id="TEXT",
         unigene_expr="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
 ### The "GO_biological_process" table.
 GO_biological_process_desc <- list(
     col2type=c(
-        accession="TEXT",
         GO_id="TEXT",
         GO_term="TEXT",
         GO_evidence="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
 ### The "pathway" table.
 pathway_desc <- list(
     col2type=c(
-        accession="TEXT",
         source="TEXT",
         pathway_name="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
 ### The "protein_domains" table.
 protein_domains_desc <- list(
     col2type=c(
-        accession="TEXT",
         source="TEXT",
         accession_or_domain_name="TEXT",
         domain_description="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
 ### The "protein_families" table.
 protein_families_desc <- list(
     col2type=c(
-        accession="TEXT",
         source="TEXT",
         family_accession="TEXT",
         family_description="TEXT",
-        probeset_id="INTEGER"       # REFERENCES probeset(probeset_id)
+        `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        probeset_id="REFERENCES probeset(probeset_id)"
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
-### Global schema (11 tables).
+### Global schema (12 tables).
 NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
     probeset=probeset_desc,
-    gene_assignment=gene_assignment_desc,
+    gene=gene_desc,
+    mrna=mrna_desc,
     mrna_assignment=mrna_assignment_desc,
     swissprot=swissprot_desc,
     unigene=unigene_desc,
@@ -274,6 +287,22 @@ create_NetAffx_HuEx_transcript_tables <- function(conn)
         col2key <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2key
         dbCreateTable(conn, tablename, col2type, col2key)
     }
+}
+
+multipartToMatrix <- function(multipart_val, ncol, min.nsubfields=ncol)
+{
+    vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
+    rows <- strsplit(vals, " // ", fixed=TRUE)
+    for (i in seq_len(length(rows))) {
+        nsubfields <- length(rows[[i]])
+        if (nsubfields < min.nsubfields || nsubfields > ncol)
+            stop("bad number of subfields")
+        if (nsubfields < ncol)
+            length(rows[[i]]) <- ncol
+    }
+    data <- unlist(rows)
+    data[data == "---"] <- NA
+    matrix(data=data, ncol=ncol, byrow=TRUE)
 }
 
 ### Return the number of parts in the multipart field (should always be equal
@@ -310,6 +339,16 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
         probeset_row <- row[names(probeset_desc$col2type)]
         names(probeset_row) <- NULL # should make dbInsertRow() slightly faster
         dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
+        genes <- row["gene_assignment"]
+        if (is.na(genes))
+            genes <- matrix(data=character(0), nrow=0, ncol=5)
+        else {
+            genes <- strsplit(genes, " // ", fixed=TRUE)
+            genes[genes == "---"] <- NA
+        }
+
+        
+
         for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)[-1]) {
             multipart_val <- row[tablename]
             insert_NetAffx_multipart_field(conn, tablename, multipart_val, probeset_id)
