@@ -83,8 +83,9 @@ dbInsertRow <- function(conn, tablename, row, col2type)
     .dbSendQuery(conn, sql)
 }
 
-### return NULL if 'row' is not found in 'tablename'
-### Note that it wouldn't make sense to pass a row such that 'row[unique_col]' is NA
+### Return NULL if 'row' is not found in 'tablename'.
+### Note that it wouldn't make sense to pass a row such that 'row[unique_col]'
+### is NA.
 dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 {
     sqlval <- toSQLValues(row[unique_col], col2type[unique_col])
@@ -107,14 +108,14 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
     
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### An R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema
+### An R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema.
 ###
 
-### The "probeset" table
+### The "probeset" table.
 ###
-### TODO: Rename this table "featureSet" (Seth, if you read this, FYI this
-### naming style is maybe part of the R culture but certainly not of the SQL
-### culture. When I see featureSet, I think function or method, not SQL table ;-)
+### TODO: Rename this table "featureSet". (This naming style maybe popular in
+### the R culture (especially for functions/methods) but not really in the SQL
+### culture (especially for table names)).
 ### Also rename cols: "probeset_id" -> "fsetid" and "seqname" -> "chrom".
 ###
 probeset_desc <- list(
@@ -131,7 +132,7 @@ probeset_desc <- list(
     )
 )
 
-### The "gene_assignment" table
+### The "gene_assignment" table.
 gene_assignment_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -146,7 +147,7 @@ gene_assignment_desc <- list(
     )
 )
 
-### The "mrna_assignment" table
+### The "mrna_assignment" table.
 mrna_assignment_desc <- list(
     col2type=c(
         accession="TEXT", 
@@ -165,7 +166,7 @@ mrna_assignment_desc <- list(
     )
 )
 
-### The "swissprot" table
+### The "swissprot" table.
 swissprot_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -177,7 +178,7 @@ swissprot_desc <- list(
     )
 )
 
-### The "unigene" table
+### The "unigene" table.
 unigene_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -190,7 +191,7 @@ unigene_desc <- list(
     )
 )
 
-### The "GO_biological_process" table
+### The "GO_biological_process" table.
 GO_biological_process_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -204,7 +205,7 @@ GO_biological_process_desc <- list(
     )
 )
 
-### The "pathway" table
+### The "pathway" table.
 pathway_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -217,7 +218,7 @@ pathway_desc <- list(
     )
 )
 
-### The "protein_domains" table
+### The "protein_domains" table.
 protein_domains_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -231,7 +232,7 @@ protein_domains_desc <- list(
     )
 )
 
-### The "protein_families" table
+### The "protein_families" table.
 protein_families_desc <- list(
     col2type=c(
         accession="TEXT",
@@ -245,7 +246,7 @@ protein_families_desc <- list(
     )
 )
 
-### Global schema (11 tables)
+### Global schema (11 tables).
 NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
     probeset=probeset_desc,
     gene_assignment=gene_assignment_desc,
@@ -262,7 +263,8 @@ NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Create the "transcript" tables and insert the "transcript" data into them
+### Create the "transcript" tables and insert the "transcript" data into
+### them.
 ###
 
 create_NetAffx_HuEx_transcript_tables <- function(conn)
@@ -274,8 +276,8 @@ create_NetAffx_HuEx_transcript_tables <- function(conn)
     }
 }
 
-### Return the number of parts in the multipart field which should always be
-### the number of rows that are inserted in tablename.
+### Return the number of parts in the multipart field (should always be equal
+### to the number of rows that are inserted in 'tablename').
 insert_NetAffx_multipart_field <- function(conn, tablename, multipart_val, probeset_id)
 {
     if (is.na(multipart_val))
