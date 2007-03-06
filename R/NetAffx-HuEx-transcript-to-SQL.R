@@ -23,31 +23,34 @@
 ### same names if 'vals' has names).
 toSQLValues <- function(vals, col2type)
 {
-    lv <- length(vals)
-    if (lv == 0)
+    nvals <- length(vals)
+    if (nvals == 0)
         stop("'vals' is empty")
     cols <- names(vals)
     if (is.null(cols)) {
-        if (lv != length(col2type)) {
+        if (nvals != length(col2type)) {
             cat("          vals  = ", vals, "\n", sep="|")
             cat("names(col2type) = ", names(col2type), "\n", sep="|")
             cat("      col2type  = ", col2type, "\n", sep="|")
             stop("when unamed, 'vals' must be of the same length as 'col2type'")
         }
+        types <- col2type
     } else {
-        col2type <- col2type[cols]
-        if (any(is.na(col2type)))
+        if (any(duplicated(cols)))
+            stop("'vals' has duplicated names")
+        types <- col2type[cols]
+        if (any(is.na(types)))
             stop("no type found for some of the values in 'vals'")
     }
-    ## From now, vals and col2type have the same length
+    ## From here, 'vals' and 'types' have the same length
     ## and the mapping between them is positional.
-    for (i in seq_len(lv)) {
+    for (i in seq_len(nvals)) {
         val <- vals[i]
         if (is.na(val)) {
             vals[i] <- "NULL"
             next
         }
-        if (col2type[i] == "INTEGER") {
+        if (types[i] == "INTEGER") {
             x <- as.integer(val)
             if (is.na(x) || x != val)
                 stop("vals[", i, "]=\"", val, "\" not an integer")
@@ -68,14 +71,16 @@ dbCreateTable <- function(conn, tablename, col2type, col2key)
     .dbSendQuery(conn, sql)
 }
 
-### 
-dbInsertRow <- function(conn, tablename, row, col2type)
+### 'row' must be a character vector with or without names.
+dbInsertRow <- function(conn, tablename, row, col2type, is.fullrow=TRUE)
 {
     sqlvals <- toSQLValues(row, col2type)
     sql <- paste(sqlvals, collapse=", ")
     sql <- paste("VALUES (", sql, ")", sep="")
-    cols <- names(sqlvals)
-    if (!is.null(cols)) {
+    cols <- names(row)
+    if (!is.null(cols) && !identical(cols, names(col2type))) {
+        if (is.fullrow)
+            stop("'names(row)' and 'names(col2type)' are not identical")
         cols <- paste(cols, collapse=", ")
         sql <- paste("(", cols, ") ", sql, sep="")
     }
@@ -203,15 +208,12 @@ probeset_desc <- list(
 ### The "gene" table.
 gene_desc <- list(
     col2type=c(
-        #`_gene_id`="INTEGER",       # internal id (PRIMARY KEY)
-        entrez_gene_id="INTEGER",   # if can't be "INTEGER" then use _gene_id as prim key
+        entrez_gene_id="INTEGER",   # PRIMARY KEY
         gene_symbol="TEXT",
         gene_title="TEXT",
         cytoband="TEXT"
     ),
     col2key=c(
-        #`_gene_id`="PRIMARY KEY",
-        # entrez_gene_id="UNIQUE",
         entrez_gene_id="PRIMARY KEY",
         gene_symbol="UNIQUE"
     )
@@ -252,6 +254,7 @@ mrna_assignment_desc <- list(
 )
 
 ### The "swissprot" table.
+### TODO: Add a UNIQUE constraint on (swissprot_accession, _mrna_id).
 swissprot_desc <- list(
     col2type=c(
         swissprot_accession="TEXT", 
@@ -263,6 +266,7 @@ swissprot_desc <- list(
 )
 
 ### The "unigene" table.
+### TODO: Add a UNIQUE constraint on (unigene_id, _mrna_id).
 unigene_desc <- list(
     col2type=c(
         unigene_id="TEXT",
@@ -288,6 +292,7 @@ GO_biological_process_desc <- list(
 )
 
 ### The "pathway" table.
+### TODO: Add a UNIQUE constraint on (source, _mrna_id).
 pathway_desc <- list(
     col2type=c(
         source="TEXT",
@@ -300,6 +305,7 @@ pathway_desc <- list(
 )
 
 ### The "protein_domains" table.
+### TODO: Add a UNIQUE constraint on (source, _mrna_id).
 protein_domains_desc <- list(
     col2type=c(
         source="TEXT",
@@ -313,6 +319,7 @@ protein_domains_desc <- list(
 )
 
 ### The "protein_families" table.
+### TODO: Add a UNIQUE constraint on (source, _mrna_id).
 protein_families_desc <- list(
     col2type=c(
         source="TEXT",
@@ -379,25 +386,37 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
     mat
 }
 
-### Return the number of parts in the multipart field (should always be equal
-### to the number of rows that are inserted in 'tablename').
-insert_NetAffx_multipart_field <- function(conn, tablename, multipart_val, probeset_id)
+insert_NetAffx_multipart_field <- function(conn, tablename, mat,
+                                           acc2id, new_accessions, probeset_id)
 {
-    if (is.na(multipart_val))
-        return(0)
     col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
-    vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
-    for (val in vals) {
-        row <- strsplit(val, " // ", fixed=TRUE)[[1]]
-        row[row == "---"] <- NA
-        if (tablename %in% c("unigene", "protein_domains")
-         && length(row) == length(col2type) - 2)
-            row <- c(row, NA)
-        row <- c(row, probeset_id)
-        #names(row) <- names(col2type)
-        dbInsertRow(conn, tablename, row, col2type)
+    uacc <- unique(mat[ , "accession"])
+    if (!all(uacc %in% names(acc2id)))
+        stop("in CSV line for probeset_id=", probeset_id, ": ",
+             "\"", tablename, "\" has unlinked parts")
+    for (i in seq_len(nrow(mat))) {
+        accession <- mat[i, "accession"]
+        if (accession %in% new_accessions) {
+            row <- mat[i, -1] # drop "accession" col
+            row <- c(row, `_mrna_id`=acc2id[accession])
+            dbInsertRow(conn, tablename, row, col2type)
+        }
     }
-    return(length(vals))
+    for (accession in setdiff(uacc, new_accessions)) {
+        submat <- mat[mat[ , "accession"] == accession, -1, drop=FALSE] # drop "accession" col
+        selected_cols <- paste(colnames(submat), collapse=",")
+        sql <- paste("SELECT ", selected_cols, " FROM ", tablename,
+                     " WHERE _mrna_id=", acc2id[accession], sep="")
+        data0 <- dbGetQuery(conn, sql)
+        if (nrow(data0) != nrow(submat))
+            stop("in CSV line for probeset_id=", probeset_id, ": ",
+                 "\"", tablename, "\" doesn't have the expected number of parts")
+        for (i in seq_len(nrow(submat))) {
+            if (!(submat[i, 1] %in% data0[[1]])) # light testing only
+                stop("in CSV line for probeset_id=", probeset_id, ": ",
+                     "\"", tablename, "\" doesn't have the expected parts")
+        }
+    }
 }
 
 insert_NetAffx_HuEx_transcript_data <- function(conn, data)
@@ -414,12 +433,18 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
 
         ## Extract simple fields
         probeset_row <- row[names(probeset_desc$col2type)]
-        names(probeset_row) <- NULL # should make dbInsertRow() slightly faster
         dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
 
-        ## Extract multipart fields
+        ## Extract "gene_assignment" and "mrna_assignment" multipart fields
         gene_assignment <- multipartToMatrix(row["gene_assignment"], gene_assignment_subfields)
         mrna_assignment <- multipartToMatrix(row["mrna_assignment"], mrna_assignment_subfields)
+        accessions <- mrna_assignment[ , "accession"]
+        if (any(duplicated(accessions)))
+            stop("in CSV line for probeset_id=", probeset_id, ": ",
+                 "\"mrna_assignment\" has parts with same accession")
+        acc2id <- character(length(accessions))
+        names(acc2id) <- accessions
+        new_accessions <- character(0)
         for (i in seq_len(nrow(mrna_assignment))) {
             accession <- mrna_assignment[i, "accession"]
             i2 <- which(gene_assignment[ , "accession"] %in% accession)
@@ -431,7 +456,6 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
                 entrez_gene_id <- gene_row[["entrez_gene_id"]] # [[ ]] to get rid of the name
                 row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", gene_row, gene_desc$col2type)
                 if (is.null(row0)) {
-                    names(gene_row) <- NULL # should make dbInsertRow() slightly faster
                     dbInsertRow(conn, "gene", gene_row, gene_desc$col2type)
                 }
                 gene_assignment <- gene_assignment[-i2, , drop=FALSE]
@@ -444,25 +468,58 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
             if (is.null(row0)) {
                 .mrna.id <- .mrna.id + 1
                 mrna_row["_mrna_id"] <- .mrna.id
-                names(mrna_row) <- NULL # should make dbInsertRow() slightly faster
                 dbInsertRow(conn, "mrna", mrna_row, mrna_desc$col2type)
+                new_accessions <- c(new_accessions, accession)
                 mrna_id0 <- .mrna.id
             } else {
                 mrna_id0 <- row0[["_mrna_id"]] # [[ ]] to get rid of the name
             }
+            acc2id[accession] <- mrna_id0
             mrna_assignment_row <- mrna_assignment[i, names(mrna_assignment_desc$col2type)[1:8]]
-            mrna_assignment_row <- c(mrna_assignment_row, probeset_id, mrna_id0)
-            names(mrna_assignment_row) <- NULL # should make dbInsertRow() slightly faster
+            mrna_assignment_row <- c(mrna_assignment_row, probeset_id=probeset_id, `_mrna_id`=mrna_id0)
             dbInsertRow(conn, "mrna_assignment", mrna_assignment_row, mrna_assignment_desc$col2type)
         }
         if (nrow(gene_assignment) != 0)
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  "\"gene_assignment\" has unlinked genes")
 
-        #for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)[-1]) {
-        #    multipart_val <- row[tablename]
-        #    insert_NetAffx_multipart_field(conn, tablename, multipart_val, probeset_id)
-        #}
+        ## Extract other multipart fields
+
+        swissprot <- multipartToMatrix(row["swissprot"], swissprot_subfields)
+        insert_NetAffx_multipart_field(conn, "swissprot", swissprot,
+                                       acc2id, new_accessions, probeset_id)
+
+        unigene <- multipartToMatrix(row["unigene"], unigene_subfields)
+        insert_NetAffx_multipart_field(conn, "unigene", unigene,
+                                       acc2id, new_accessions, probeset_id)
+
+        GO_biological_process <- multipartToMatrix(row["GO_biological_process"],
+                                                   GO_biological_process_subfields)
+        insert_NetAffx_multipart_field(conn, "GO_biological_process", GO_biological_process,
+                                       acc2id, new_accessions, probeset_id)
+
+        GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
+                                                   GO_biological_process_subfields)
+        insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
+                                       acc2id, new_accessions, probeset_id)
+
+        GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
+                                                   GO_biological_process_subfields)
+        insert_NetAffx_multipart_field(conn, "GO_molecular_function", GO_molecular_function,
+                                       acc2id, new_accessions, probeset_id)
+
+        pathway <- multipartToMatrix(row["pathway"], pathway_subfields)
+        insert_NetAffx_multipart_field(conn, "pathway", pathway,
+                                       acc2id, new_accessions, probeset_id)
+
+        protein_domains <- multipartToMatrix(row["protein_domains"], protein_domains_subfields)
+        insert_NetAffx_multipart_field(conn, "protein_domains", protein_domains,
+                                       acc2id, new_accessions, probeset_id)
+
+        protein_families <- multipartToMatrix(row["protein_families"], protein_families_subfields)
+        insert_NetAffx_multipart_field(conn, "protein_families", protein_families,
+                                       acc2id, new_accessions, probeset_id)
+
         #if (is(conn, "SQLiteConnection"))
         #    dbCommit(conn)
     }
