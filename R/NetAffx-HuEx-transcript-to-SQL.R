@@ -41,7 +41,7 @@ toSQLValues <- function(vals, col2type)
     }
     ## From now, vals and col2type have the same length
     ## and the mapping between them is positional.
-    for (i in 1:lv) {
+    for (i in seq_len(lv)) {
         val <- vals[i]
         if (is.na(val)) {
             vals[i] <- "NULL"
@@ -88,9 +88,22 @@ dbInsertRow <- function(conn, tablename, row, col2type)
 ### is NA.
 dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 {
-    sqlval <- toSQLValues(row[unique_col], col2type[unique_col])
+    ncols <- length(row)
+    cols <- names(row)
+    if (is.null(cols)) {
+        if (ncols != length(col2type)) {
+            cat("           row  = ", row, "\n", sep="|")
+            cat("names(col2type) = ", names(col2type), "\n", sep="|")
+            cat("      col2type  = ", col2type, "\n", sep="|")
+            stop("when unamed, 'row' must be of the same length as 'col2type'")
+        }
+        unique_col_pos <- which(names(col2type) %in% unique_col)
+        unique_sqlval <- toSQLValues(row[unique_col_pos], col2type[unique_col_pos]) 
+    } else {
+        unique_sqlval <- toSQLValues(row[unique_col], col2type)
+    }
     sql <- paste("SELECT * FROM ", tablename, " WHERE ",
-                 unique_col, "=", sqlval, " LIMIT 1", sep="")
+                 unique_col, "=", unique_sqlval, " LIMIT 1", sep="")
     data <- dbGetQuery(conn, sql)
     ## 'data' data frame can only have 0 or 1 row
     if (nrow(data) == 0)
@@ -397,13 +410,13 @@ insert_NetAffx_multipart_field <- function(conn, tablename, multipart_val, probe
     return(length(vals))
 }
 
-insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
+insert_NetAffx_HuEx_transcript_data <- function(conn, data)
 {
     .mrna.id <- 0
-    for (i in 1:nrow(transcript)) {
+    for (i in seq_len(nrow(data))) {
         if (is(conn, "SQLiteConnection"))
             dbBeginTransaction(conn)
-        row <- unlist(transcript[i, ])
+        row <- unlist(data[i, ])
         probeset_id <- row[["probeset_id"]] # instead of [ ] to get rid of the name
         if (!is(conn, "DBIConnection"))
             .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
@@ -417,17 +430,18 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
         ## Extract multipart fields
         gene_assignment <- multipartToMatrix(row["gene_assignment"], gene_assignment_subfields)
         mrna_assignment <- multipartToMatrix(row["mrna_assignment"], mrna_assignment_subfields)
-        for (i in nrow(mrna_assignment)) {
+        for (i in seq_len(nrow(mrna_assignment))) {
             accession <- mrna_assignment[i, "accession"]
             i2 <- which(gene_assignment[ , "accession"] %in% accession)
             if (length(i2) >= 2)
                 stop("in CSV line for probeset_id=", probeset_id, ": ",
                      "\"gene_assignment\" has more than 1 gene linked to ", accession)
             if (length(i2) == 1) {
-                gene_row <- gene_assignment[i2, names(gene_desc$col2key)]
-                row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", gene_row, gene_desc$col2key)
+                gene_row <- gene_assignment[i2, names(gene_desc$col2type)]
+                row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", gene_row, gene_desc$col2type)
+                names(gene_row) <- NULL # should make dbInsertRow() slightly faster
                 if (is.null(row0))
-                    dbInsertRow(conn, "gene", gene_row, gene_desc$col2key)
+                    dbInsertRow(conn, "gene", gene_row, gene_desc$col2type)
                 gene_assignment <- gene_assignment[-i2, ]
                 entrez_gene_id <- gene_row["entrez_gene_id"]
             } else {
@@ -436,12 +450,18 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
             mrna_row <- c(NA, accession, entrez_gene_id)
             row0 <- dbGetThisRow(conn, "mrna", "accession", mrna_row, mrna_desc$col2type)
             if (is.null(row0)) {
-                mrna_id0 <- .mrna.id <- .mrna.id + 1
+                .mrna.id <- .mrna.id + 1
                 mrna_row[1] <- .mrna.id
-                dbInsertRow(conn, "mrna", mrna_row, mrna_desc$col2key)
+                dbInsertRow(conn, "mrna", mrna_row, mrna_desc$col2type)
+                mrna_id0 <- .mrna.id
             } else {
-                mrna_id0 <- row0[1]
+                mrna_id0 <- row0["_mrna_id"]
             }
+
+            mrna_assignment_row <- mrna_assignment[i, names(mrna_assignment_desc$col2type)[1:8]]
+            mrna_assignment_row <- c(mrna_assignment_row, probeset_id, mrna_id0)
+            names(mrna_assignment_row) <- NULL # should make dbInsertRow() slightly faster
+            dbInsertRow(conn, "mrna_assignment", mrna_assignment_row, mrna_assignment_desc$col2type)
         }
         if (nrow(gene_assignment) != 0)
             stop("in CSV line for probeset_id=", probeset_id, ": ",
@@ -456,12 +476,15 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, transcript)
     }
 }
 
-build_NetAffx_HuEx_transcript_SQL <- function(csv_file, sql_file)
+build_NetAffx_HuEx_transcript_SQL <- function(transcript_csv_file, sql_file)
 {
-    data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    ## Takes about 1 min to load file "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
+    ## (312368x17) into 'transcript_data' on gopher6.
+    transcript_data <- read.table(transcript_csv_file, header=TRUE, sep=",", quote="\"",
+                                  stringsAsFactors=FALSE)
     conn <- dbConnect(dbDriver("SQLite"), dbname=sql_file)
     create_NetAffx_HuEx_transcript_tables(conn)
-    insert_NetAffx_HuEx_transcript_data(conn, data)
+    insert_NetAffx_HuEx_transcript_data(conn, transcript_data)
     dbDisconnect(conn)
 }
 
