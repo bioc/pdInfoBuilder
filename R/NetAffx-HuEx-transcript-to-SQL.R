@@ -83,25 +83,15 @@ dbInsertRow <- function(conn, tablename, row, col2type)
     .dbSendQuery(conn, sql)
 }
 
+### 'row' must be a named character vector.
 ### Return NULL if 'row' is not found in 'tablename'.
 ### Note that it wouldn't make sense to pass a row such that 'row[unique_col]'
 ### is NA.
 dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 {
-    ncols <- length(row)
-    cols <- names(row)
-    if (is.null(cols)) {
-        if (ncols != length(col2type)) {
-            cat("           row  = ", row, "\n", sep="|")
-            cat("names(col2type) = ", names(col2type), "\n", sep="|")
-            cat("      col2type  = ", col2type, "\n", sep="|")
-            stop("when unamed, 'row' must be of the same length as 'col2type'")
-        }
-        unique_col_pos <- which(names(col2type) %in% unique_col)
-        unique_sqlval <- toSQLValues(row[unique_col_pos], col2type[unique_col_pos]) 
-    } else {
-        unique_sqlval <- toSQLValues(row[unique_col], col2type)
-    }
+    if (is.null(names(row)))
+        stop("'row' must be a named character vector")
+    unique_sqlval <- toSQLValues(row[unique_col], col2type)
     sql <- paste("SELECT * FROM ", tablename, " WHERE ",
                  unique_col, "=", unique_sqlval, " LIMIT 1", sep="")
     data <- dbGetQuery(conn, sql)
@@ -438,26 +428,28 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
                      "\"gene_assignment\" has more than 1 gene linked to ", accession)
             if (length(i2) == 1) {
                 gene_row <- gene_assignment[i2, names(gene_desc$col2type)]
-                row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", gene_row, gene_desc$col2type)
-                names(gene_row) <- NULL # should make dbInsertRow() slightly faster
-                if (is.null(row0))
-                    dbInsertRow(conn, "gene", gene_row, gene_desc$col2type)
-                gene_assignment <- gene_assignment[-i2, ]
                 entrez_gene_id <- gene_row[["entrez_gene_id"]] # [[ ]] to get rid of the name
+                row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", gene_row, gene_desc$col2type)
+                if (is.null(row0)) {
+                    names(gene_row) <- NULL # should make dbInsertRow() slightly faster
+                    dbInsertRow(conn, "gene", gene_row, gene_desc$col2type)
+                }
+                gene_assignment <- gene_assignment[-i2, ]
             } else {
                 entrez_gene_id <- NA
             }
             mrna_row <- c(NA, accession, entrez_gene_id)
+            names(mrna_row) <- names(mrna_desc$col2type)
             row0 <- dbGetThisRow(conn, "mrna", "accession", mrna_row, mrna_desc$col2type)
             if (is.null(row0)) {
                 .mrna.id <- .mrna.id + 1
-                mrna_row[1] <- .mrna.id
+                mrna_row["_mrna_id"] <- .mrna.id
+                names(mrna_row) <- NULL # should make dbInsertRow() slightly faster
                 dbInsertRow(conn, "mrna", mrna_row, mrna_desc$col2type)
                 mrna_id0 <- .mrna.id
             } else {
                 mrna_id0 <- row0[["_mrna_id"]] # [[ ]] to get rid of the name
             }
-
             mrna_assignment_row <- mrna_assignment[i, names(mrna_assignment_desc$col2type)[1:8]]
             mrna_assignment_row <- c(mrna_assignment_row, probeset_id, mrna_id0)
             names(mrna_assignment_row) <- NULL # should make dbInsertRow() slightly faster
@@ -476,13 +468,13 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
     }
 }
 
-build_NetAffx_HuEx_transcript_SQL <- function(transcript_csv_file, sql_file)
+build_NetAffx_HuEx_transcript_DB <- function(transcript_csv_file, db_file)
 {
     ## Takes about 1 min to load file "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
     ## (312368x17) into 'transcript_data' on gopher6.
     transcript_data <- read.table(transcript_csv_file, header=TRUE, sep=",", quote="\"",
                                   stringsAsFactors=FALSE)
-    conn <- dbConnect(dbDriver("SQLite"), dbname=sql_file)
+    conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     create_NetAffx_HuEx_transcript_tables(conn)
     insert_NetAffx_HuEx_transcript_data(conn, transcript_data)
     dbDisconnect(conn)
