@@ -398,7 +398,7 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat,
         accession <- mat[i, "accession"]
         if (accession %in% new_accessions) {
             row <- mat[i, -1] # drop "accession" col
-            row <- c(row, `_mrna_id`=acc2id[accession])
+            row <- c(row, acc2id[accession])
             dbInsertRow(conn, tablename, row, col2type)
         }
     }
