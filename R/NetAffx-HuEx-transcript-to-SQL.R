@@ -414,12 +414,12 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
 {
     .mrna.id <- 0
     for (i in seq_len(nrow(data))) {
-        if (is(conn, "SQLiteConnection"))
-            dbBeginTransaction(conn)
+        #if (is(conn, "SQLiteConnection"))
+        #    dbBeginTransaction(conn)
         row <- unlist(data[i, ])
-        probeset_id <- row[["probeset_id"]] # instead of [ ] to get rid of the name
-        if (!is(conn, "DBIConnection"))
-            .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
+        probeset_id <- row[["probeset_id"]] # [[ ]] to get rid of the name
+        #if (!is(conn, "DBIConnection"))
+        #    .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
         row[row == "---"] <- NA
 
         ## Extract simple fields
@@ -443,7 +443,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
                 if (is.null(row0))
                     dbInsertRow(conn, "gene", gene_row, gene_desc$col2type)
                 gene_assignment <- gene_assignment[-i2, ]
-                entrez_gene_id <- gene_row["entrez_gene_id"]
+                entrez_gene_id <- gene_row[["entrez_gene_id"]] # [[ ]] to get rid of the name
             } else {
                 entrez_gene_id <- NA
             }
@@ -455,7 +455,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
                 dbInsertRow(conn, "mrna", mrna_row, mrna_desc$col2type)
                 mrna_id0 <- .mrna.id
             } else {
-                mrna_id0 <- row0["_mrna_id"]
+                mrna_id0 <- row0[["_mrna_id"]] # [[ ]] to get rid of the name
             }
 
             mrna_assignment_row <- mrna_assignment[i, names(mrna_assignment_desc$col2type)[1:8]]
@@ -471,8 +471,8 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
         #    multipart_val <- row[tablename]
         #    insert_NetAffx_multipart_field(conn, tablename, multipart_val, probeset_id)
         #}
-        if (is(conn, "SQLiteConnection"))
-            dbCommit(conn)
+        #if (is(conn, "SQLiteConnection"))
+        #    dbCommit(conn)
     }
 }
 
