@@ -434,7 +434,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
                     names(gene_row) <- NULL # should make dbInsertRow() slightly faster
                     dbInsertRow(conn, "gene", gene_row, gene_desc$col2type)
                 }
-                gene_assignment <- gene_assignment[-i2, ]
+                gene_assignment <- gene_assignment[-i2, , drop=FALSE]
             } else {
                 entrez_gene_id <- NA
             }
