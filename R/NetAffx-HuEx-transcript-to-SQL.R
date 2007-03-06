@@ -36,6 +36,8 @@ toSQLValues <- function(vals, col2type)
         }
         types <- col2type
     } else {
+        if (any(is.na(cols)) || any(cols == ""))
+            stop("'vals' has invalid names")
         if (any(duplicated(cols)))
             stop("'vals' has duplicated names")
         types <- col2type[cols]
@@ -399,6 +401,7 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat,
         if (accession %in% new_accessions) {
             row <- mat[i, -1] # drop "accession" col
             row <- c(row, acc2id[accession])
+            names(row) <- NULL
             dbInsertRow(conn, tablename, row, col2type)
         }
     }
