@@ -492,7 +492,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
         insert_NetAffx_multipart_field(conn, "swissprot", swissprot,
                                        acc2id, new_accessions, probeset_id)
 
-        unigene <- multipartToMatrix(row["unigene"], unigene_subfields)
+        unigene <- multipartToMatrix(row["unigene"], unigene_subfields, min.nsubfields=2)
         insert_NetAffx_multipart_field(conn, "unigene", unigene,
                                        acc2id, new_accessions, probeset_id)
 
@@ -515,7 +515,8 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
         insert_NetAffx_multipart_field(conn, "pathway", pathway,
                                        acc2id, new_accessions, probeset_id)
 
-        protein_domains <- multipartToMatrix(row["protein_domains"], protein_domains_subfields)
+        protein_domains <- multipartToMatrix(row["protein_domains"],
+                                             protein_domains_subfields, min.nsubfields=3)
         insert_NetAffx_multipart_field(conn, "protein_domains", protein_domains,
                                        acc2id, new_accessions, probeset_id)
 
