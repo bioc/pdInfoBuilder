@@ -198,7 +198,7 @@ toRefMatrix <- function(mat, acc2id)
     ref_mat <- matrix(data=character(0), ncol=ncol(mat))
     colnames(ref_mat) <- colnames(mat)
     for (submat in ref_submats)
-        rbind(ref_mat, submat)
+        ref_mat <- rbind(ref_mat, submat)
     ref_mat
 }
 
