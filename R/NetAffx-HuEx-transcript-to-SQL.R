@@ -188,7 +188,7 @@ haveTheSameData <- function(mat, dat)
     ii2 <- do.call("order", args=lapply(colnames(mat2), function(col) mat2[ , col]))
     ## Compare row by row.
     for (i in seq_len(nrow(mat)))
-        if (!all(mat[ii1[i], ] == mat2[ii2[i], ]))
+        if (!identical(mat[ii1[i], ], mat2[ii2[i], ]))
             return(FALSE)
     return(TRUE)
 }
