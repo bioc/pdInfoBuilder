@@ -120,6 +120,28 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### ID generation.
+###
+
+.db.current.ids <- new.env(hash=TRUE)
+
+set.id <- function(tablename, id=0)
+{
+    assign(tablename, id, envir=.db.current.ids, inherits=FALSE)
+}
+
+next.id <- function(tablename)
+{
+    if (!exists(tablename, envir=.db.current.ids, inherits=FALSE))
+        stop("no current id for table \"", tablename, "\"")
+    id <- get(tablename, envir=.db.current.ids, inherits=FALSE)
+    id <- id + 1
+    set.id(tablename, id)
+    id
+}
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Helper functions specific to NetAffx CSV files.
 ###
 
@@ -444,11 +466,9 @@ create_NetAffx_HuEx_transcript_tables <- function(conn)
         col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
         col2key <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2key
         dbCreateTable(conn, tablename, col2type, col2key)
+        set.id(tablename)
     }
 }
-
-.GLOBAL.mrna.id <- 0
-.GLOBAL.mrna_assignment.id <- 0
 
 insert_gene_data <- function(conn, genes)
 {
@@ -482,7 +502,7 @@ insert_mrna_data <- function(conn, accessions, gene_acc2id)
         names(row1) <- names(col2type)
         row0 <- dbGetThisRow(conn, "mrna", "accession", row1, col2type)
         if (is.null(row0)) {
-            id <- .GLOBAL.mrna.id <- .GLOBAL.mrna.id + 1
+            id <- next.id("mrna")
             row1["_mrna_id"] <- id
             dbInsertRow(conn, "mrna", row1, col2type)
             new_ids <- c(new_ids, id)
@@ -500,7 +520,7 @@ insert_mrna_assignment_data <- function(conn, probeset_id, mrna_acc2id)
     acc2id[] <- ""
     col2type <- mrna_assignment_desc$col2type
     for (i in seq_len(length(mrna_acc2id))) {
-        id <- .GLOBAL.mrna_assignment.id <- .GLOBAL.mrna_assignment.id + 1
+        id <- next.id("mrna_assignment")
         row1 <- c(id, probeset_id, mrna_acc2id[i])
         names(row1) <- names(col2type)
         dbInsertRow(conn, "mrna_assignment", row1, col2type)
