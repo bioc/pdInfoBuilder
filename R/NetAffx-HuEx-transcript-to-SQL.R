@@ -566,6 +566,11 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
         sql <- paste("SELECT ", selected_cols, " FROM ", tablename,
                      " WHERE _mrna_id=", acc2id[accession], sep="")
         data0 <- dbGetQuery(conn, sql)
+        if (verbose) {
+            cat("  tablename=", tablename, " accession=", accession, "\n", sep="")
+            show(submat)
+            show(data0)
+        }
         if (!haveTheSameData(submat, data0))
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  accession, " parts in \"", tablename, "\" are not the expected ones")
