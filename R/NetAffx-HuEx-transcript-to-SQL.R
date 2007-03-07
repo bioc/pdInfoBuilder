@@ -168,38 +168,33 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
     mat
 }
 
-### 
-toRefMatrix <- function(mat, acc2id)
+### Return a list of matrices.
+splitMatrix <- function(mat, acc2id)
 {
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
-    if (!all(mat[ , 1] %in% names(acc2id)))
+    accessions <- mat[ , 1]
+    if (!all(accessions %in% names(acc2id)))
         stop("'mat' contains invalid accessions")
     uids <- unique(acc2id)
-    ref_submats <- list()
-    length(ref_submats) <- length(uids)
-    names(ref_submats) <- uids
-    for (accession in names(acc2id)) {
-        submat <- mat[mat[ , 1] == accession, , drop=FALSE]
+    id2submat <- list()
+    length(id2submat) <- length(uids)
+    names(id2submat) <- uids
+    for (accession in accessions) {
+        submat <- mat[accessions == accession, -1 , drop=FALSE]
         id <- acc2id[accession]
-        ref_submat <- ref_submats[[id]]
-        if (is.null(ref_submat)) {
-            ref_submats[[id]] <- submat
+        submat0 <- id2submat[[id]]
+        if (is.null(submat0)) {
+            id2submat[[id]] <- submat
             next
         }
-        submat <- submat[ , -1, drop=FALSE]
-        ref_submat <- ref_submat[ , -1, drop=FALSE]
-        if (!identical(submat, ref_submat)) {
-            show(ref_submat)
-            show(submat)
-            stop("can't extract reference matrix")
+        if (!identical(submat, submat0)) {
+            show(mat)
+            show(acc2id)
+            stop("can't split 'mat'")
         }
     }
-    ref_mat <- matrix(data=character(0), ncol=ncol(mat))
-    colnames(ref_mat) <- colnames(mat)
-    for (submat in ref_submats)
-        ref_mat <- rbind(ref_mat, submat)
-    ref_mat
+    id2submat
 }
 
 ### Comparison of the data contained in a character matrix ('mat') and a data
@@ -317,6 +312,21 @@ probeset_desc <- list(
 )
 
 ### The "gene" table.
+###
+### Note that we can't put a UNIQUE constraint on "gene_symbol".
+### For example in HuEx-1_0-st-v2.na21.hg18.transcript.csv, line 10430
+### (probeset_id=2564225), the "gene_assignment" field (multipart) contains
+### the following parts:
+###      accession | gene_symbol | gene_title                    | cytoband | entrez_gene_id
+###   -------------|-------------|-------------------------------|----------|---------------
+###      NM_002339 | LSP1        | lymphocyte-specific protein 1 |  11p15.5 |           4046
+###      XM_946374 | LSP1        | lymphocyte-specific protein 1 |   2p11.1 |         654342
+###   NM_001013254 | LSP1        | lymphocyte-specific protein 1 |  11p15.5 |           4046
+###   NM_001013255 | LSP1        | lymphocyte-specific protein 1 |  11p15.5 |           4046
+###   NM_001013253 | LSP1        | lymphocyte-specific protein 1 |  11p15.5 |           4046
+###       AK093859 | LSP1        | lymphocyte-specific protein 1 |  11p15.5 |           4046
+###       AK092071 | LSP1        | lymphocyte-specific protein 1 |  11p15.5 |           4046
+###
 gene_desc <- list(
     col2type=c(
         entrez_gene_id="INTEGER",   # PRIMARY KEY
@@ -325,8 +335,7 @@ gene_desc <- list(
         cytoband="TEXT"
     ),
     col2key=c(
-        entrez_gene_id="PRIMARY KEY",
-        gene_symbol="UNIQUE"
+        entrez_gene_id="PRIMARY KEY"
     )
 )
 
@@ -581,36 +590,35 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
     acc2id <- insres$acc2id
-    new_accessions <- names(acc2id)[acc2id %in% insres$new_ids]
+    id2submat <- splitMatrix(mat, acc2id)
+    new_ids <- insres$new_ids
     col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
-    uacc <- unique(mat[ , 1])
-    if (!all(uacc %in% names(acc2id)))
-        stop("in CSV line for probeset_id=", probeset_id, ": ",
-             "\"", tablename, "\" has unlinked parts")
-    for (i in seq_len(nrow(mat))) {
-        accession <- mat[i, 1]
-        if (accession %in% new_accessions) {
-            row1 <- mat[i, -1, drop=FALSE] # drop "accession" col
-            row1 <- c(row1, acc2id[accession])
-            names(row1) <- names(col2type)
-            dbInsertRow(conn, tablename, row1, col2type)
-        }
-    }
-    for (accession in setdiff(uacc, new_accessions)) {
-        submat <- mat[mat[ , 1] == accession, -1, drop=FALSE] # drop "accession" col
-        selected_cols <- paste(colnames(submat), collapse=",")
-        link_col <- names(col2type)[length(col2type)]
-        sql <- paste("SELECT ", selected_cols, " FROM ", tablename,
-                     " WHERE ", link_col, "=", acc2id[accession], sep="")
-        data0 <- dbGetQuery(conn, sql)
-        #if (verbose) {
-        #    cat("  tablename=", tablename, " accession=", accession, "\n", sep="")
-        #    show(submat)
-        #    show(data0)
-        #}
-        if (!haveTheSameData(submat, data0))
+    cols0 <- paste(colnames(submat), collapse=",")
+    link0 <- names(col2type)[length(col2type)]
+    sql0 <- paste("SELECT ", cols0, " FROM ", tablename, " WHERE ", link0, "=", sep="")
+    for (id in names(id2submat)) {
+        submat <- id2submat[[id]]
+        if (id %in% new_ids) {
+            if (is.null(submat))
+                next
+            for (i in seq_len(nrow(submat))) {
+                row1 <- c(submat[i, ], id)
+                names(row1) <- names(col2type)
+                dbInsertRow(conn, tablename, row1, col2type)
+            }
+        } else {
+            sql <- paste(sql0, id, sep="")
+            data0 <- dbGetQuery(conn, sql)
+            if (is.null(submat)) {
+                if (nrow(data0) == 0)
+                    next
+            } else {
+                if (haveTheSameData(submat, data0))
+                    next
+            }
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  accession, " parts in \"", tablename, "\" are not the expected ones")
+        }
     }
 }
 
@@ -662,20 +670,14 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
         ## Extract and insert the "GO" data
         GO_biological_process <- multipartToMatrix(row["GO_biological_process"],
                                                    GO_biological_process_subfields)
-        GO_biological_process <- toRefMatrix(GO_biological_process, gene_insres$acc2id)
         insert_NetAffx_multipart_field(conn, "GO_biological_process", GO_biological_process,
                                        gene_insres, probeset_id, verbose)
         GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
                                                    GO_biological_process_subfields)
-        #show(gene_insres$acc2id)
-        #show(GO_cellular_component)
-        GO_cellular_component <- toRefMatrix(GO_cellular_component, gene_insres$acc2id)
-        #show(GO_cellular_component)
         insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
                                        gene_insres, probeset_id, verbose)
         GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
                                                    GO_biological_process_subfields)
-        GO_molecular_function <- toRefMatrix(GO_molecular_function, gene_insres$acc2id)
         insert_NetAffx_multipart_field(conn, "GO_molecular_function", GO_molecular_function,
                                        gene_insres, probeset_id, verbose)
 
