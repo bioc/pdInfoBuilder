@@ -123,6 +123,29 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 ### Helper functions specific to NetAffx CSV files.
 ###
 
+multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
+{
+    ncol <- length(subfields)
+    if (is.na(multipart_val)) {
+        mat <- matrix(data=character(0), ncol=ncol)
+    } else {
+        vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
+        rows <- strsplit(vals, " // ", fixed=TRUE)
+        for (i in seq_len(length(rows))) {
+            nsubfields <- length(rows[[i]])
+            if (nsubfields < min.nsubfields || nsubfields > ncol)
+                stop("bad number of subfields")
+            if (nsubfields < ncol)
+                length(rows[[i]]) <- ncol
+        }
+        data <- unlist(rows)
+        data[data == "---"] <- NA
+        mat <- matrix(data=data, ncol=ncol, byrow=TRUE)
+    }
+    dimnames(mat) <- list(mat[ , 1], subfields)
+    mat
+}
+
 ### Comparison of the data contained in a character matrix ('mat') and a data
 ### frame ('dat').
 ### 'mat' and 'dat' _must_ have exactly the same col names (it's an error if
@@ -146,29 +169,6 @@ haveTheSameData <- function(mat, dat)
         if (!all(mat[ii1[i], ] == mat2[ii2[i], ]))
             return(FALSE)
     return(TRUE)
-}
-
-multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
-{
-    ncol <- length(subfields)
-    if (is.na(multipart_val)) {
-        mat <- matrix(data=character(0), ncol=ncol)
-    } else {
-        vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
-        rows <- strsplit(vals, " // ", fixed=TRUE)
-        for (i in seq_len(length(rows))) {
-            nsubfields <- length(rows[[i]])
-            if (nsubfields < min.nsubfields || nsubfields > ncol)
-                stop("bad number of subfields")
-            if (nsubfields < ncol)
-                length(rows[[i]]) <- ncol
-        }
-        data <- unlist(rows)
-        data[data == "---"] <- NA
-        mat <- matrix(data=data, ncol=ncol, byrow=TRUE)
-    }
-    dimnames(mat) <- list(mat[ , 1], subfields)
-    mat
 }
 
 
@@ -450,7 +450,7 @@ create_NetAffx_HuEx_transcript_tables <- function(conn)
 .GLOBAL.mrna.id <- 0
 .GLOBAL.mrna_assignment.id <- 0
 
-insert_gene_data <- function(genes)
+insert_gene_data <- function(conn, genes)
 {
     acc2id <- character(nrow(genes))
     names(acc2id) <- genes[ , "accession"]
@@ -469,7 +469,7 @@ insert_gene_data <- function(genes)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-insert_mrna_data <- function(accessions, gene_insres)
+insert_mrna_data <- function(conn, accessions, gene_insres)
 {
     acc2id <- character(length(accessions))
     names(acc2id) <- accessions
@@ -494,7 +494,7 @@ insert_mrna_data <- function(accessions, gene_insres)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-insert_mrna_assignment_data <- function(probeset_id, mrna_acc2id)
+insert_mrna_assignment_data <- function(conn, probeset_id, mrna_acc2id)
 {
     acc2id <- mrna_acc2id
     acc2id[] <- ""
@@ -509,7 +509,7 @@ insert_mrna_assignment_data <- function(probeset_id, mrna_acc2id)
     acc2id
 }
 
-insert_mrna_assignment_details_data <- function(mrna_assignment, mrna_assignment_acc2id)
+insert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assignment_acc2id)
 {
     col2type <- mrna_assignment_details_desc$col2type
     for (i in seq_len(nrow(mrna_assignment))) {
@@ -568,7 +568,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
 
         ## Extract and insert the "gene_assignment" data
         gene_assignment <- multipartToMatrix(row["gene_assignment"], gene_assignment_subfields)
-        gene_insres <- insert_gene_data(gene_assignment)
+        gene_insres <- insert_gene_data(conn, gene_assignment)
         if (any(duplicated(names(gene_insres$acc2id))))
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  "\"gene_assignment\" has more than 1 part with the same accession")
@@ -579,9 +579,9 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
         if (!all(names(gene_insres$acc2id) %in% accessions))
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  "\"gene_assignment\" has unlinked parts")
-        mrna_insres <- insert_mrna_data(accessions, gene_insres)
-        mrna_assignment_acc2id <- insert_mrna_assignment_data(probeset_id, mrna_insres$acc2id)
-        insert_mrna_assignment_details_data(mrna_assignment, mrna_assignment_acc2id)
+        mrna_insres <- insert_mrna_data(conn, accessions, gene_insres)
+        mrna_assignment_acc2id <- insert_mrna_assignment_data(conn, probeset_id, mrna_insres$acc2id)
+        insert_mrna_assignment_details_data(conn, mrna_assignment, mrna_assignment_acc2id)
 
         ## Extract and insert the "swissprot" data
         swissprot <- multipartToMatrix(row["swissprot"], swissprot_subfields)
@@ -629,6 +629,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
 }
 
 ### Typical use:
+###   > library(RSQLite)
 ###   > transcript_csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
 ###   > dbImport_NetAffx_HuEx_transcript(transcript_csv_file, "test.sqlite", 200)
 ###
