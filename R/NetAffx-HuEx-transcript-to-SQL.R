@@ -164,8 +164,32 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
         data[data == "---"] <- NA
         mat <- matrix(data=data, ncol=ncol, byrow=TRUE)
     }
-    dimnames(mat) <- list(mat[ , 1], subfields)
+    colnames(mat) <- subfields
     mat
+}
+
+### 
+toRefMatrix <- function(mat, acc2id)
+{
+    ref_mat <- matrix(data=character(0), ncol=ncol(mat))
+    colnames(ref_mat) <- colnames(mat)
+    prev_id <- NULL
+    prev_submat <- NULL
+    for (accession in names(acc2id)) {
+        submat <- mat[mat[ , 1] == accession, -1, drop=FALSE]
+        if (is.null(prev_id) || acc2id[accession] != prev_id) {
+            prev_id <- acc2id[accession]
+            prev_submat <- submat
+            ref_mat <- rbind(ref_mat, mat[mat[ , 1] == accession, ])
+            next
+        }
+        if (!identical(submat, prev_submat)) {
+            show(prev_submat)
+            show(submat)
+            stop("can't extract reference matrix")
+        }
+    }
+    ref_mat
 }
 
 ### Comparison of the data contained in a character matrix ('mat') and a data
@@ -544,15 +568,17 @@ insert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assi
 
 insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probeset_id, verbose=FALSE)
 {
+    if (colnames(mat)[1] != "accession")
+        stop("first 'mat' col name must be \"accession\"")
     acc2id <- insres$acc2id
     new_accessions <- names(acc2id)[acc2id %in% insres$new_ids]
     col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
-    uacc <- unique(mat[ , "accession"])
+    uacc <- unique(mat[ , 1])
     if (!all(uacc %in% names(acc2id)))
         stop("in CSV line for probeset_id=", probeset_id, ": ",
              "\"", tablename, "\" has unlinked parts")
     for (i in seq_len(nrow(mat))) {
-        accession <- mat[i, "accession"]
+        accession <- mat[i, 1]
         if (accession %in% new_accessions) {
             row1 <- mat[i, -1, drop=FALSE] # drop "accession" col
             row1 <- c(row1, acc2id[accession])
@@ -561,7 +587,7 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
         }
     }
     for (accession in setdiff(uacc, new_accessions)) {
-        submat <- mat[mat[ , "accession"] == accession, -1, drop=FALSE] # drop "accession" col
+        submat <- mat[mat[ , 1] == accession, -1, drop=FALSE] # drop "accession" col
         selected_cols <- paste(colnames(submat), collapse=",")
         link_col <- names(col2type)[length(col2type)]
         sql <- paste("SELECT ", selected_cols, " FROM ", tablename,
@@ -626,14 +652,17 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
         ## Extract and insert the "GO" data
         GO_biological_process <- multipartToMatrix(row["GO_biological_process"],
                                                    GO_biological_process_subfields)
+        GO_biological_process <- toRefMatrix(GO_biological_process, gene_insres$acc2id)
         insert_NetAffx_multipart_field(conn, "GO_biological_process", GO_biological_process,
                                        gene_insres, probeset_id, verbose)
         GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
                                                    GO_biological_process_subfields)
+        GO_cellular_component <- toRefMatrix(GO_cellular_component, gene_insres$acc2id)
         insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
                                        gene_insres, probeset_id, verbose)
         GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
                                                    GO_biological_process_subfields)
+        GO_molecular_function <- toRefMatrix(GO_molecular_function, gene_insres$acc2id)
         insert_NetAffx_multipart_field(conn, "GO_molecular_function", GO_molecular_function,
                                        gene_insres, probeset_id, verbose)
 
