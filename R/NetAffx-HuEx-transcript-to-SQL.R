@@ -4,6 +4,27 @@
 ### ... work in progress ... (nothing from this file is exported)
 
 
+### Authority: http://www.geneontology.org/GO.evidence.shtml
+GO_evidence_codes <- c(
+    IC="Inferred by Curator",
+    IDA="Inferred from Direct Assay",
+    IEA="Inferred from Electronic Annotation",
+    IEP="Inferred from Expression Pattern",
+    IGC="Inferred from Genomic Context",
+    IGI="Inferred from Genetic Interaction",
+    IMP="Inferred from Mutant Phenotype",
+    IPI="Inferred from Physical Interaction",
+    ISS="Inferred from Sequence or Structural Similarity",
+    NAS="Non-traceable Author Statement",
+    ND="No biological Data available",
+    RCA="inferred from Reviewed Computational Analysis",
+    TAS="Traceable Author Statement",
+    NR="Not Recorded"
+)
+
+GO_evidence_codes_lower <- tolower(GO_evidence_codes)
+
+
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### General purpose low-level SQL helper functions (should probably go
 ### somewhere else).
@@ -168,9 +189,23 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
     mat
 }
 
+replaceGOEvidenceByCode <- function(mat)
+{
+    evidences <- mat[ , "GO_evidence"]
+    pos <- match(evidences, GO_evidence_codes_lower)
+    if (any(is.na(pos)))
+        stop("unknown evidence '", evidences[is.na(pos)][1], "'")
+    codes <- names(GO_evidence_codes_lower)[pos]
+    mat[ , "GO_evidence"] <- codes
+    colnames(mat)[colnames(mat) == "GO_evidence"] <- "GO_evidence_code"
+    mat
+}
+
 ### Return a list of matrices.
 splitMatrix <- function(mat, acc2id)
 {
+    if (ncol(mat) < 2)
+        stop("won't split a matrix with less than 2 cols")
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
     accessions <- mat[ , 1]
@@ -412,12 +447,12 @@ unigene_desc <- list(
 )
 
 ### The "GO_biological_process" table.
-### TODO: Add a UNIQUE constraint on (GO_id, GO_evidence).
+### TODO: Add a UNIQUE constraint on (GO_id, GO_evidence_code).
 GO_biological_process_desc <- list(
     col2type=c(
         GO_id="TEXT",
         GO_term="TEXT",
-        GO_evidence="TEXT",
+        GO_evidence_code="TEXT",
         entrez_gene_id="INTEGER"        # REFERENCES gene(entrez_gene_id)
     ),
     col2key=c(
@@ -593,7 +628,7 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
     id2submat <- splitMatrix(mat, acc2id)
     new_ids <- insres$new_ids
     col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
-    cols0 <- paste(colnames(submat), collapse=",")
+    cols0 <- paste(colnames(mat)[-1], collapse=",")
     link0 <- names(col2type)[length(col2type)]
     sql0 <- paste("SELECT ", cols0, " FROM ", tablename, " WHERE ", link0, "=", sep="")
     for (id in names(id2submat)) {
@@ -670,14 +705,17 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
         ## Extract and insert the "GO" data
         GO_biological_process <- multipartToMatrix(row["GO_biological_process"],
                                                    GO_biological_process_subfields)
+        GO_biological_process <- replaceGOEvidenceByCode(GO_biological_process)
         insert_NetAffx_multipart_field(conn, "GO_biological_process", GO_biological_process,
                                        gene_insres, probeset_id, verbose)
         GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
                                                    GO_biological_process_subfields)
+        GO_cellular_component <- replaceGOEvidenceByCode(GO_cellular_component)
         insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
                                        gene_insres, probeset_id, verbose)
         GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
                                                    GO_biological_process_subfields)
+        GO_molecular_function <- replaceGOEvidenceByCode(GO_molecular_function)
         insert_NetAffx_multipart_field(conn, "GO_molecular_function", GO_molecular_function,
                                        gene_insres, probeset_id, verbose)
 
