@@ -333,11 +333,11 @@ protein_families_subfields <- c(
 ### Note: Seth suggests to rename this table "featureSet". (This naming style
 ### maybe popular in the R culture (especially for functions/methods) but not
 ### really in the SQL culture (especially for table names)).
-### Also rename cols: "transcript_cluster_id" -> "fsetid" and "seqname" -> "chrom".
+### Also rename cols: "transcript_cluster_ID" -> "fsetid" and "seqname" -> "chrom".
 ###
 transcript_cluster_desc <- list(
     col2type=c(
-        transcript_cluster_id="INTEGER",      # PRIMARY KEY
+        transcript_cluster_ID="INTEGER",      # PRIMARY KEY
         seqname="TEXT",
         strand="CHAR(1)",
         start="INTEGER",
@@ -345,7 +345,7 @@ transcript_cluster_desc <- list(
         total_probes="INTEGER"
     ),
     col2key=c(
-        transcript_cluster_id="PRIMARY KEY"
+        transcript_cluster_ID="PRIMARY KEY"
     )
 )
 
@@ -353,7 +353,7 @@ transcript_cluster_desc <- list(
 ###
 ### Note that we can't put a UNIQUE constraint on "gene_symbol".
 ### For example in HuEx-1_0-st-v2.na21.hg18.transcript.csv, line 10430
-### (transcript_cluster_id=2564225), the "gene_assignment" field (multipart)
+### (transcript_cluster_ID=2564225), the "gene_assignment" field (multipart)
 ### contains the following parts:
 ###      accession | gene_symbol | gene_title                    | cytoband | entrez_gene_id
 ###   -------------|-------------|-------------------------------|----------|---------------
@@ -392,16 +392,16 @@ mrna_desc <- list(
 )
 
 ### The "mrna_assignment" table.
-### TODO: Add a UNIQUE constraint on (transcript_cluster_id, _mrna_id).
+### TODO: Add a UNIQUE constraint on (transcript_cluster_ID, _mrna_id).
 mrna_assignment_desc <- list(
     col2type=c(
         `_mrna_assignment_id`="INTEGER",
-        transcript_cluster_id="INTEGER",    # REFERENCES transcript_cluster(transcript_cluster_id)
+        transcript_cluster_ID="INTEGER",    # REFERENCES transcript_cluster(transcript_cluster_ID)
         `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
         `_mrna_assignment_id`="PRIMARY KEY",
-        transcript_cluster_id="NOT NULL REFERENCES transcript_cluster(transcript_cluster_id)",
+        transcript_cluster_ID="NOT NULL REFERENCES transcript_cluster(transcript_cluster_ID)",
         `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
@@ -594,14 +594,14 @@ dbInsert_mrna_data <- function(conn, accessions, gene_acc2id)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-dbInsert_mrna_assignment_data <- function(conn, transcript_cluster_id, mrna_acc2id)
+dbInsert_mrna_assignment_data <- function(conn, transcript_cluster_ID, mrna_acc2id)
 {
     acc2id <- mrna_acc2id
     acc2id[] <- ""
     col2type <- mrna_assignment_desc$col2type
     for (i in seq_len(length(mrna_acc2id))) {
         id <- next.id("mrna_assignment")
-        row1 <- c(id, transcript_cluster_id, mrna_acc2id[i])
+        row1 <- c(id, transcript_cluster_ID, mrna_acc2id[i])
         names(row1) <- names(col2type)
         dbInsertRow(conn, "mrna_assignment", row1, col2type)
         acc2id[i] <- id
@@ -622,7 +622,7 @@ dbInsert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_as
     }
 }
 
-dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_cluster_id, verbose=FALSE)
+dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_cluster_ID, verbose=FALSE)
 {
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
@@ -653,7 +653,7 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_clu
                 if (haveTheSameData(submat, data0))
                     next
             }
-            stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
+            stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
                  accession, " parts in \"", tablename, "\" are not the expected ones")
         }
     }
@@ -661,11 +661,11 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_clu
 
 dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbose=FALSE)
 {
-    transcript_cluster_id <- dataline[["transcript_cluster_id"]] # [[ ]] to get rid of the name
+    transcript_cluster_ID <- dataline[["transcript_cluster_ID"]] # [[ ]] to get rid of the name
     if (verbose)
-        cat(line_nb, ": transcript_cluster_id=", transcript_cluster_id, "\n", sep="")
+        cat(line_nb, ": transcript_cluster_ID=", transcript_cluster_ID, "\n", sep="")
     #if (!is(conn, "DBIConnection"))
-    #    .dbGetQuery(conn, paste("-- transcript_cluster_id ", transcript_cluster_id, sep=""))
+    #    .dbGetQuery(conn, paste("-- transcript_cluster_ID ", transcript_cluster_ID, sep=""))
     dataline[dataline == "---"] <- NA
 
     ## Extract the simple fields
@@ -676,50 +676,50 @@ dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbos
     gene_assignment <- multipartToMatrix(dataline["gene_assignment"], gene_assignment_subfields)
     gene_insres <- dbInsert_gene_data(conn, gene_assignment)
     if (any(duplicated(names(gene_insres$acc2id))))
-        stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
+        stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
              "\"gene_assignment\" has more than 1 part with the same accession")
 
     ## Extract and insert the "mrna_assignment" data
     mrna_assignment <- multipartToMatrix(dataline["mrna_assignment"], mrna_assignment_subfields)
     accessions <- unique(mrna_assignment[ , "accession"])
     if (!all(names(gene_insres$acc2id) %in% accessions))
-        stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
+        stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
              "\"gene_assignment\" has unlinked parts")
     mrna_insres <- dbInsert_mrna_data(conn, accessions, gene_insres$acc2id)
-    mrna_assignment_acc2id <- dbInsert_mrna_assignment_data(conn, transcript_cluster_id, mrna_insres$acc2id)
+    mrna_assignment_acc2id <- dbInsert_mrna_assignment_data(conn, transcript_cluster_ID, mrna_insres$acc2id)
     dbInsert_mrna_assignment_details_data(conn, mrna_assignment, mrna_assignment_acc2id)
 
     ## Extract and insert the "swissprot" data
     swissprot <- multipartToMatrix(dataline["swissprot"], swissprot_subfields)
     dbInsert_multipart_data(conn, "swissprot", swissprot,
-                                   mrna_insres, transcript_cluster_id, verbose)
+                                   mrna_insres, transcript_cluster_ID, verbose)
 
     ## Extract and insert the "unigene" data
     unigene <- multipartToMatrix(dataline["unigene"], unigene_subfields, min.nsubfields=2)
     dbInsert_multipart_data(conn, "unigene", unigene,
-                                   mrna_insres, transcript_cluster_id, verbose)
+                                   mrna_insres, transcript_cluster_ID, verbose)
 
     ## Extract and insert the "GO" data
     GO_biological_process <- multipartToMatrix(dataline["GO_biological_process"],
                                                GO_biological_process_subfields)
     GO_biological_process <- replaceGOEvidenceByCode(GO_biological_process)
     dbInsert_multipart_data(conn, "GO_biological_process", GO_biological_process,
-                                   gene_insres, transcript_cluster_id, verbose)
+                                   gene_insres, transcript_cluster_ID, verbose)
     GO_cellular_component <- multipartToMatrix(dataline["GO_cellular_component"],
                                                GO_biological_process_subfields)
     GO_cellular_component <- replaceGOEvidenceByCode(GO_cellular_component)
     dbInsert_multipart_data(conn, "GO_cellular_component", GO_cellular_component,
-                                   gene_insres, transcript_cluster_id, verbose)
+                                   gene_insres, transcript_cluster_ID, verbose)
     GO_molecular_function <- multipartToMatrix(dataline["GO_molecular_function"],
                                                GO_biological_process_subfields)
     GO_molecular_function <- replaceGOEvidenceByCode(GO_molecular_function)
     dbInsert_multipart_data(conn, "GO_molecular_function", GO_molecular_function,
-                                   gene_insres, transcript_cluster_id, verbose)
+                                   gene_insres, transcript_cluster_ID, verbose)
 
     ## Extract and insert the "pathway" data
     pathway <- multipartToMatrix(dataline["pathway"], pathway_subfields)
     dbInsert_multipart_data(conn, "pathway", pathway,
-                                   mrna_insres, transcript_cluster_id, verbose)
+                                   mrna_insres, transcript_cluster_ID, verbose)
 
     return() # that's all for now
 
@@ -727,11 +727,11 @@ dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbos
     protein_domains <- multipartToMatrix(dataline["protein_domains"],
                                          protein_domains_subfields, min.nsubfields=3)
     dbInsert_multipart_data(conn, "protein_domains", protein_domains,
-                                   acc2id, new_accessions, transcript_cluster_id)
+                                   acc2id, new_accessions, transcript_cluster_ID)
 
     protein_families <- multipartToMatrix(dataline["protein_families"], protein_families_subfields)
     dbInsert_multipart_data(conn, "protein_families", protein_families,
-                                   acc2id, new_accessions, transcript_cluster_id)
+                                   acc2id, new_accessions, transcript_cluster_ID)
 }
 
 ### File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
@@ -749,6 +749,7 @@ dbImportData_NetAffx_HuEx_transcript <- function(conn, csv_file, nrows=-1, verbo
             data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                nrows=1, stringsAsFactors=FALSE)
             header <- names(data)
+            header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
         } else {
             data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                col.names=header, nrows=1, stringsAsFactors=FALSE)
