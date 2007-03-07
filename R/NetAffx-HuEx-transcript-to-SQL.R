@@ -667,10 +667,10 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
                                        gene_insres, probeset_id, verbose)
         GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
                                                    GO_biological_process_subfields)
-        show(gene_insres$acc2id)
-        show(GO_cellular_component)
+        #show(gene_insres$acc2id)
+        #show(GO_cellular_component)
         GO_cellular_component <- toRefMatrix(GO_cellular_component, gene_insres$acc2id)
-        show(GO_cellular_component)
+        #show(GO_cellular_component)
         insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
                                        gene_insres, probeset_id, verbose)
         GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
