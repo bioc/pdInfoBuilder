@@ -540,7 +540,7 @@ NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
 ### them.
 ###
 
-create_NetAffx_HuEx_transcript_tables <- function(conn)
+dbCreateTables_NetAffx_HuEx_transcript <- function(conn)
 {
     for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)) {
         col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
@@ -550,7 +550,7 @@ create_NetAffx_HuEx_transcript_tables <- function(conn)
     }
 }
 
-insert_gene_data <- function(conn, genes)
+dbInsert_gene_data <- function(conn, genes)
 {
     acc2id <- character(nrow(genes))
     names(acc2id) <- genes[ , "accession"]
@@ -569,7 +569,7 @@ insert_gene_data <- function(conn, genes)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-insert_mrna_data <- function(conn, accessions, gene_acc2id)
+dbInsert_mrna_data <- function(conn, accessions, gene_acc2id)
 {
     acc2id <- character(length(accessions))
     names(acc2id) <- accessions
@@ -594,7 +594,7 @@ insert_mrna_data <- function(conn, accessions, gene_acc2id)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-insert_mrna_assignment_data <- function(conn, transcript_cluster_id, mrna_acc2id)
+dbInsert_mrna_assignment_data <- function(conn, transcript_cluster_id, mrna_acc2id)
 {
     acc2id <- mrna_acc2id
     acc2id[] <- ""
@@ -609,7 +609,7 @@ insert_mrna_assignment_data <- function(conn, transcript_cluster_id, mrna_acc2id
     acc2id
 }
 
-insert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assignment_acc2id)
+dbInsert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assignment_acc2id)
 {
     col2type <- mrna_assignment_details_desc$col2type
     for (i in seq_len(nrow(mrna_assignment))) {
@@ -622,7 +622,7 @@ insert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assi
     }
 }
 
-insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, transcript_cluster_id, verbose=FALSE)
+dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_cluster_id, verbose=FALSE)
 {
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
@@ -659,103 +659,110 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, transcr
     }
 }
 
-insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
+dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbose=FALSE)
 {
-    .mrna.id <- 0
-    for (i in seq_len(nrow(data))) {
-        #if (is(conn, "SQLiteConnection"))
-        #    dbBeginTransaction(conn)
-        row <- unlist(data[i, ])
-        transcript_cluster_id <- row[["transcript_cluster_id"]] # [[ ]] to get rid of the name
-        if (verbose)
-            cat(i, ": transcript_cluster_id=", transcript_cluster_id, "\n", sep="")
-        #if (!is(conn, "DBIConnection"))
-        #    .dbGetQuery(conn, paste("-- transcript_cluster_id ", transcript_cluster_id, sep=""))
-        row[row == "---"] <- NA
+    transcript_cluster_id <- dataline[["transcript_cluster_id"]] # [[ ]] to get rid of the name
+    if (verbose)
+        cat(line_nb, ": transcript_cluster_id=", transcript_cluster_id, "\n", sep="")
+    #if (!is(conn, "DBIConnection"))
+    #    .dbGetQuery(conn, paste("-- transcript_cluster_id ", transcript_cluster_id, sep=""))
+    dataline[dataline == "---"] <- NA
 
-        ## Extract the simple fields
-        transcript_cluster_row <- row[names(transcript_cluster_desc$col2type)]
-        dbInsertRow(conn, "transcript_cluster", transcript_cluster_row, transcript_cluster_desc$col2type)
+    ## Extract the simple fields
+    transcript_cluster_row <- dataline[names(transcript_cluster_desc$col2type)]
+    dbInsertRow(conn, "transcript_cluster", transcript_cluster_row, transcript_cluster_desc$col2type)
 
-        ## Extract and insert the "gene_assignment" data
-        gene_assignment <- multipartToMatrix(row["gene_assignment"], gene_assignment_subfields)
-        gene_insres <- insert_gene_data(conn, gene_assignment)
-        if (any(duplicated(names(gene_insres$acc2id))))
-            stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
-                 "\"gene_assignment\" has more than 1 part with the same accession")
+    ## Extract and insert the "gene_assignment" data
+    gene_assignment <- multipartToMatrix(dataline["gene_assignment"], gene_assignment_subfields)
+    gene_insres <- dbInsert_gene_data(conn, gene_assignment)
+    if (any(duplicated(names(gene_insres$acc2id))))
+        stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
+             "\"gene_assignment\" has more than 1 part with the same accession")
 
-        ## Extract and insert the "mrna_assignment" data
-        mrna_assignment <- multipartToMatrix(row["mrna_assignment"], mrna_assignment_subfields)
-        accessions <- unique(mrna_assignment[ , "accession"])
-        if (!all(names(gene_insres$acc2id) %in% accessions))
-            stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
-                 "\"gene_assignment\" has unlinked parts")
-        mrna_insres <- insert_mrna_data(conn, accessions, gene_insres$acc2id)
-        mrna_assignment_acc2id <- insert_mrna_assignment_data(conn, transcript_cluster_id, mrna_insres$acc2id)
-        insert_mrna_assignment_details_data(conn, mrna_assignment, mrna_assignment_acc2id)
+    ## Extract and insert the "mrna_assignment" data
+    mrna_assignment <- multipartToMatrix(dataline["mrna_assignment"], mrna_assignment_subfields)
+    accessions <- unique(mrna_assignment[ , "accession"])
+    if (!all(names(gene_insres$acc2id) %in% accessions))
+        stop("in CSV line for transcript_cluster_id=", transcript_cluster_id, ": ",
+             "\"gene_assignment\" has unlinked parts")
+    mrna_insres <- dbInsert_mrna_data(conn, accessions, gene_insres$acc2id)
+    mrna_assignment_acc2id <- dbInsert_mrna_assignment_data(conn, transcript_cluster_id, mrna_insres$acc2id)
+    dbInsert_mrna_assignment_details_data(conn, mrna_assignment, mrna_assignment_acc2id)
 
-        ## Extract and insert the "swissprot" data
-        swissprot <- multipartToMatrix(row["swissprot"], swissprot_subfields)
-        insert_NetAffx_multipart_field(conn, "swissprot", swissprot,
-                                       mrna_insres, transcript_cluster_id, verbose)
+    ## Extract and insert the "swissprot" data
+    swissprot <- multipartToMatrix(dataline["swissprot"], swissprot_subfields)
+    dbInsert_multipart_data(conn, "swissprot", swissprot,
+                                   mrna_insres, transcript_cluster_id, verbose)
 
-        ## Extract and insert the "unigene" data
-        unigene <- multipartToMatrix(row["unigene"], unigene_subfields, min.nsubfields=2)
-        insert_NetAffx_multipart_field(conn, "unigene", unigene,
-                                       mrna_insres, transcript_cluster_id, verbose)
+    ## Extract and insert the "unigene" data
+    unigene <- multipartToMatrix(dataline["unigene"], unigene_subfields, min.nsubfields=2)
+    dbInsert_multipart_data(conn, "unigene", unigene,
+                                   mrna_insres, transcript_cluster_id, verbose)
 
-        ## Extract and insert the "GO" data
-        GO_biological_process <- multipartToMatrix(row["GO_biological_process"],
-                                                   GO_biological_process_subfields)
-        GO_biological_process <- replaceGOEvidenceByCode(GO_biological_process)
-        insert_NetAffx_multipart_field(conn, "GO_biological_process", GO_biological_process,
-                                       gene_insres, transcript_cluster_id, verbose)
-        GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
-                                                   GO_biological_process_subfields)
-        GO_cellular_component <- replaceGOEvidenceByCode(GO_cellular_component)
-        insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
-                                       gene_insres, transcript_cluster_id, verbose)
-        GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
-                                                   GO_biological_process_subfields)
-        GO_molecular_function <- replaceGOEvidenceByCode(GO_molecular_function)
-        insert_NetAffx_multipart_field(conn, "GO_molecular_function", GO_molecular_function,
-                                       gene_insres, transcript_cluster_id, verbose)
+    ## Extract and insert the "GO" data
+    GO_biological_process <- multipartToMatrix(dataline["GO_biological_process"],
+                                               GO_biological_process_subfields)
+    GO_biological_process <- replaceGOEvidenceByCode(GO_biological_process)
+    dbInsert_multipart_data(conn, "GO_biological_process", GO_biological_process,
+                                   gene_insres, transcript_cluster_id, verbose)
+    GO_cellular_component <- multipartToMatrix(dataline["GO_cellular_component"],
+                                               GO_biological_process_subfields)
+    GO_cellular_component <- replaceGOEvidenceByCode(GO_cellular_component)
+    dbInsert_multipart_data(conn, "GO_cellular_component", GO_cellular_component,
+                                   gene_insres, transcript_cluster_id, verbose)
+    GO_molecular_function <- multipartToMatrix(dataline["GO_molecular_function"],
+                                               GO_biological_process_subfields)
+    GO_molecular_function <- replaceGOEvidenceByCode(GO_molecular_function)
+    dbInsert_multipart_data(conn, "GO_molecular_function", GO_molecular_function,
+                                   gene_insres, transcript_cluster_id, verbose)
 
-        ## Extract and insert the "pathway" data
-        pathway <- multipartToMatrix(row["pathway"], pathway_subfields)
-        insert_NetAffx_multipart_field(conn, "pathway", pathway,
-                                       mrna_insres, transcript_cluster_id, verbose)
+    ## Extract and insert the "pathway" data
+    pathway <- multipartToMatrix(dataline["pathway"], pathway_subfields)
+    dbInsert_multipart_data(conn, "pathway", pathway,
+                                   mrna_insres, transcript_cluster_id, verbose)
 
-        next # that's all for now
+    return() # that's all for now
 
-        protein_domains <- multipartToMatrix(row["protein_domains"],
-                                             protein_domains_subfields, min.nsubfields=3)
-        insert_NetAffx_multipart_field(conn, "protein_domains", protein_domains,
-                                       acc2id, new_accessions, transcript_cluster_id)
+    ## The code below is not ready...
+    protein_domains <- multipartToMatrix(dataline["protein_domains"],
+                                         protein_domains_subfields, min.nsubfields=3)
+    dbInsert_multipart_data(conn, "protein_domains", protein_domains,
+                                   acc2id, new_accessions, transcript_cluster_id)
 
-        protein_families <- multipartToMatrix(row["protein_families"], protein_families_subfields)
-        insert_NetAffx_multipart_field(conn, "protein_families", protein_families,
-                                       acc2id, new_accessions, transcript_cluster_id)
+    protein_families <- multipartToMatrix(dataline["protein_families"], protein_families_subfields)
+    dbInsert_multipart_data(conn, "protein_families", protein_families,
+                                   acc2id, new_accessions, transcript_cluster_id)
+}
 
-        #if (is(conn, "SQLiteConnection"))
-        #    dbCommit(conn)
+### File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
+### and 17 fields. To load the entire file at once:
+###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+### It takes about 1 min on gopher6.
+dbImportData_NetAffx_HuEx_transcript <- function(conn, csv_file, nrows, verbose=FALSE)
+{
+    csv_con <- file(csv_file, open="r")
+    on.exit(close(csv_con))
+    line_nb <- 0
+    while (nrows >= 0 && line_nb < nrows) {
+        data <- read.table(csv_con, header=TRUE, sep=",", quote="\"", nrows=1, stringsAsFactors=FALSE)
+        if (nrow(data) == 0)
+            break
+        line_nb <- line_nb + 1
+        dataline <- unlist(data[1, ])
+        dbImportLine_NetAffx_HuEx_transcript(conn, dataline, line_nb, verbose)
     }
 }
 
 ### Typical use:
 ###   > library(RSQLite)
-###   > transcript_csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-###   > dbImport_NetAffx_HuEx_transcript(transcript_csv_file, "test.sqlite", 200, TRUE)
+###   > csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
+###   > dbImport_NetAffx_HuEx_transcript(csv_file, "test.sqlite", 200, TRUE)
 ###
-dbImport_NetAffx_HuEx_transcript <- function(transcript_csv_file, db_file, nrows=-1, verbose=FALSE)
+dbImport_NetAffx_HuEx_transcript <- function(csv_file, db_file, nrows=-1, verbose=FALSE)
 {
-    ## Takes about 1 min to load file "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-    ## (312368x17) into 'transcript_data' on gopher6.
-    transcript_data <- read.table(transcript_csv_file, header=TRUE, sep=",", quote="\"",
-                                  nrows=nrows, stringsAsFactors=FALSE)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     on.exit(dbDisconnect(conn))
-    create_NetAffx_HuEx_transcript_tables(conn)
-    insert_NetAffx_HuEx_transcript_data(conn, transcript_data, verbose)
+    dbCreateTables_NetAffx_HuEx_transcript(conn)
+    dbImportData_NetAffx_HuEx_transcript(conn, csv_file, nrows, verbose)
 }
 
