@@ -171,24 +171,34 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
 ### 
 toRefMatrix <- function(mat, acc2id)
 {
-    ref_mat <- matrix(data=character(0), ncol=ncol(mat))
-    colnames(ref_mat) <- colnames(mat)
-    prev_id <- NULL
-    prev_submat <- NULL
+    if (colnames(mat)[1] != "accession")
+        stop("first 'mat' col name must be \"accession\"")
+    if (!all(mat[ , 1] %in% names(acc2id)))
+        stop("'mat' contains invalid accessions")
+    uids <- unique(acc2id)
+    ref_submats <- list()
+    length(ref_submats) <- length(uids)
+    names(ref_submats) <- uids
     for (accession in names(acc2id)) {
-        submat <- mat[mat[ , 1] == accession, -1, drop=FALSE]
-        if (is.null(prev_id) || acc2id[accession] != prev_id) {
-            prev_id <- acc2id[accession]
-            prev_submat <- submat
-            ref_mat <- rbind(ref_mat, mat[mat[ , 1] == accession, ])
+        submat <- mat[mat[ , 1] == accession, ]
+        id <- acc2id[accession]
+        ref_submat <- ref_submats[[id]]
+        if (is.null(ref_submat)) {
+            ref_submats[[id]] <- submat
             next
         }
-        if (!identical(submat, prev_submat)) {
-            show(prev_submat)
+        submat <- submat[ , -1, drop=FALSE]
+        ref_submat <- ref_submat[ , -1, drop=FALSE]
+        if (!identical(submat, ref_submat)) {
+            show(ref_submat)
             show(submat)
             stop("can't extract reference matrix")
         }
     }
+    ref_mat <- matrix(data=character(0), ncol=ncol(mat))
+    colnames(ref_mat) <- colnames(mat)
+    for (submat in ref_submats)
+        rbind(ref_mat, submat)
     ref_mat
 }
 
