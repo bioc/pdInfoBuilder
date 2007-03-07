@@ -738,13 +738,15 @@ dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbos
 ### and 17 fields. To load the entire file at once:
 ###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
 ### It takes about 1 min on gopher6.
-dbImportData_NetAffx_HuEx_transcript <- function(conn, csv_file, nrows, verbose=FALSE)
+###
+dbImportData_NetAffx_HuEx_transcript <- function(conn, csv_file, nrows=-1, verbose=FALSE)
 {
     csv_con <- file(csv_file, open="r")
     on.exit(close(csv_con))
     line_nb <- 0
-    while (nrows >= 0 && line_nb < nrows) {
-        data <- read.table(csv_con, header=TRUE, sep=",", quote="\"", nrows=1, stringsAsFactors=FALSE)
+    while (nrows == -1 || line_nb < nrows) {
+        data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
+                           nrows=1, stringsAsFactors=FALSE)
         if (nrow(data) == 0)
             break
         line_nb <- line_nb + 1
@@ -754,7 +756,6 @@ dbImportData_NetAffx_HuEx_transcript <- function(conn, csv_file, nrows, verbose=
 }
 
 ### Typical use:
-###   > library(RSQLite)
 ###   > csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
 ###   > dbImport_NetAffx_HuEx_transcript(csv_file, "test.sqlite", 200, TRUE)
 ###
