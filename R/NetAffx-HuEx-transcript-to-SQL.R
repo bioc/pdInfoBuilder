@@ -628,12 +628,16 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
     }
 }
 
-build_NetAffx_HuEx_transcript_DB <- function(transcript_csv_file, db_file)
+### Typical use:
+###   > transcript_csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
+###   > dbImport_NetAffx_HuEx_transcript(transcript_csv_file, "test.sqlite", 200)
+###
+dbImport_NetAffx_HuEx_transcript <- function(transcript_csv_file, db_file, nrows=-1)
 {
     ## Takes about 1 min to load file "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
     ## (312368x17) into 'transcript_data' on gopher6.
     transcript_data <- read.table(transcript_csv_file, header=TRUE, sep=",", quote="\"",
-                                  stringsAsFactors=FALSE)
+                                  nrows=nrows, stringsAsFactors=FALSE)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     create_NetAffx_HuEx_transcript_tables(conn)
     insert_NetAffx_HuEx_transcript_data(conn, transcript_data)
