@@ -516,7 +516,8 @@ insert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assi
         accession <- mrna_assignment[i, "accession"]
         mrna_assignment.id <- mrna_assignment_acc2id[accession]
         row1 <- mrna_assignment[i, names(col2type)[1:8]]
-        row1 <- c(row1, `_mrna_assignment_id`=mrna_assignment.id)
+        row1 <- c(row1, mrna_assignment.id)
+        names(row1) <- names(col2type)
         dbInsertRow(conn, "mrna_assignment_details", row1, col2type)
     }
 }
@@ -550,7 +551,7 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
     }
 }
 
-insert_NetAffx_HuEx_transcript_data <- function(conn, data)
+insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
 {
     .mrna.id <- 0
     for (i in seq_len(nrow(data))) {
@@ -558,6 +559,8 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
         #    dbBeginTransaction(conn)
         row <- unlist(data[i, ])
         probeset_id <- row[["probeset_id"]] # [[ ]] to get rid of the name
+        if (verbose)
+            cat(i, ": probeset_id=", probeset_id, "\n", sep="")
         #if (!is(conn, "DBIConnection"))
         #    .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
         row[row == "---"] <- NA
@@ -631,9 +634,9 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data)
 ### Typical use:
 ###   > library(RSQLite)
 ###   > transcript_csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-###   > dbImport_NetAffx_HuEx_transcript(transcript_csv_file, "test.sqlite", 200)
+###   > dbImport_NetAffx_HuEx_transcript(transcript_csv_file, "test.sqlite", 200, TRUE)
 ###
-dbImport_NetAffx_HuEx_transcript <- function(transcript_csv_file, db_file, nrows=-1)
+dbImport_NetAffx_HuEx_transcript <- function(transcript_csv_file, db_file, nrows=-1, verbose=FALSE)
 {
     ## Takes about 1 min to load file "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
     ## (312368x17) into 'transcript_data' on gopher6.
@@ -641,7 +644,7 @@ dbImport_NetAffx_HuEx_transcript <- function(transcript_csv_file, db_file, nrows
                                   nrows=nrows, stringsAsFactors=FALSE)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     create_NetAffx_HuEx_transcript_tables(conn)
-    insert_NetAffx_HuEx_transcript_data(conn, transcript_data)
+    insert_NetAffx_HuEx_transcript_data(conn, transcript_data, verbose)
     dbDisconnect(conn)
 }
 
