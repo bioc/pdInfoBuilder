@@ -10,10 +10,10 @@
 ###
 
 ### 'conn' must be a DBIConnection object, a filename or a file object
-.dbSendQuery <- function(conn, sql)
+.dbGetQuery <- function(conn, sql)
 {
     if (is(conn, "DBIConnection"))
-        dbSendQuery(conn, sql)
+        dbGetQuery(conn, sql)
     else
         cat(sql, ";\n", file=conn, sep="", append=TRUE)
 }
@@ -70,7 +70,7 @@ dbCreateTable <- function(conn, tablename, col2type, col2key)
     sql <- paste(names(col2type), col2type, sep=" ")
     sql <- paste(sql, collapse=", ")
     sql <- paste("CREATE TABLE ", tablename, " (", sql, ")", sep="")
-    .dbSendQuery(conn, sql)
+    .dbGetQuery(conn, sql)
 }
 
 ### 'row' must be a character vector with or without names.
@@ -87,7 +87,7 @@ dbInsertRow <- function(conn, tablename, row, col2type, is.fullrow=TRUE)
         sql <- paste("(", cols, ") ", sql, sep="")
     }
     sql <- paste("INSERT INTO ", tablename, " ", sql, sep="")
-    .dbSendQuery(conn, sql)
+    .dbGetQuery(conn, sql)
 }
 
 ### 'row' must be a named character vector.
@@ -563,14 +563,15 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
     for (accession in setdiff(uacc, new_accessions)) {
         submat <- mat[mat[ , "accession"] == accession, -1, drop=FALSE] # drop "accession" col
         selected_cols <- paste(colnames(submat), collapse=",")
+        link_col <- names(col2type)[length(col2type)]
         sql <- paste("SELECT ", selected_cols, " FROM ", tablename,
-                     " WHERE _mrna_id=", acc2id[accession], sep="")
+                     " WHERE ", link_col, "=", acc2id[accession], sep="")
         data0 <- dbGetQuery(conn, sql)
-        if (verbose) {
-            cat("  tablename=", tablename, " accession=", accession, "\n", sep="")
-            show(submat)
-            show(data0)
-        }
+        #if (verbose) {
+        #    cat("  tablename=", tablename, " accession=", accession, "\n", sep="")
+        #    show(submat)
+        #    show(data0)
+        #}
         if (!haveTheSameData(submat, data0))
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  accession, " parts in \"", tablename, "\" are not the expected ones")
@@ -588,7 +589,7 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
         if (verbose)
             cat(i, ": probeset_id=", probeset_id, "\n", sep="")
         #if (!is(conn, "DBIConnection"))
-        #    .dbSendQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
+        #    .dbGetQuery(conn, paste("-- probeset_id ", probeset_id, sep=""))
         row[row == "---"] <- NA
 
         ## Extract the simple fields
@@ -622,26 +623,26 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
         insert_NetAffx_multipart_field(conn, "unigene", unigene,
                                        mrna_insres, probeset_id, verbose)
 
-        next # that's all for now
-
+        ## Extract and insert the "GO" data
         GO_biological_process <- multipartToMatrix(row["GO_biological_process"],
                                                    GO_biological_process_subfields)
         insert_NetAffx_multipart_field(conn, "GO_biological_process", GO_biological_process,
-                                       acc2id, new_accessions, probeset_id)
-
+                                       gene_insres, probeset_id, verbose)
         GO_cellular_component <- multipartToMatrix(row["GO_cellular_component"],
                                                    GO_biological_process_subfields)
         insert_NetAffx_multipart_field(conn, "GO_cellular_component", GO_cellular_component,
-                                       acc2id, new_accessions, probeset_id)
-
+                                       gene_insres, probeset_id, verbose)
         GO_molecular_function <- multipartToMatrix(row["GO_molecular_function"],
                                                    GO_biological_process_subfields)
         insert_NetAffx_multipart_field(conn, "GO_molecular_function", GO_molecular_function,
-                                       acc2id, new_accessions, probeset_id)
+                                       gene_insres, probeset_id, verbose)
 
+        ## Extract and insert the "pathway" data
         pathway <- multipartToMatrix(row["pathway"], pathway_subfields)
         insert_NetAffx_multipart_field(conn, "pathway", pathway,
-                                       acc2id, new_accessions, probeset_id)
+                                       mrna_insres, probeset_id, verbose)
+
+        next # that's all for now
 
         protein_domains <- multipartToMatrix(row["protein_domains"],
                                              protein_domains_subfields, min.nsubfields=3)
