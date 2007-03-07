@@ -1,7 +1,8 @@
 ### =========================================================================
 ### Utilities for converting a NetAffx HuEx transcript CSV file to SQL
 ### 
-### ... work in progress ... (nothing from this file is exported)
+### ... work in progress ... (if pdInfoBuilder had a NAMESPACE, nothing from
+###                           this file should be exported for now)
 
 
 ### Authority: http://www.geneontology.org/GO.evidence.shtml
