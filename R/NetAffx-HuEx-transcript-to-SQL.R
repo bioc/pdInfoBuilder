@@ -180,7 +180,7 @@ toRefMatrix <- function(mat, acc2id)
     length(ref_submats) <- length(uids)
     names(ref_submats) <- uids
     for (accession in names(acc2id)) {
-        submat <- mat[mat[ , 1] == accession, ]
+        submat <- mat[mat[ , 1] == accession, , drop=FALSE]
         id <- acc2id[accession]
         ref_submat <- ref_submats[[id]]
         if (is.null(ref_submat)) {
