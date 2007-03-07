@@ -469,7 +469,7 @@ insert_gene_data <- function(conn, genes)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-insert_mrna_data <- function(conn, accessions, gene_insres)
+insert_mrna_data <- function(conn, accessions, gene_acc2id)
 {
     acc2id <- character(length(accessions))
     names(acc2id) <- accessions
@@ -477,7 +477,7 @@ insert_mrna_data <- function(conn, accessions, gene_insres)
     col2type <- mrna_desc$col2type
     for (i in seq_len(length(accessions))) {
         accession <- accessions[i]
-        entrez_gene_id <- gene_insres$acc2id[accession]
+        entrez_gene_id <- gene_acc2id[accession]
         row1 <- c(NA, accession, entrez_gene_id)
         names(row1) <- names(col2type)
         row0 <- dbGetThisRow(conn, "mrna", "accession", row1, col2type)
@@ -522,10 +522,10 @@ insert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_assi
     }
 }
 
-insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probeset_id)
+insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probeset_id, verbose=FALSE)
 {
     acc2id <- insres$acc2id
-    new_accessions <- insres$new_ids
+    new_accessions <- names(acc2id)[acc2id %in% insres$new_ids]
     col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
     uacc <- unique(mat[ , "accession"])
     if (!all(uacc %in% names(acc2id)))
@@ -582,19 +582,19 @@ insert_NetAffx_HuEx_transcript_data <- function(conn, data, verbose=FALSE)
         if (!all(names(gene_insres$acc2id) %in% accessions))
             stop("in CSV line for probeset_id=", probeset_id, ": ",
                  "\"gene_assignment\" has unlinked parts")
-        mrna_insres <- insert_mrna_data(conn, accessions, gene_insres)
+        mrna_insres <- insert_mrna_data(conn, accessions, gene_insres$acc2id)
         mrna_assignment_acc2id <- insert_mrna_assignment_data(conn, probeset_id, mrna_insres$acc2id)
         insert_mrna_assignment_details_data(conn, mrna_assignment, mrna_assignment_acc2id)
 
         ## Extract and insert the "swissprot" data
         swissprot <- multipartToMatrix(row["swissprot"], swissprot_subfields)
         insert_NetAffx_multipart_field(conn, "swissprot", swissprot,
-                                       mrna_insres, probeset_id)
+                                       mrna_insres, probeset_id, verbose)
 
         ## Extract and insert the "unigene" data
         unigene <- multipartToMatrix(row["unigene"], unigene_subfields, min.nsubfields=2)
         insert_NetAffx_multipart_field(conn, "unigene", unigene,
-                                       mrna_insres, probeset_id)
+                                       mrna_insres, probeset_id, verbose)
 
         next # that's all for now
 
