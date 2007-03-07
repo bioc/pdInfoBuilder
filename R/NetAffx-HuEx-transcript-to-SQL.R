@@ -745,8 +745,14 @@ dbImportData_NetAffx_HuEx_transcript <- function(conn, csv_file, nrows=-1, verbo
     on.exit(close(csv_con))
     line_nb <- 0
     while (nrows == -1 || line_nb < nrows) {
-        data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
-                           nrows=1, stringsAsFactors=FALSE)
+        if (line_nb == 0) {
+            data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
+                               nrows=1, stringsAsFactors=FALSE)
+            header <- names(data)
+        } else {
+            data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
+                               col.names=header, nrows=1, stringsAsFactors=FALSE)
+        }
         if (nrow(data) == 0)
             break
         line_nb <- line_nb + 1
