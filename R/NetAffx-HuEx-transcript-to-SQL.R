@@ -534,9 +534,10 @@ insert_NetAffx_multipart_field <- function(conn, tablename, mat, insres, probese
     for (i in seq_len(nrow(mat))) {
         accession <- mat[i, "accession"]
         if (accession %in% new_accessions) {
-            row <- mat[i, -1, drop=FALSE] # drop "accession" col
-            row <- c(row, `_mrna_id`=acc2id[accession])
-            dbInsertRow(conn, tablename, row, col2type)
+            row1 <- mat[i, -1, drop=FALSE] # drop "accession" col
+            row1 <- c(row1, acc2id[accession])
+            names(row1) <- names(col2type)
+            dbInsertRow(conn, tablename, row1, col2type)
         }
     }
     for (accession in setdiff(uacc, new_accessions)) {
