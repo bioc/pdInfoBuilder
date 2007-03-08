@@ -778,9 +778,55 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline, line_nb, verbose
     ## Extract and insert the "gene_assignment" data
     gene_assignment <- multipartToMatrix(dataline["gene_assignment"], TRsubfields.gene_assignment)
     gene_insres <- dbInsertRows.gene(conn, gene_assignment)
-    if (any(duplicated(names(gene_insres$acc2id))))
-        stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
-             "\"gene_assignment\" has more than 1 part with the same accession")
+
+    ## There should never be more than 1 part with the same accession in the
+    ## "gene_assignment" field. Unfortunately this happens sometimes (very rarely though).
+    ## For example in HuEx-1_0-st-v2.na21.hg18.transcript.csv, line 16411
+    ## (transcript_cluster_ID=2718075), the "gene_assignment" field (multipart)
+    ## contains the following parts:
+    ##
+    ##      accession | gene_symbol | gene_title                    | cytoband | entrez_gene_id
+    ##   -------------|-------------|-------------------------------|----------|---------------
+    ##   NM_001040448 | DEFB131     | defensin, beta 131            |   4p16.1 |         644414
+    ##      XM_938410 | DEFB131     | defensin, beta 131            |   4p16.1 |         644414
+    ##      XM_938410 | LOC649335   | similar to Beta-defensin 131..|          |         649335
+    ##   ...
+    ## This poses 2 problems: (1) the current DB schema can't handle this (a
+    ## given mrna can only be linked to 1 or 0 gene), (2) when this happens,
+    ## then the GO annotations are ambiguous (this is because Affymetrix has
+    ## choosen to link GO terms to mrnas, not to genes).
+    ## For example, on the same line (transcript_cluster_ID=2718075), the
+    ## "GO_biological_process" field (multipart) contains:
+    ##
+    ##      accession | GO_id | GO_term                                | GO_evidence_code
+    ##   -------------|-------|----------------------------------------|-----------------
+    ##   NM_001040448 |  9613 | response to pest, pathogen or parasite | IEA
+    ##   NM_001040448 | 42742 | defense response to bacteria           | IEA
+    ##      XM_938410 |  9613 | response to pest, pathogen or parasite | IEA
+    ##      XM_938410 | 42742 | defense response to bacteria           | IEA
+    ##   NM_001037804 |  9613 | response to pest, pathogen or parasite | IEA
+    ##   NM_001037804 | 42742 | defense response to bacteria           | IEA
+    ##
+    ## 3rd and 4th parts are linked to which gene?
+    ##
+    ## So we can't do this anymore:
+    ##   if (any(duplicated(names(gene_insres$acc2id))))
+    ##      stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
+    ##           "\"gene_assignment\" has more than 1 part with the same accession")
+    ## For now we ignore the duplicated and issue a warning
+    dup_gene_acc2id <- duplicated(names(gene_insres$acc2id))
+    if (any(dup_gene_acc2id)) {
+        gene_acc2id_string <- paste(names(gene_insres$acc2id), collapse=",")
+        gene_acc2id_string <- paste(gene_acc2id_string, " [",
+                                    paste(gene_insres$acc2id, collapse=","),
+                                    "]", sep="")
+        msg <- paste("in CSV line for transcript_cluster_ID=",
+                     transcript_cluster_ID, ": ",
+                     "\"gene_assignment\" has more than 1 part with the same accession: ",
+                     gene_acc2id_string, sep="")
+        warning(msg)
+        gene_insres$acc2id <- gene_insres$acc2id[!dup_gene_acc2id]
+    }
 
     ## Extract and insert the "mrna_assignment" data
     mrna_assignment <- multipartToMatrix(dataline["mrna_assignment"], TRsubfields.mrna_assignment)
