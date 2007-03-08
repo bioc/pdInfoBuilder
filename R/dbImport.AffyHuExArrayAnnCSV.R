@@ -899,6 +899,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1, verbos
                                nrows=1, stringsAsFactors=FALSE)
             header <- names(data)
             header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
+            names(data) <- header
         } else {
             data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                col.names=header, nrows=1, stringsAsFactors=FALSE)
@@ -949,6 +950,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=
             header <- names(data)
             header[header == "probeset_id"] <- "probeset_ID"
             header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
+            names(data) <- header
         } else {
             data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                col.names=header, nrows=1, stringsAsFactors=FALSE)
