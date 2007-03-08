@@ -7,10 +7,12 @@
 ###   1. The Probe Set CSV file (HuEx-1_0-st-v2.na21.hg18.probeset.csv)
 ###   2. The Transcript CSV file (HuEx-1_0-st-v2.na21.hg18.transcript.csv)
 ###
-### This file is divided in 3 sections:
-###   A. Shared objects and functions.
-###   B. Importation of the Transcript CSV file (167M, aka the "small" file).
-###   C. Importation of the Probe Set CSV file (475M, aka the "big" file).
+### This file is divided in 5 sections:
+###   A. General purpose low-level SQL helper functions.
+###   B. CSV field description and DB schema.
+###   C. Objects and functions shared by D. and E.
+###   D. Importation of the Transcript CSV file (167M, aka the "small" file).
+###   E. Importation of the Probe Set CSV file (475M, aka the "big" file).
 ### 
 ### WARNING: This is a WORK IN PROGRESS!!! (if pdInfoBuilder had a NAMESPACE,
 ### nothing should be exported from this file for now)
@@ -20,43 +22,9 @@
 
 
 ### =========================================================================
-### A. Shared objects and functions.
+### A. General purpose low-level SQL helper functions (should probably go
+###    somewhere else).
 ### -------------------------------------------------------------------------
-
-### Authority: http://www.geneontology.org/GO.evidence.shtml
-GO_evidence_codes <- c(
-    IC="Inferred by Curator",
-    IDA="Inferred from Direct Assay",
-    IEA="Inferred from Electronic Annotation",
-    IEP="Inferred from Expression Pattern",
-    IGC="Inferred from Genomic Context",
-    IGI="Inferred from Genetic Interaction",
-    IMP="Inferred from Mutant Phenotype",
-    IPI="Inferred from Physical Interaction",
-    ISS="Inferred from Sequence or Structural Similarity",
-    NAS="Non-traceable Author Statement",
-    ND="No biological Data available",
-    RCA="inferred from Reviewed Computational Analysis",
-    TAS="Traceable Author Statement",
-    NR="Not Recorded"
-)
-
-GO_evidence_codes_lower <- tolower(GO_evidence_codes)
-
-
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### General purpose low-level SQL helper functions (should probably go
-### somewhere else).
-###
-
-### 'conn' must be a DBIConnection object, a filename or a file object
-.dbGetQuery <- function(conn, sql)
-{
-    if (is(conn, "DBIConnection"))
-        dbGetQuery(conn, sql)
-    else
-        cat(sql, ";\n", file=conn, sep="", append=TRUE)
-}
 
 ### 'vals' must be a character vector with NAs for the SQL NULL.
 ### Return a character vector of the same length as 'vals' (and with the
@@ -104,6 +72,34 @@ toSQLValues <- function(vals, col2type)
     vals
 }
 
+### ID generation.
+
+.db.current.ids <- new.env(hash=TRUE)
+
+set.id <- function(tablename, id=0)
+{
+    assign(tablename, id, envir=.db.current.ids, inherits=FALSE)
+}
+
+next.id <- function(tablename)
+{
+    if (!exists(tablename, envir=.db.current.ids, inherits=FALSE))
+        stop("no current id for table \"", tablename, "\"")
+    id <- get(tablename, envir=.db.current.ids, inherits=FALSE)
+    id <- id + 1
+    set.id(tablename, id)
+    id
+}
+
+### 'conn' must be a DBIConnection object, a filename or a file object
+.dbGetQuery <- function(conn, sql)
+{
+    if (is(conn, "DBIConnection"))
+        dbGetQuery(conn, sql)
+    else
+        cat(sql, ";\n", file=conn, sep="", append=TRUE)
+}
+
 dbCreateTable <- function(conn, tablename, col2type, col2key)
 {
     col2type[names(col2key)] <- paste(col2type[names(col2key)], col2key, sep=" ")
@@ -111,6 +107,7 @@ dbCreateTable <- function(conn, tablename, col2type, col2key)
     sql <- paste(sql, collapse=", ")
     sql <- paste("CREATE TABLE ", tablename, " (", sql, ")", sep="")
     .dbGetQuery(conn, sql)
+    set.id(tablename)
 }
 
 ### 'row' must be a character vector with or without names.
@@ -159,129 +156,9 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 }
 
 
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### ID generation.
-###
-
-.db.current.ids <- new.env(hash=TRUE)
-
-set.id <- function(tablename, id=0)
-{
-    assign(tablename, id, envir=.db.current.ids, inherits=FALSE)
-}
-
-next.id <- function(tablename)
-{
-    if (!exists(tablename, envir=.db.current.ids, inherits=FALSE))
-        stop("no current id for table \"", tablename, "\"")
-    id <- get(tablename, envir=.db.current.ids, inherits=FALSE)
-    id <- id + 1
-    set.id(tablename, id)
-    id
-}
-
-
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Helper functions specific to NetAffx CSV files.
-###
-
-multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
-{
-    ncol <- length(subfields)
-    if (is.na(multipart_val)) {
-        mat <- matrix(data=character(0), ncol=ncol)
-    } else {
-        vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
-        rows <- strsplit(vals, " // ", fixed=TRUE)
-        for (i in seq_len(length(rows))) {
-            nsubfields <- length(rows[[i]])
-            if (nsubfields < min.nsubfields || nsubfields > ncol)
-                stop("bad number of subfields")
-            if (nsubfields < ncol)
-                length(rows[[i]]) <- ncol
-        }
-        data <- unlist(rows)
-        data[data == "---"] <- NA
-        mat <- matrix(data=data, ncol=ncol, byrow=TRUE)
-    }
-    colnames(mat) <- subfields
-    mat
-}
-
-replaceGOEvidenceByCode <- function(mat)
-{
-    evidences <- mat[ , "GO_evidence"]
-    notNA <- !is.na(evidences)
-    notNA_evidences <- evidences[notNA]
-    pos <- match(notNA_evidences, GO_evidence_codes_lower)
-    if (any(is.na(pos)))
-        stop("unknown evidence '", notNA_evidences[is.na(pos)][1], "'")
-    evidences[notNA] <- names(GO_evidence_codes_lower)[pos]
-    mat[ , "GO_evidence"] <- evidences
-    colnames(mat)[colnames(mat) == "GO_evidence"] <- "GO_evidence_code"
-    mat
-}
-
-### Return a list of matrices.
-splitMatrix <- function(mat, acc2id)
-{
-    if (ncol(mat) < 2)
-        stop("won't split a matrix with less than 2 cols")
-    if (colnames(mat)[1] != "accession")
-        stop("first 'mat' col name must be \"accession\"")
-    accessions <- mat[ , 1]
-    if (!all(accessions %in% names(acc2id)))
-        stop("'mat' contains invalid accessions")
-    uids <- unique(acc2id)
-    id2submat <- list()
-    length(id2submat) <- length(uids)
-    names(id2submat) <- uids
-    for (accession in accessions) {
-        submat <- mat[accessions == accession, -1 , drop=FALSE]
-        id <- acc2id[accession]
-        submat0 <- id2submat[[id]]
-        if (is.null(submat0)) {
-            id2submat[[id]] <- submat
-            next
-        }
-        if (!identical(submat, submat0)) {
-            show(mat)
-            show(acc2id)
-            stop("can't split 'mat'")
-        }
-    }
-    id2submat
-}
-
-### Comparison of the data contained in a character matrix ('mat') and a data
-### frame ('dat').
-### 'mat' and 'dat' _must_ have exactly the same col names (it's an error if
-### they don't).
-haveTheSameData <- function(mat, dat)
-{
-    if (is.null(colnames(mat)))
-        stop("'mat' has no col names")
-    if (!identical(colnames(mat), colnames(dat)))
-        stop("'mat' and 'dat' have different col names")
-    if (nrow(mat) != nrow(dat))
-        return(FALSE)
-    ## Convert 'dat' to a character matrix (we can't just use as.matrix
-    ## because of the infamous "format" feature).
-    mat2 <- do.call("cbind", args=lapply(dat, function(x) if (is.character(x)) x else as.character(x)))
-    ## Find the order of the rows in the 2 matrices.
-    ii1 <- do.call("order", args=lapply(colnames(mat), function(col) mat[ , col]))
-    ii2 <- do.call("order", args=lapply(colnames(mat2), function(col) mat2[ , col]))
-    ## Compare row by row.
-    for (i in seq_len(nrow(mat)))
-        if (!identical(mat[ii1[i], ], mat2[ii2[i], ]))
-            return(FALSE)
-    return(TRUE)
-}
-
-
 
 ### =========================================================================
-### B. Importation of the Transcript CSV file (167M, aka the "small" file).
+### B. CSV field description and DB schema.
 ### -------------------------------------------------------------------------
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -558,10 +435,11 @@ NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
 )
 
 
-### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### Create the "transcript" tables and insert the "transcript" data into
-### them.
-###
+
+### =========================================================================
+### C. Objects and functions shared by D. and E. 
+### -------------------------------------------------------------------------
+
 
 dbCreateTables_NetAffx_HuEx_transcript <- function(conn)
 {
@@ -569,9 +447,165 @@ dbCreateTables_NetAffx_HuEx_transcript <- function(conn)
         col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
         col2key <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2key
         dbCreateTable(conn, tablename, col2type, col2key)
-        set.id(tablename)
     }
 }
+
+multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
+{
+    ncol <- length(subfields)
+    if (is.na(multipart_val)) {
+        mat <- matrix(data=character(0), ncol=ncol)
+    } else {
+        vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
+        rows <- strsplit(vals, " // ", fixed=TRUE)
+        for (i in seq_len(length(rows))) {
+            nsubfields <- length(rows[[i]])
+            if (nsubfields < min.nsubfields || nsubfields > ncol)
+                stop("bad number of subfields")
+            if (nsubfields < ncol)
+                length(rows[[i]]) <- ncol
+        }
+        data <- unlist(rows)
+        data[data == "---"] <- NA
+        mat <- matrix(data=data, ncol=ncol, byrow=TRUE)
+    }
+    colnames(mat) <- subfields
+    mat
+}
+
+### Authority: http://www.geneontology.org/GO.evidence.shtml
+GO_evidence_codes <- c(
+    IC="Inferred by Curator",
+    IDA="Inferred from Direct Assay",
+    IEA="Inferred from Electronic Annotation",
+    IEP="Inferred from Expression Pattern",
+    IGC="Inferred from Genomic Context",
+    IGI="Inferred from Genetic Interaction",
+    IMP="Inferred from Mutant Phenotype",
+    IPI="Inferred from Physical Interaction",
+    ISS="Inferred from Sequence or Structural Similarity",
+    NAS="Non-traceable Author Statement",
+    ND="No biological Data available",
+    RCA="inferred from Reviewed Computational Analysis",
+    TAS="Traceable Author Statement",
+    NR="Not Recorded"
+)
+
+GO_evidence_codes_lower <- tolower(GO_evidence_codes)
+
+replaceGOEvidenceByCode <- function(mat)
+{
+    evidences <- mat[ , "GO_evidence"]
+    notNA <- !is.na(evidences)
+    notNA_evidences <- evidences[notNA]
+    pos <- match(notNA_evidences, GO_evidence_codes_lower)
+    if (any(is.na(pos)))
+        stop("unknown evidence '", notNA_evidences[is.na(pos)][1], "'")
+    evidences[notNA] <- names(GO_evidence_codes_lower)[pos]
+    mat[ , "GO_evidence"] <- evidences
+    colnames(mat)[colnames(mat) == "GO_evidence"] <- "GO_evidence_code"
+    mat
+}
+
+### Return a list of matrices.
+splitMatrix <- function(mat, acc2id)
+{
+    if (ncol(mat) < 2)
+        stop("won't split a matrix with less than 2 cols")
+    if (colnames(mat)[1] != "accession")
+        stop("first 'mat' col name must be \"accession\"")
+    accessions <- mat[ , 1]
+    if (!all(accessions %in% names(acc2id)))
+        stop("'mat' contains invalid accessions")
+    uids <- unique(acc2id)
+    id2submat <- list()
+    length(id2submat) <- length(uids)
+    names(id2submat) <- uids
+    for (accession in accessions) {
+        submat <- mat[accessions == accession, -1 , drop=FALSE]
+        id <- acc2id[accession]
+        submat0 <- id2submat[[id]]
+        if (is.null(submat0)) {
+            id2submat[[id]] <- submat
+            next
+        }
+        if (!identical(submat, submat0)) {
+            show(mat)
+            show(acc2id)
+            stop("can't split 'mat'")
+        }
+    }
+    id2submat
+}
+
+### Comparison of the data contained in a character matrix ('mat') and a data
+### frame ('dat').
+### 'mat' and 'dat' _must_ have exactly the same col names (it's an error if
+### they don't).
+haveTheSameData <- function(mat, dat)
+{
+    if (is.null(colnames(mat)))
+        stop("'mat' has no col names")
+    if (!identical(colnames(mat), colnames(dat)))
+        stop("'mat' and 'dat' have different col names")
+    if (nrow(mat) != nrow(dat))
+        return(FALSE)
+    ## Convert 'dat' to a character matrix (we can't just use as.matrix
+    ## because of the infamous "format" feature).
+    mat2 <- do.call("cbind", args=lapply(dat, function(x) if (is.character(x)) x else as.character(x)))
+    ## Find the order of the rows in the 2 matrices.
+    ii1 <- do.call("order", args=lapply(colnames(mat), function(col) mat[ , col]))
+    ii2 <- do.call("order", args=lapply(colnames(mat2), function(col) mat2[ , col]))
+    ## Compare row by row.
+    for (i in seq_len(nrow(mat)))
+        if (!identical(mat[ii1[i], ], mat2[ii2[i], ]))
+            return(FALSE)
+    return(TRUE)
+}
+
+dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_cluster_ID, verbose=FALSE)
+{
+    if (colnames(mat)[1] != "accession")
+        stop("first 'mat' col name must be \"accession\"")
+    acc2id <- insres$acc2id
+    id2submat <- splitMatrix(mat, acc2id)
+    new_ids <- insres$new_ids
+    col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
+    cols0 <- paste(colnames(mat)[-1], collapse=",")
+    link0 <- names(col2type)[length(col2type)]
+    sql0 <- paste("SELECT ", cols0, " FROM ", tablename, " WHERE ", link0, "=", sep="")
+    for (id in names(id2submat)) {
+        submat <- id2submat[[id]]
+        if (id %in% new_ids) {
+            if (is.null(submat))
+                next
+            for (i in seq_len(nrow(submat))) {
+                row1 <- c(submat[i, ], id)
+                names(row1) <- names(col2type)
+                dbInsertRow(conn, tablename, row1, col2type)
+            }
+        } else {
+            sql <- paste(sql0, id, sep="")
+            data0 <- dbGetQuery(conn, sql)
+            if (is.null(submat)) {
+                if (nrow(data0) == 0)
+                    next
+            } else {
+                if (haveTheSameData(submat, data0))
+                    next
+            }
+            stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
+                 accession, " parts in \"", tablename, "\" are not the expected ones")
+        }
+    }
+}
+
+
+
+### =========================================================================
+### D. Importation of the Transcript CSV file (167M, aka the "small" file).
+### -------------------------------------------------------------------------
+
 
 dbInsert_gene_data <- function(conn, genes)
 {
@@ -642,43 +676,6 @@ dbInsert_mrna_assignment_details_data <- function(conn, mrna_assignment, mrna_as
         row1 <- c(row1, mrna_assignment.id)
         names(row1) <- names(col2type)
         dbInsertRow(conn, "mrna_assignment_details", row1, col2type)
-    }
-}
-
-dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_cluster_ID, verbose=FALSE)
-{
-    if (colnames(mat)[1] != "accession")
-        stop("first 'mat' col name must be \"accession\"")
-    acc2id <- insres$acc2id
-    id2submat <- splitMatrix(mat, acc2id)
-    new_ids <- insres$new_ids
-    col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
-    cols0 <- paste(colnames(mat)[-1], collapse=",")
-    link0 <- names(col2type)[length(col2type)]
-    sql0 <- paste("SELECT ", cols0, " FROM ", tablename, " WHERE ", link0, "=", sep="")
-    for (id in names(id2submat)) {
-        submat <- id2submat[[id]]
-        if (id %in% new_ids) {
-            if (is.null(submat))
-                next
-            for (i in seq_len(nrow(submat))) {
-                row1 <- c(submat[i, ], id)
-                names(row1) <- names(col2type)
-                dbInsertRow(conn, tablename, row1, col2type)
-            }
-        } else {
-            sql <- paste(sql0, id, sep="")
-            data0 <- dbGetQuery(conn, sql)
-            if (is.null(submat)) {
-                if (nrow(data0) == 0)
-                    next
-            } else {
-                if (haveTheSameData(submat, data0))
-                    next
-            }
-            stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
-                 accession, " parts in \"", tablename, "\" are not the expected ones")
-        }
     }
 }
 
@@ -800,7 +797,8 @@ dbImport_NetAffx_HuEx_transcript <- function(csv_file, db_file, nrows=-1, verbos
 
 
 ### =========================================================================
-### C. Importation of the Probe Set CSV file (475M, aka the "big" file).
+### E. Importation of the Probe Set CSV file (475M, aka the "big" file).
 ### -------------------------------------------------------------------------
+
 
 
