@@ -1,4 +1,5 @@
 #############################################################################
+#############################################################################
 ###
 ### Functions for importing the CSV files containing annotations for the
 ### Affymetrix Human Exon Array probe sets and transcript clusters.
@@ -159,13 +160,25 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 
 ### =========================================================================
 ### B. CSV field description and DB schema.
+###
+###    3 sub-sections:
+###      B.a. CSV field description for the Transcript CSV file.
+###      B.b. CSV field description for the Probe Set CSV file.
+###      B.c. The DB schema.
+###
+###    The original field description is provided in
+###      HuEx-1_0-st-v2.na21.hg18.AFFX_README.NetAffx-CSV-Files.txt
 ### -------------------------------------------------------------------------
 
+
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### CSV sub-fields of the multipart fields.
+### B.a. CSV field description for the Transcript CSV file.
+###
+### The character vectors below list the CSV sub-fields for each multipart
+### field.
 ###
 
-gene_assignment_subfields <- c(
+TRsubfields.gene_assignment <- c(
     "accession",
     "gene_symbol",
     "gene_title",
@@ -173,7 +186,7 @@ gene_assignment_subfields <- c(
     "entrez_gene_id"
 )
 
-mrna_assignment_subfields <- c(
+TRsubfields.mrna_assignment <- c(
     "accession",
     "source_name",
     "description",
@@ -185,38 +198,38 @@ mrna_assignment_subfields <- c(
     "xhyb"
 )
 
-swissprot_subfields <- c(
+TRsubfields.swissprot <- c(
     "accession",
     "swissprot_accession"
 )
 
-unigene_subfields <- c(
+TRsubfields.unigene <- c(
     "accession",
     "unigene_id",
     "unigene_expr"
 )
 
-GO_biological_process_subfields <- c(
+TRsubfields.GO_biological_process <- c(
     "accession",
     "GO_id",
     "GO_term",
     "GO_evidence"   # can be "---" (-> NA in R, -> NULL in SQL)
 )
 
-pathway_subfields <- c(
+TRsubfields.pathway <- c(
     "accession",
     "source",
     "pathway_name"
 )
 
-protein_domains_subfields <- c(
+TRsubfields.protein_domains <- c(
     "accession",
     "source",
     "accession_or_domain_name",
     "domain_description"
 )
 
-protein_families_subfields <- c(
+TRsubfields.protein_families <- c(
     "accession",
     "source",
     "family_accession",
@@ -225,7 +238,19 @@ protein_families_subfields <- c(
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### An R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema.
+### B.b. CSV field description for the Probe Set CSV file.
+###
+### The character vectors below list the CSV sub-fields for each multipart
+### field.
+###
+
+### coming soon...
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### B.c. The DB schema.
+###
+### This is an R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema.
 ###
 
 ### The "transcript_cluster" table.
@@ -693,14 +718,14 @@ dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbos
     dbInsertRow(conn, "transcript_cluster", transcript_cluster_row, transcript_cluster_desc$col2type)
 
     ## Extract and insert the "gene_assignment" data
-    gene_assignment <- multipartToMatrix(dataline["gene_assignment"], gene_assignment_subfields)
+    gene_assignment <- multipartToMatrix(dataline["gene_assignment"], TRsubfields.gene_assignment)
     gene_insres <- dbInsert_gene_data(conn, gene_assignment)
     if (any(duplicated(names(gene_insres$acc2id))))
         stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
              "\"gene_assignment\" has more than 1 part with the same accession")
 
     ## Extract and insert the "mrna_assignment" data
-    mrna_assignment <- multipartToMatrix(dataline["mrna_assignment"], mrna_assignment_subfields)
+    mrna_assignment <- multipartToMatrix(dataline["mrna_assignment"], TRsubfields.mrna_assignment)
     accessions <- unique(mrna_assignment[ , "accession"])
     if (!all(names(gene_insres$acc2id) %in% accessions))
         stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
@@ -710,34 +735,34 @@ dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbos
     dbInsert_mrna_assignment_details_data(conn, mrna_assignment, mrna_assignment_acc2id)
 
     ## Extract and insert the "swissprot" data
-    swissprot <- multipartToMatrix(dataline["swissprot"], swissprot_subfields)
+    swissprot <- multipartToMatrix(dataline["swissprot"], TRsubfields.swissprot)
     dbInsert_multipart_data(conn, "swissprot", swissprot,
                                    mrna_insres, transcript_cluster_ID, verbose)
 
     ## Extract and insert the "unigene" data
-    unigene <- multipartToMatrix(dataline["unigene"], unigene_subfields, min.nsubfields=2)
+    unigene <- multipartToMatrix(dataline["unigene"], TRsubfields.unigene, min.nsubfields=2)
     dbInsert_multipart_data(conn, "unigene", unigene,
                                    mrna_insres, transcript_cluster_ID, verbose)
 
     ## Extract and insert the "GO" data
     GO_biological_process <- multipartToMatrix(dataline["GO_biological_process"],
-                                               GO_biological_process_subfields)
+                                               TRsubfields.GO_biological_process)
     GO_biological_process <- replaceGOEvidenceByCode(GO_biological_process)
     dbInsert_multipart_data(conn, "GO_biological_process", GO_biological_process,
                                    gene_insres, transcript_cluster_ID, verbose)
     GO_cellular_component <- multipartToMatrix(dataline["GO_cellular_component"],
-                                               GO_biological_process_subfields)
+                                               TRsubfields.GO_biological_process)
     GO_cellular_component <- replaceGOEvidenceByCode(GO_cellular_component)
     dbInsert_multipart_data(conn, "GO_cellular_component", GO_cellular_component,
                                    gene_insres, transcript_cluster_ID, verbose)
     GO_molecular_function <- multipartToMatrix(dataline["GO_molecular_function"],
-                                               GO_biological_process_subfields)
+                                               TRsubfields.GO_biological_process)
     GO_molecular_function <- replaceGOEvidenceByCode(GO_molecular_function)
     dbInsert_multipart_data(conn, "GO_molecular_function", GO_molecular_function,
                                    gene_insres, transcript_cluster_ID, verbose)
 
     ## Extract and insert the "pathway" data
-    pathway <- multipartToMatrix(dataline["pathway"], pathway_subfields)
+    pathway <- multipartToMatrix(dataline["pathway"], TRsubfields.pathway)
     dbInsert_multipart_data(conn, "pathway", pathway,
                                    mrna_insres, transcript_cluster_ID, verbose)
 
@@ -745,11 +770,11 @@ dbImportLine_NetAffx_HuEx_transcript <- function(conn, dataline, line_nb, verbos
 
     ## The code below is not ready...
     protein_domains <- multipartToMatrix(dataline["protein_domains"],
-                                         protein_domains_subfields, min.nsubfields=3)
+                                         TRsubfields.protein_domains, min.nsubfields=3)
     dbInsert_multipart_data(conn, "protein_domains", protein_domains,
                                    acc2id, new_accessions, transcript_cluster_ID)
 
-    protein_families <- multipartToMatrix(dataline["protein_families"], protein_families_subfields)
+    protein_families <- multipartToMatrix(dataline["protein_families"], TRsubfields.protein_families)
     dbInsert_multipart_data(conn, "protein_families", protein_families,
                                    acc2id, new_accessions, transcript_cluster_ID)
 }
