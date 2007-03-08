@@ -8,12 +8,13 @@
 ###   1. The Probe Set CSV file (HuEx-1_0-st-v2.na21.hg18.probeset.csv)
 ###   2. The Transcript CSV file (HuEx-1_0-st-v2.na21.hg18.transcript.csv)
 ###
-### This file is divided in 5 sections:
+### This file is divided in 6 sections:
 ###   A. General purpose low-level SQL helper functions.
 ###   B. CSV field description and DB schema.
 ###   C. Objects and functions shared by D. and E.
 ###   D. Importation of the Transcript CSV file (167M, aka the "small" file).
 ###   E. Importation of the Probe Set CSV file (475M, aka the "big" file).
+###   F. Importation of the 2 CSV files (Transcript + Probe Set).
 ### 
 ### WARNING: This is a WORK IN PROGRESS!!! (if pdInfoBuilder had a NAMESPACE,
 ### nothing should be exported from this file for now)
@@ -270,7 +271,7 @@ PSsubfields.mrna_assignment <- c(
 ### The "transcript_cluster" table.
 transcript_cluster_desc <- list(
     col2type=c(
-        transcript_cluster_ID="INTEGER",      # PRIMARY KEY
+        transcript_cluster_ID="INTEGER",    # PRIMARY KEY
         seqname="TEXT",
         strand="CHAR(1)",
         start="INTEGER",
@@ -279,6 +280,53 @@ transcript_cluster_desc <- list(
     ),
     col2key=c(
         transcript_cluster_ID="PRIMARY KEY"
+    )
+)
+
+### The "probeset" table.
+probeset_desc <- list(
+    col2type=c(
+        probeset_ID="INTEGER",              # PRIMARY KEY
+        seqname="TEXT",
+        strand="CHAR(1)",
+        start="INTEGER",
+        stop="INTEGER",
+        probe_count="INTEGER",
+        transcript_cluster_ID="INTEGER",    # REFERENCES transcript_cluster(transcript_cluster_ID)
+        exon_id="INTEGER",
+        psr_id="INTEGER",
+        crosshyb_type="INTEGER",
+        number_independent_probes="INTEGER",
+        number_cross_hyb_probes="INTEGER",
+        number_nonoverlapping_probes="INTEGER",
+        level="INTEGER",
+        bounded="INTEGER",
+        noBoundedEvidence="INTEGER",
+        has_cds="INTEGER",
+        fl="INTEGER",
+        mrna="INTEGER",
+        est="INTEGER",
+        vegaGene="INTEGER",
+        vegaPseudoGene="INTEGER",
+        ensGene="INTEGER",
+        sgpGene="INTEGER",
+        exoniphy="INTEGER",
+        twinscan="INTEGER",
+        geneid="INTEGER",
+        genscan="INTEGER",
+        genscanSubopt="INTEGER",
+        mouse_fl="INTEGER",
+        mouse_mrna="INTEGER",
+        rat_fl="INTEGER",
+        rat_mrna="INTEGER",
+        microRNAregistry="INTEGER",
+        rnaGene="INTEGER",
+        mitomap="INTEGER",
+        probeset_type="INTEGER"
+    ),
+    col2key=c(
+        probeset_ID="PRIMARY KEY",
+        transcript_cluster_ID="REFERENCES transcript_cluster(transcript_cluster_ID)"
     )
 )
 
@@ -450,9 +498,10 @@ protein_families_desc <- list(
     )
 )
 
-### Global schema (14 tables).
+### Global schema (15 tables).
 AFFYHUEX_DB_schema <- list(
     transcript_cluster=transcript_cluster_desc,
+    probeset=probeset_desc,
     gene=gene_desc,
     mrna=mrna_desc,
     mrna_assignment=mrna_assignment_desc,
@@ -713,7 +762,7 @@ dbInsertRows.mrna_assignment_details <- function(conn, mrna_assignment, mrna_ass
     }
 }
 
-dbImportLine.AFFYHUEX_DB.transcript <- function(conn, dataline, line_nb, verbose=FALSE)
+dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline, line_nb, verbose=FALSE)
 {
     transcript_cluster_ID <- dataline[["transcript_cluster_ID"]] # [[ ]] to get rid of the name
     if (verbose)
@@ -793,7 +842,7 @@ dbImportLine.AFFYHUEX_DB.transcript <- function(conn, dataline, line_nb, verbose
 ###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
 ### It takes about 1 min on gopher6.
 ###
-dbImportData.AFFYHUEX_DB.transcript <- function(conn, csv_file, nrows=-1, verbose=FALSE)
+dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1, verbose=FALSE)
 {
     csv_con <- file(csv_file, open="r")
     on.exit(close(csv_con))
@@ -812,20 +861,8 @@ dbImportData.AFFYHUEX_DB.transcript <- function(conn, csv_file, nrows=-1, verbos
             break
         line_nb <- line_nb + 1
         dataline <- unlist(data[1, ])
-        dbImportLine.AFFYHUEX_DB.transcript(conn, dataline, line_nb, verbose)
+        dbImportLine.AFFYHUEX_DB.Transcript(conn, dataline, line_nb, verbose)
     }
-}
-
-### Typical use:
-###   > csv_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-###   > dbImport_NetAffx_HuEx_transcript(csv_file, "test.sqlite", 200, TRUE)
-###
-dbImport_NetAffx_HuEx_transcript <- function(csv_file, db_file, nrows=-1, verbose=FALSE)
-{
-    conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
-    on.exit(dbDisconnect(conn))
-    dbCreateTables.AFFYHUEX_DB(conn)
-    dbImportData.AFFYHUEX_DB.transcript(conn, csv_file, nrows, verbose)
 }
 
 
@@ -835,4 +872,68 @@ dbImport_NetAffx_HuEx_transcript <- function(csv_file, db_file, nrows=-1, verbos
 ### -------------------------------------------------------------------------
 
 
+dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline, line_nb, verbose=FALSE)
+{
+    probeset_ID <- dataline[["probeset_ID"]] # [[ ]] to get rid of the name
+    if (verbose)
+        cat(line_nb, ": probeset_ID=", probeset_ID, "\n", sep="")
+    #if (!is(conn, "DBIConnection"))
+    #    .dbGetQuery(conn, paste("-- probeset_ID ", probeset_ID, sep=""))
+    dataline[dataline == "---"] <- NA
+
+    ## Extract the simple fields
+    probeset_row <- dataline[names(probeset_desc$col2type)]
+    dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
+}
+
+### File "HuEx-1_0-st-v2.na21.hg18.probeset.csv" has 1425647 lines
+### and 39 fields. Trying to load the entire file at once with:
+###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+### takes 20 minutes on gladstone! (32G of RAM)
+###
+dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=FALSE)
+{
+    csv_con <- file(csv_file, open="r")
+    on.exit(close(csv_con))
+    line_nb <- 0
+    while (nrows == -1 || line_nb < nrows) {
+        if (line_nb == 0) {
+            data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
+                               nrows=1, stringsAsFactors=FALSE)
+            header <- names(data)
+            header[header == "probeset_id"] <- "probeset_ID"
+            header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
+        } else {
+            data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
+                               col.names=header, nrows=1, stringsAsFactors=FALSE)
+        }
+        if (nrow(data) == 0)
+            break
+        line_nb <- line_nb + 1
+        dataline <- unlist(data[1, ])
+        dbImportLine.AFFYHUEX_DB.ProbeSet(conn, dataline, line_nb, verbose)
+    }
+}
+
+
+
+### =========================================================================
+### F. Importation of the 2 CSV files (Transcript + Probe Set).
+### -------------------------------------------------------------------------
+
+
+### Typical use:
+###   > transcript_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
+###   > probeset_file <- "HuEx-1_0-st-v2.na21.hg18.probeset.csv"
+###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, probeset_file, "test.sqlite", 20, 40, TRUE)
+###
+dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file,
+                                         transcript_nrows=-1, probeset_nrows=-1, verbose=FALSE)
+{
+    conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
+    on.exit(dbDisconnect(conn))
+    dbCreateTables.AFFYHUEX_DB(conn)
+    dbImportData.AFFYHUEX_DB.Transcript(conn, transcript_file, transcript_nrows, verbose)
+    dbImportData.AFFYHUEX_DB.ProbeSet(conn, probeset_file, probeset_nrows, verbose)
+}
 
