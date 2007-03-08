@@ -926,6 +926,8 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=
 ###   > transcript_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
 ###   > probeset_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.probeset.csv"
 ###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, probeset_file, "test.sqlite", 20, 40, TRUE)
+### To skip importation of the "Probe Set" file:
+###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, "", "test.sqlite", 20, verbose=TRUE)
 ###
 dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file,
                                          transcript_nrows=-1, probeset_nrows=-1, verbose=FALSE)
@@ -934,6 +936,8 @@ dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file
     on.exit(dbDisconnect(conn))
     dbCreateTables.AFFYHUEX_DB(conn)
     dbImportData.AFFYHUEX_DB.Transcript(conn, transcript_file, transcript_nrows, verbose)
+    if (is.null(probeset_file) || is.na(probeset_file) || probeset_file == "")
+        return()
     dbImportData.AFFYHUEX_DB.ProbeSet(conn, probeset_file, probeset_nrows, verbose)
 }
 
