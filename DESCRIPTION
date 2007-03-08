@@ -5,7 +5,7 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
   annotation data.
-Version: 0.1.16
+Version: 0.1.17
 Author: Seth Falcon
 Maintainer: Seth Falcon <sfalcon@fhcrc.org>
 LazyLoad: yes
@@ -17,7 +17,7 @@ Collate: schema.R
          initDb.R 
          pmmmBlockToMat.R 
          loaders.R
-         NetAffx-HuEx-transcript-to-SQL.R
+         dbImport-AffyHuExArrayAnnCSV.R
          parseAffySeqFasta.R 
          makePdInfoPackage-methods.R
          zzz.R
