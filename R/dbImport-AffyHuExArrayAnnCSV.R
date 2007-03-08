@@ -250,16 +250,12 @@ TRsubfields.protein_families <- c(
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### B.c. The DB schema.
 ###
-### This is an R representation of the NETAFFX_HUEX_TRANSCRIPT_DB schema.
+### The DB schema used for importing the annotations for the Affymetrix Human
+### Exon Array probe sets and transcript clusters is called AFFYHUEX_DB.
+### This sub-section provides a definition of this schema at the R level.
 ###
 
 ### The "transcript_cluster" table.
-###
-### Note: Seth suggests to rename this table "featureSet". (This naming style
-### maybe popular in the R culture (especially for functions/methods) but not
-### really in the SQL culture (especially for table names)).
-### Also rename cols: "transcript_cluster_ID" -> "fsetid" and "seqname" -> "chrom".
-###
 transcript_cluster_desc <- list(
     col2type=c(
         transcript_cluster_ID="INTEGER",      # PRIMARY KEY
@@ -442,7 +438,7 @@ protein_families_desc <- list(
 )
 
 ### Global schema (14 tables).
-NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
+AFFYHUEX_DB_schema <- list(
     transcript_cluster=transcript_cluster_desc,
     gene=gene_desc,
     mrna=mrna_desc,
@@ -468,9 +464,9 @@ NETAFFX_HUEX_TRANSCRIPT_DB_schema <- list(
 
 dbCreateTables_NetAffx_HuEx_transcript <- function(conn)
 {
-    for (tablename in names(NETAFFX_HUEX_TRANSCRIPT_DB_schema)) {
-        col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
-        col2key <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2key
+    for (tablename in names(AFFYHUEX_DB_schema)) {
+        col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+        col2key <- AFFYHUEX_DB_schema[[tablename]]$col2key
         dbCreateTable(conn, tablename, col2type, col2key)
     }
 }
@@ -595,7 +591,7 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_clu
     acc2id <- insres$acc2id
     id2submat <- splitMatrix(mat, acc2id)
     new_ids <- insres$new_ids
-    col2type <- NETAFFX_HUEX_TRANSCRIPT_DB_schema[[tablename]]$col2type
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     cols0 <- paste(colnames(mat)[-1], collapse=",")
     link0 <- names(col2type)[length(col2type)]
     sql0 <- paste("SELECT ", cols0, " FROM ", tablename, " WHERE ", link0, "=", sep="")
