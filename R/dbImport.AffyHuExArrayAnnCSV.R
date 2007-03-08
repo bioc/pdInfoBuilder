@@ -924,7 +924,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=
 
 ### Typical use:
 ###   > transcript_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-###   > probeset_file <- "HuEx-1_0-st-v2.na21.hg18.probeset.csv"
+###   > probeset_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.probeset.csv"
 ###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, probeset_file, "test.sqlite", 20, 40, TRUE)
 ###
 dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file,
