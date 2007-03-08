@@ -1,9 +1,27 @@
-### =========================================================================
-### Utilities for converting a NetAffx HuEx transcript CSV file to SQL
+#############################################################################
+###
+### Functions for importing the CSV files containing annotations for the
+### Affymetrix Human Exon Array probe sets and transcript clusters.
+###
+### Affymetrix provides 2 files:
+###   1. The Probe Set CSV file (HuEx-1_0-st-v2.na21.hg18.probeset.csv)
+###   2. The Transcript CSV file (HuEx-1_0-st-v2.na21.hg18.transcript.csv)
+###
+### This file is divided in 3 sections:
+###   A. Shared objects and functions.
+###   B. Importation of the Transcript CSV file (167M, aka the "small" file).
+###   C. Importation of the Probe Set CSV file (475M, aka the "big" file).
 ### 
-### ... work in progress ... (if pdInfoBuilder had a NAMESPACE, nothing from
-###                           this file should be exported for now)
+### WARNING: This is a WORK IN PROGRESS!!! (if pdInfoBuilder had a NAMESPACE,
+### nothing should be exported from this file for now)
+###
+#############################################################################
 
+
+
+### =========================================================================
+### A. Shared objects and functions.
+### -------------------------------------------------------------------------
 
 ### Authority: http://www.geneontology.org/GO.evidence.shtml
 GO_evidence_codes <- c(
@@ -260,6 +278,11 @@ haveTheSameData <- function(mat, dat)
     return(TRUE)
 }
 
+
+
+### =========================================================================
+### B. Importation of the Transcript CSV file (167M, aka the "small" file).
+### -------------------------------------------------------------------------
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### CSV sub-fields of the multipart fields.
@@ -773,4 +796,11 @@ dbImport_NetAffx_HuEx_transcript <- function(csv_file, db_file, nrows=-1, verbos
     dbCreateTables_NetAffx_HuEx_transcript(conn)
     dbImportData_NetAffx_HuEx_transcript(conn, csv_file, nrows, verbose)
 }
+
+
+
+### =========================================================================
+### C. Importation of the Probe Set CSV file (475M, aka the "big" file).
+### -------------------------------------------------------------------------
+
 
