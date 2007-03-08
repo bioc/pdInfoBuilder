@@ -17,7 +17,7 @@ Collate: schema.R
          initDb.R 
          pmmmBlockToMat.R 
          loaders.R
-         dbImport-AffyHuExArrayAnnCSV.R
+         dbImport.AffyHuExArrayAnnCSV.R
          parseAffySeqFasta.R 
          makePdInfoPackage-methods.R
          zzz.R
