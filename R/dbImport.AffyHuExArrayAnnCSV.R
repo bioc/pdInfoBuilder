@@ -119,7 +119,9 @@ dbCreateTable <- function(conn, tablename, col2type, col2key)
 ### 'row' must be a character vector with or without names.
 dbInsertRow <- function(conn, tablename, row, col2type, is.fullrow=TRUE)
 {
-    sqlvals <- toSQLValues(row, col2type)
+    sqlvals <- try(toSQLValues(row, col2type), silent=TRUE)
+    if (is(sqlvals, "try-error"))
+        stop("tablename=\"", tablename, "\": ", sqlvals)
     sql <- paste(sqlvals, collapse=", ")
     sql <- paste("VALUES (", sql, ")", sep="")
     cols <- names(row)
@@ -141,7 +143,9 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 {
     if (is.null(names(row)))
         stop("'row' must be a named character vector")
-    unique_sqlval <- toSQLValues(row[unique_col], col2type)
+    unique_sqlval <- try(toSQLValues(row[unique_col], col2type), silent=TRUE)
+    if (is(unique_sqlval, "try-error"))
+        stop("tablename=\"", tablename, "\": ", unique_sqlval)
     sql <- paste("SELECT * FROM ", tablename, " WHERE ",
                  unique_col, "=", unique_sqlval, " LIMIT 1", sep="")
     data <- dbGetQuery(conn, sql)
@@ -749,7 +753,9 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
             for (i in seq_len(nrow(submat))) {
                 row1 <- c(submat[i, ], id)
                 names(row1) <- names(col2type)
-                dbInsertRow(conn, tablename, row1, col2type)
+                res <- try(dbInsertRow(conn, tablename, row1, col2type), silent=TRUE)
+                if (is(res, "try-error"))
+                    stop("In ", csv_current_pos(), ":\n", res, "\n")
             }
         } else {
             sql <- paste(sql0, id, sep="")
@@ -784,9 +790,13 @@ dbInsertRows.gene <- function(conn, genes)
     for (i in seq_len(nrow(genes))) {
         row1 <- genes[i, names(col2type)]
         id <- row1[["entrez_gene_id"]] # [[ ]] to get rid of the name
-        row0 <- dbGetThisRow(conn, "gene", "entrez_gene_id", row1, col2type)
+        row0 <- try(dbGetThisRow(conn, "gene", "entrez_gene_id", row1, col2type), silent=TRUE)
+        if (is(row0, "try-error"))
+            stop("In ", csv_current_pos(), ":\n", row0, "\n")
         if (is.null(row0)) {
-            dbInsertRow(conn, "gene", row1, col2type)
+            res <- try(dbInsertRow(conn, "gene", row1, col2type), silent=TRUE)
+            if (is(res, "try-error"))
+                stop("In ", csv_current_pos(), ":\n", res, "\n")
             new_ids <- c(new_ids, id)
         }
         acc2id[i] <- id
@@ -805,11 +815,15 @@ dbInsertRows.mrna <- function(conn, accessions, gene_acc2id)
         entrez_gene_id <- gene_acc2id[accession]
         row1 <- c(NA, accession, entrez_gene_id)
         names(row1) <- names(col2type)
-        row0 <- dbGetThisRow(conn, "mrna", "accession", row1, col2type)
+        row0 <- try(dbGetThisRow(conn, "mrna", "accession", row1, col2type), silent=TRUE)
+        if (is(row0, "try-error"))
+            stop("In ", csv_current_pos(), ":\n", row0, "\n")
         if (is.null(row0)) {
             id <- .db.next.id("mrna")
             row1["_mrna_id"] <- id
-            dbInsertRow(conn, "mrna", row1, col2type)
+            res <- try(dbInsertRow(conn, "mrna", row1, col2type), silent=TRUE)
+            if (is(res, "try-error"))
+                stop("In ", csv_current_pos(), ":\n", res, "\n")
             new_ids <- c(new_ids, id)
         } else {
             id <- row0["_mrna_id"]
@@ -828,7 +842,9 @@ dbInsertRows.mrna_assignment <- function(conn, transcript_cluster_ID, mrna_acc2i
         id <- .db.next.id("mrna_assignment")
         row1 <- c(id, transcript_cluster_ID, mrna_acc2id[i])
         names(row1) <- names(col2type)
-        dbInsertRow(conn, "mrna_assignment", row1, col2type)
+        res <- try(dbInsertRow(conn, "mrna_assignment", row1, col2type), silent=TRUE)
+        if (is(res, "try-error"))
+            stop("In ", csv_current_pos(), ":\n", res, "\n")
         acc2id[i] <- id
     }
     acc2id
@@ -843,7 +859,9 @@ dbInsertRows.mrna_assignment_details <- function(conn, mrna_assignment, mrna_ass
         row1 <- mrna_assignment[i, names(col2type)[1:8]]
         row1 <- c(row1, mrna_assignment.id)
         names(row1) <- names(col2type)
-        dbInsertRow(conn, "mrna_assignment_details", row1, col2type)
+        res <- try(dbInsertRow(conn, "mrna_assignment_details", row1, col2type), silent=TRUE)
+        if (is(res, "try-error"))
+            stop("In ", csv_current_pos(), ":\n", res, "\n")
     }
 }
 
@@ -857,8 +875,8 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
     ## Extract the simple fields
 
-    transcript_cluster_row <- dataline[names(transcript_cluster_desc$col2type)]
-    dbInsertRow(conn, "transcript_cluster", transcript_cluster_row, transcript_cluster_desc$col2type)
+    row1 <- dataline[names(transcript_cluster_desc$col2type)]
+    dbInsertRow(conn, "transcript_cluster", row1, transcript_cluster_desc$col2type)
 
     ## Extract and insert the "gene_assignment" data
 
