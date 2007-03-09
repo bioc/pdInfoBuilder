@@ -307,7 +307,7 @@ probeset_desc <- list(
         number_independent_probes="INTEGER",
         number_cross_hyb_probes="INTEGER",
         number_nonoverlapping_probes="INTEGER",
-        level="INTEGER",
+        level="TEXT",
         bounded="INTEGER",
         noBoundedEvidence="INTEGER",
         has_cds="INTEGER",
@@ -330,7 +330,7 @@ probeset_desc <- list(
         microRNAregistry="INTEGER",
         rnaGene="INTEGER",
         mitomap="INTEGER",
-        probeset_type="INTEGER"
+        probeset_type="TEXT"
     ),
     col2key=c(
         probeset_ID="PRIMARY KEY",
