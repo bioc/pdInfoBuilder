@@ -64,8 +64,10 @@ toSQLValues <- function(vals, col2type)
         }
         if (types[i] == "INTEGER") {
             x <- as.integer(val)
-            if (is.na(x) || x != val)
-                stop("vals[", i, "]=\"", val, "\" not an integer")
+            ## Bad idea, this will not give the correct answer if 'val' is "1e+05"
+            ## for example.
+            #if (is.na(x) || x != val)
+            #    stop("vals[", i, "]=\"", val, "\" not an integer")
             vals[i] <- x
             next
         }
