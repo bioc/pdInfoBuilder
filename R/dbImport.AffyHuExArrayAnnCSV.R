@@ -76,21 +76,24 @@ toSQLValues <- function(vals, col2type)
 }
 
 ### ID generation.
+### WARNING: Those functions are unsafe in a "multi db" context because when
+### several db connections are open at the same time (e.g. 'conn1' and 'conn2')
+### then 'tablename' is not a unique key anymore.
 
-.db.current.ids <- new.env(hash=TRUE)
+.DB.CURRENT.IDS <- new.env(hash=TRUE, parent=emptyenv())
 
-set.id <- function(tablename, id=0)
+.db.set.id <- function(tablename, id=0)
 {
-    assign(tablename, id, envir=.db.current.ids, inherits=FALSE)
+    assign(tablename, id, envir=.DB.CURRENT.IDS)
 }
 
-next.id <- function(tablename)
+.db.next.id <- function(tablename)
 {
-    if (!exists(tablename, envir=.db.current.ids, inherits=FALSE))
+    if (!exists(tablename, envir=.DB.CURRENT.IDS))
         stop("no current id for table \"", tablename, "\"")
-    id <- get(tablename, envir=.db.current.ids, inherits=FALSE)
+    id <- get(tablename, envir=.DB.CURRENT.IDS)
     id <- id + 1
-    set.id(tablename, id)
+    .db.set.id(tablename, id)
     id
 }
 
@@ -110,7 +113,7 @@ dbCreateTable <- function(conn, tablename, col2type, col2key)
     sql <- paste(sql, collapse=", ")
     sql <- paste("CREATE TABLE ", tablename, " (", sql, ")", sep="")
     .dbGetQuery(conn, sql)
-    set.id(tablename)
+    .db.set.id(tablename)
 }
 
 ### 'row' must be a character vector with or without names.
@@ -534,6 +537,82 @@ dbCreateTables.AFFYHUEX_DB <- function(conn)
     }
 }
 
+### Utilities for reporting errors/warnings in the CSV data
+
+.CSVIMPORT.VARS <- new.env(hash=TRUE, parent=emptyenv())
+
+.CSVimport.var <- function(objname, objval)
+{
+    if (is.null(objval))
+        return(get(objname, envir=.CSVIMPORT.VARS))
+    assign(objname, objval, envir=.CSVIMPORT.VARS)
+}
+
+.CSVimport.verbose <- function(verbose=NULL)
+{
+    .CSVimport.var("verbose", verbose)
+}
+
+.CSVimport.infile <- function(file=NULL)
+{
+    if (.CSVimport.verbose() && !is.null(file))
+        cat("- CSV_file=\"", file, "\"\n", sep="")
+    .CSVimport.var("infile", file)
+}
+
+.CSVimport.dataline_nb <- function(nb=NULL)
+{
+    if (.CSVimport.verbose() && !is.null(nb))
+        cat("-- dataline_nb=", nb, "\n", sep="")
+    .CSVimport.var("dataline_nb", nb)
+}
+
+.CSVimport.line_ID <- function(line_ID=NULL)
+{
+    if (.CSVimport.verbose() && !is.null(line_ID))
+        cat("-- line_ID=", line_ID, "\n", sep="")
+    .CSVimport.var("line_ID", line_ID)
+}
+
+.CSVimport.field <- function(field=NULL)
+{
+    if (.CSVimport.verbose() && !is.null(field))
+        cat("--- field=\"", field, "\"\n", sep="")
+    .CSVimport.var("field", field)
+}
+
+.CSVimport.logfile <- function(file=NULL)
+{
+    .CSVimport.var("logfile", file)
+}
+
+csv_current_pos <- function()
+{
+    paste("CSV_file=\"", .CSVimport.infile(), "\"",
+          ", dataline_nb=", .CSVimport.dataline_nb(), 
+          ", [line_ID=", .CSVimport.line_ID(), "]",
+          ", field=\"", .CSVimport.field(), "\"",
+          sep="")
+}
+          
+data_error <- function(msg)
+{
+    msg <- paste("*** <DATAERROR>\n",
+                 "*** In ", csv_current_pos(), ":\n*** ", msg, "\n",
+                 "*** </DATAERROR>\n", sep="")
+    cat("\n", msg, "\n", sep="")
+    stop(msg)
+}
+
+data_warning <- function(msg)
+{
+    msg <- paste("*** <DATAWARNING>\n",
+                 "*** In ", csv_current_pos(), ":\n*** ", msg, "\n",
+                 "*** </DATAWARNING>\n", sep="")
+    cat("\n", msg, "\n", sep="")
+    warning(msg)
+}
+
 multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
 {
     ncol <- length(subfields)
@@ -544,8 +623,10 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
         rows <- strsplit(vals, " // ", fixed=TRUE)
         for (i in seq_len(length(rows))) {
             nsubfields <- length(rows[[i]])
-            if (nsubfields < min.nsubfields || nsubfields > ncol)
-                stop("bad number of subfields")
+            if (nsubfields < min.nsubfields || nsubfields > ncol) {
+                msg <- "wrong number of subfields"
+                data_error(msg)
+            }
             if (nsubfields < ncol)
                 length(rows[[i]]) <- ncol
         }
@@ -583,8 +664,10 @@ replaceGOEvidenceByCode <- function(mat)
     notNA <- !is.na(evidences)
     notNA_evidences <- evidences[notNA]
     pos <- match(notNA_evidences, GO_evidence_codes_lower)
-    if (any(is.na(pos)))
-        stop("unknown evidence '", notNA_evidences[is.na(pos)][1], "'")
+    if (any(is.na(pos))) {
+        msg <- paste("unknown evidence '", notNA_evidences[is.na(pos)][1], "'", sep="")
+        data_error(msg)
+    }
     evidences[notNA] <- names(GO_evidence_codes_lower)[pos]
     mat[ , "GO_evidence"] <- evidences
     colnames(mat)[colnames(mat) == "GO_evidence"] <- "GO_evidence_code"
@@ -616,7 +699,7 @@ splitMatrix <- function(mat, acc2id)
         if (!identical(submat, submat0)) {
             show(mat)
             show(acc2id)
-            stop("can't split 'mat'")
+            data_warning("no way to properly split this matrix (see above)")
         }
     }
     id2submat
@@ -647,7 +730,7 @@ haveTheSameData <- function(mat, dat)
     return(TRUE)
 }
 
-dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_cluster_ID, verbose=FALSE)
+dbInsert_multipart_data <- function(conn, tablename, mat, insres)
 {
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
@@ -678,8 +761,9 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres, transcript_clu
                 if (haveTheSameData(submat, data0))
                     next
             }
-            stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
-                 accession, " parts in \"", tablename, "\" are not the expected ones")
+            msg <- paste("parts in CSV field don't match records already in ",
+                         "table \"", tablename, "\" for ", link0, "=", id, sep="")
+            data_error(msg)
         }
     }
 }
@@ -723,7 +807,7 @@ dbInsertRows.mrna <- function(conn, accessions, gene_acc2id)
         names(row1) <- names(col2type)
         row0 <- dbGetThisRow(conn, "mrna", "accession", row1, col2type)
         if (is.null(row0)) {
-            id <- next.id("mrna")
+            id <- .db.next.id("mrna")
             row1["_mrna_id"] <- id
             dbInsertRow(conn, "mrna", row1, col2type)
             new_ids <- c(new_ids, id)
@@ -741,7 +825,7 @@ dbInsertRows.mrna_assignment <- function(conn, transcript_cluster_ID, mrna_acc2i
     acc2id[] <- ""
     col2type <- mrna_assignment_desc$col2type
     for (i in seq_len(length(mrna_acc2id))) {
-        id <- next.id("mrna_assignment")
+        id <- .db.next.id("mrna_assignment")
         row1 <- c(id, transcript_cluster_ID, mrna_acc2id[i])
         names(row1) <- names(col2type)
         dbInsertRow(conn, "mrna_assignment", row1, col2type)
@@ -763,21 +847,24 @@ dbInsertRows.mrna_assignment_details <- function(conn, mrna_assignment, mrna_ass
     }
 }
 
-dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline, line_nb, verbose=FALSE)
+dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 {
     transcript_cluster_ID <- dataline[["transcript_cluster_ID"]] # [[ ]] to get rid of the name
-    if (verbose)
-        cat(line_nb, ": transcript_cluster_ID=", transcript_cluster_ID, "\n", sep="")
+    .CSVimport.line_ID(transcript_cluster_ID)
     #if (!is(conn, "DBIConnection"))
     #    .dbGetQuery(conn, paste("-- transcript_cluster_ID ", transcript_cluster_ID, sep=""))
     dataline[dataline == "---"] <- NA
 
     ## Extract the simple fields
+
     transcript_cluster_row <- dataline[names(transcript_cluster_desc$col2type)]
     dbInsertRow(conn, "transcript_cluster", transcript_cluster_row, transcript_cluster_desc$col2type)
 
     ## Extract and insert the "gene_assignment" data
-    gene_assignment <- multipartToMatrix(dataline["gene_assignment"], TRsubfields.gene_assignment)
+
+    field <- "gene_assignment"
+    .CSVimport.field(field)
+    gene_assignment <- multipartToMatrix(dataline[field], TRsubfields.gene_assignment)
     gene_insres <- dbInsertRows.gene(conn, gene_assignment)
 
     ## There should never be more than 1 part with the same accession in the
@@ -817,60 +904,68 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline, line_nb, verbose
     ## For now we ignore the duplicated and issue a warning
     dup_gene_acc2id <- duplicated(names(gene_insres$acc2id))
     if (any(dup_gene_acc2id)) {
-        gene_acc2id_string <- paste(names(gene_insres$acc2id), collapse=",")
-        gene_acc2id_string <- paste(gene_acc2id_string, " [",
-                                    paste(gene_insres$acc2id, collapse=","),
-                                    "]", sep="")
-        msg <- paste("in CSV line for transcript_cluster_ID=",
-                     transcript_cluster_ID, ": ",
-                     "\"gene_assignment\" has more than 1 part with the same accession: ",
-                     gene_acc2id_string, sep="")
-        cat("  ** WARNING ** ", msg, "\n")
-        warning(msg)
+        msg <- paste(names(gene_insres$acc2id), collapse=",")
+        msg <- paste(msg, " [", paste(gene_insres$acc2id, collapse=","), "]", sep="")
+        msg <- paste("\"gene_assignment\" has more than 1 part with the same accession: ",
+                     msg, sep="")
+        data_warning(msg)
         gene_insres$acc2id <- gene_insres$acc2id[!dup_gene_acc2id]
     }
 
     ## Extract and insert the "mrna_assignment" data
-    mrna_assignment <- multipartToMatrix(dataline["mrna_assignment"], TRsubfields.mrna_assignment)
+
+    field <- "mrna_assignment"
+    .CSVimport.field(field)
+    mrna_assignment <- multipartToMatrix(dataline[field], TRsubfields.mrna_assignment)
     accessions <- unique(mrna_assignment[ , "accession"])
-    if (!all(names(gene_insres$acc2id) %in% accessions))
-        stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
-             "\"gene_assignment\" has unlinked parts")
+    if (!all(names(gene_insres$acc2id) %in% accessions)) {
+        msg <- "\"gene_assignment\" has unlinked parts"
+        data_error(msg)
+    }
     mrna_insres <- dbInsertRows.mrna(conn, accessions, gene_insres$acc2id)
     mrna_assignment_acc2id <- dbInsertRows.mrna_assignment(conn, transcript_cluster_ID, mrna_insres$acc2id)
     dbInsertRows.mrna_assignment_details(conn, mrna_assignment, mrna_assignment_acc2id)
 
     ## Extract and insert the "swissprot" data
-    swissprot <- multipartToMatrix(dataline["swissprot"], TRsubfields.swissprot)
-    dbInsert_multipart_data(conn, "swissprot", swissprot,
-                                   mrna_insres, transcript_cluster_ID, verbose)
+
+    field <- "swissprot"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.swissprot)
+    dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     ## Extract and insert the "unigene" data
-    unigene <- multipartToMatrix(dataline["unigene"], TRsubfields.unigene, min.nsubfields=2)
-    dbInsert_multipart_data(conn, "unigene", unigene,
-                                   mrna_insres, transcript_cluster_ID, verbose)
+
+    field <- "unigene"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.unigene, min.nsubfields=2)
+    dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     ## Extract and insert the "GO" data
-    GO_biological_process <- multipartToMatrix(dataline["GO_biological_process"],
-                                               TRsubfields.GO_biological_process)
-    GO_biological_process <- replaceGOEvidenceByCode(GO_biological_process)
-    dbInsert_multipart_data(conn, "GO_biological_process", GO_biological_process,
-                                   gene_insres, transcript_cluster_ID, verbose)
-    GO_cellular_component <- multipartToMatrix(dataline["GO_cellular_component"],
-                                               TRsubfields.GO_biological_process)
-    GO_cellular_component <- replaceGOEvidenceByCode(GO_cellular_component)
-    dbInsert_multipart_data(conn, "GO_cellular_component", GO_cellular_component,
-                                   gene_insres, transcript_cluster_ID, verbose)
-    GO_molecular_function <- multipartToMatrix(dataline["GO_molecular_function"],
-                                               TRsubfields.GO_biological_process)
-    GO_molecular_function <- replaceGOEvidenceByCode(GO_molecular_function)
-    dbInsert_multipart_data(conn, "GO_molecular_function", GO_molecular_function,
-                                   gene_insres, transcript_cluster_ID, verbose)
+
+    field <- "GO_biological_process"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- replaceGOEvidenceByCode(mat)
+    dbInsert_multipart_data(conn, field, mat, gene_insres)
+
+    field <- "GO_cellular_component"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- replaceGOEvidenceByCode(mat)
+    dbInsert_multipart_data(conn, field, mat, gene_insres)
+
+    field <- "GO_molecular_function"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- replaceGOEvidenceByCode(mat)
+    dbInsert_multipart_data(conn, field, mat, gene_insres)
 
     ## Extract and insert the "pathway" data
-    pathway <- multipartToMatrix(dataline["pathway"], TRsubfields.pathway)
-    dbInsert_multipart_data(conn, "pathway", pathway,
-                                   mrna_insres, transcript_cluster_ID, verbose)
+
+    field <- "pathway"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.pathway)
+    dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     return() # that's all for now
 
@@ -890,13 +985,14 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline, line_nb, verbose
 ###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
 ### It takes about 1 min on gopher6.
 ###
-dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1, verbose=FALSE)
+dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1)
 {
+    .CSVimport.infile(csv_file)
     csv_con <- file(csv_file, open="r")
     on.exit(close(csv_con))
-    line_nb <- 0
-    while (nrows == -1 || line_nb < nrows) {
-        if (line_nb == 0) {
+    dataline_nb <- 0
+    while (nrows == -1 || dataline_nb < nrows) {
+        if (dataline_nb == 0) {
             data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                nrows=1, stringsAsFactors=FALSE)
             header <- names(data)
@@ -908,9 +1004,10 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1, verbos
         }
         if (nrow(data) == 0)
             break
-        line_nb <- line_nb + 1
+        dataline_nb <- dataline_nb + 1
+        .CSVimport.dataline_nb(dataline_nb)
         dataline <- unlist(data[1, ])
-        dbImportLine.AFFYHUEX_DB.Transcript(conn, dataline, line_nb, verbose)
+        dbImportLine.AFFYHUEX_DB.Transcript(conn, dataline)
     }
 }
 
@@ -921,16 +1018,16 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1, verbos
 ### -------------------------------------------------------------------------
 
 
-dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline, line_nb, verbose=FALSE)
+dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 {
     probeset_ID <- dataline[["probeset_ID"]] # [[ ]] to get rid of the name
-    if (verbose)
-        cat(line_nb, ": probeset_ID=", probeset_ID, "\n", sep="")
+    .CSVimport.line_ID(probeset_ID)
     #if (!is(conn, "DBIConnection"))
     #    .dbGetQuery(conn, paste("-- probeset_ID ", probeset_ID, sep=""))
     dataline[dataline == "---"] <- NA
 
     ## Extract the simple fields
+
     probeset_row <- dataline[names(probeset_desc$col2type)]
     dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
 }
@@ -940,13 +1037,14 @@ dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline, line_nb, verbose=F
 ###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
 ### takes 20 minutes on gladstone! (32G of RAM)
 ###
-dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=FALSE)
+dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1)
 {
+    .CSVimport.infile(csv_file)
     csv_con <- file(csv_file, open="r")
     on.exit(close(csv_con))
-    line_nb <- 0
-    while (nrows == -1 || line_nb < nrows) {
-        if (line_nb == 0) {
+    dataline_nb <- 0
+    while (nrows == -1 || dataline_nb < nrows) {
+        if (dataline_nb == 0) {
             data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                nrows=1, stringsAsFactors=FALSE)
             header <- names(data)
@@ -959,9 +1057,10 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=
         }
         if (nrow(data) == 0)
             break
-        line_nb <- line_nb + 1
+        dataline_nb <- dataline_nb + 1
+        .CSVimport.dataline_nb(dataline_nb)
         dataline <- unlist(data[1, ])
-        dbImportLine.AFFYHUEX_DB.ProbeSet(conn, dataline, line_nb, verbose)
+        dbImportLine.AFFYHUEX_DB.ProbeSet(conn, dataline)
     }
 }
 
@@ -982,12 +1081,13 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1, verbose=
 dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file,
                                          transcript_nrows=-1, probeset_nrows=-1, verbose=FALSE)
 {
+    .CSVimport.verbose(verbose)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     on.exit(dbDisconnect(conn))
     dbCreateTables.AFFYHUEX_DB(conn)
-    dbImportData.AFFYHUEX_DB.Transcript(conn, transcript_file, transcript_nrows, verbose)
+    dbImportData.AFFYHUEX_DB.Transcript(conn, transcript_file, transcript_nrows)
     if (is.null(probeset_file) || is.na(probeset_file) || probeset_file == "")
         return()
-    dbImportData.AFFYHUEX_DB.ProbeSet(conn, probeset_file, probeset_nrows, verbose)
+    dbImportData.AFFYHUEX_DB.ProbeSet(conn, probeset_file, probeset_nrows)
 }
 
