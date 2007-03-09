@@ -826,6 +826,7 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline, line_nb, verbose
                      transcript_cluster_ID, ": ",
                      "\"gene_assignment\" has more than 1 part with the same accession: ",
                      gene_acc2id_string, sep="")
+        cat("  ** WARNING ** ", msg, "\n")
         warning(msg)
         gene_insres$acc2id <- gene_insres$acc2id[!dup_gene_acc2id]
     }
