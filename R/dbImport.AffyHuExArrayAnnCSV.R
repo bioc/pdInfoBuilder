@@ -1073,7 +1073,7 @@ dbInsertRows.PBS2mrna <- function(conn, mrna_assignment, probeset_ID)
         accession <- mrna_assignment[i, "accession"]
         row1 <- c(NA, accession, NA)
         names(row1) <- names(mrna_desc$col2type)
-        row0 <- try(dbGetThisRow(conn, "mrna", "accession", row1, col2type), silent=TRUE)
+        row0 <- try(dbGetThisRow(conn, "mrna", "accession", row1, mrna_desc$col2type), silent=TRUE)
         if (is(row0, "try-error"))
             stop("In ", csv_current_pos(), ":\n", row0, "\n")
         if (is.null(row0)) {
