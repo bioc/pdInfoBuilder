@@ -121,13 +121,13 @@ dbInsertRow <- function(conn, tablename, row, col2type, is.fullrow=TRUE)
 {
     sqlvals <- try(toSQLValues(row, col2type), silent=TRUE)
     if (is(sqlvals, "try-error"))
-        stop("tablename=\"", tablename, "\": ", sqlvals)
+        stop("table=\"", tablename, "\": ", sqlvals)
     sql <- paste(sqlvals, collapse=", ")
     sql <- paste("VALUES (", sql, ")", sep="")
     cols <- names(row)
     if (!is.null(cols) && !identical(cols, names(col2type))) {
         if (is.fullrow)
-            stop("'names(row)' and 'names(col2type)' are not identical")
+            stop("table=\"", tablename, "\": 'names(row)' and 'names(col2type)' are not identical")
         cols <- paste(cols, collapse=", ")
         sql <- paste("(", cols, ") ", sql, sep="")
     }
@@ -145,7 +145,7 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
         stop("'row' must be a named character vector")
     unique_sqlval <- try(toSQLValues(row[unique_col], col2type), silent=TRUE)
     if (is(unique_sqlval, "try-error"))
-        stop("tablename=\"", tablename, "\": ", unique_sqlval)
+        stop("table=\"", tablename, "\": ", unique_sqlval)
     sql <- paste("SELECT * FROM ", tablename, " WHERE ",
                  unique_col, "=", unique_sqlval, " LIMIT 1", sep="")
     data <- dbGetQuery(conn, sql)
@@ -253,12 +253,12 @@ TRsubfields.protein_families <- c(
 ### field.
 ###
 
-PSsubfields.gene_assignment <- c(
+PBSsubfields.gene_assignment <- c(
     "accession",
     "gene_symbol"
 )
 
-PSsubfields.mrna_assignment <- c(
+PBSsubfields.mrna_assignment <- c(
     "accession",
     "assignment_seqname",
     "assignment_score",
@@ -288,53 +288,6 @@ transcript_cluster_desc <- list(
     ),
     col2key=c(
         transcript_cluster_ID="PRIMARY KEY"
-    )
-)
-
-### The "probeset" table.
-probeset_desc <- list(
-    col2type=c(
-        probeset_ID="INTEGER",              # PRIMARY KEY
-        seqname="TEXT",
-        strand="CHAR(1)",
-        start="INTEGER",
-        stop="INTEGER",
-        probe_count="INTEGER",
-        transcript_cluster_ID="INTEGER",    # REFERENCES transcript_cluster(transcript_cluster_ID)
-        exon_id="INTEGER",
-        psr_id="INTEGER",
-        crosshyb_type="INTEGER",
-        number_independent_probes="INTEGER",
-        number_cross_hyb_probes="INTEGER",
-        number_nonoverlapping_probes="INTEGER",
-        level="TEXT",
-        bounded="INTEGER",
-        noBoundedEvidence="INTEGER",
-        has_cds="INTEGER",
-        fl="INTEGER",
-        mrna="INTEGER",
-        est="INTEGER",
-        vegaGene="INTEGER",
-        vegaPseudoGene="INTEGER",
-        ensGene="INTEGER",
-        sgpGene="INTEGER",
-        exoniphy="INTEGER",
-        twinscan="INTEGER",
-        geneid="INTEGER",
-        genscan="INTEGER",
-        genscanSubopt="INTEGER",
-        mouse_fl="INTEGER",
-        mouse_mrna="INTEGER",
-        rat_fl="INTEGER",
-        rat_mrna="INTEGER",
-        microRNAregistry="INTEGER",
-        rnaGene="INTEGER",
-        mitomap="INTEGER",
-        probeset_type="TEXT"
-    ),
-    col2key=c(
-        probeset_ID="PRIMARY KEY",
-        transcript_cluster_ID="REFERENCES transcript_cluster(transcript_cluster_ID)"
     )
 )
 
@@ -381,23 +334,23 @@ mrna_desc <- list(
     )
 )
 
-### The "mrna_assignment" table.
+### The "TR2mrna" table.
 ### TODO: Add a UNIQUE constraint on (transcript_cluster_ID, _mrna_id).
-mrna_assignment_desc <- list(
+TR2mrna_desc <- list(
     col2type=c(
-        `_mrna_assignment_id`="INTEGER",
+        `_TR2mrna_id`="INTEGER",
         transcript_cluster_ID="INTEGER",    # REFERENCES transcript_cluster(transcript_cluster_ID)
         `_mrna_id`="INTEGER"        # REFERENCES mrna(_mrna_id)
     ),
     col2key=c(
-        `_mrna_assignment_id`="PRIMARY KEY",
+        `_TR2mrna_id`="PRIMARY KEY",
         transcript_cluster_ID="NOT NULL REFERENCES transcript_cluster(transcript_cluster_ID)",
         `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
     )
 )
 
-### The "mrna_assignment_details" table.
-mrna_assignment_details_desc <- list(
+### The "TR2mrna_details" table.
+TR2mrna_details_desc <- list(
     col2type=c(
         source_name="TEXT",
         description="TEXT",
@@ -407,10 +360,10 @@ mrna_assignment_details_desc <- list(
         direct_probes="INTEGER",
         possible_probes="INTEGER",
         xhyb="INTEGER",
-        `_mrna_assignment_id`="INTEGER"        # REFERENCES mrna_assignment(_mrna_assignment_id)
+        `_TR2mrna_id`="INTEGER"         # REFERENCES TR2mrna(_TR2mrna_id)
     ),
     col2key=c(
-        `_mrna_assignment_id`="NOT NULL REFERENCES mrna_assignment(_mrna_assignment_id)"
+        `_TR2mrna_id`="NOT NULL REFERENCES TR2mrna(_TR2mrna_id)"
     )
 )
 
@@ -479,15 +432,15 @@ protein_domains_desc <- list(
     )
 )
 
-### The "mrna_assignment_2_protein_domains" table.
-### TODO: Add a UNIQUE constraint on (_mrna_assignment_id, _protein_domains_id).
-mrna_assignment_2_protein_domains_desc <- list(
+### The "TR2mrna_2_protein_domains" table.
+### TODO: Add a UNIQUE constraint on (_TR2mrna_id, _protein_domains_id).
+TR2mrna_2_protein_domains_desc <- list(
     col2type=c(
-        `_mrna_assignment_id`="INTEGER",
+        `_TR2mrna_id`="INTEGER",
         `_protein_domains_id`="INTEGER"
     ),
     col2key=c(
-        `_mrna_assignment_id`="NOT NULL REFERENCES mrna_assignment(_mrna_assignment_id)",
+        `_TR2mrna_id`="NOT NULL REFERENCES TR2mrna(_TR2mrna_id)",
         `_protein_domains_id`="NOT NULL REFERENCES protein_domains(_protein_domains_id)"
     )
 )
@@ -506,14 +459,80 @@ protein_families_desc <- list(
     )
 )
 
-### Global schema (15 tables).
+### The "probeset" table.
+probeset_desc <- list(
+    col2type=c(
+        probeset_ID="INTEGER",              # PRIMARY KEY
+        seqname="TEXT",
+        strand="CHAR(1)",
+        start="INTEGER",
+        stop="INTEGER",
+        probe_count="INTEGER",
+        transcript_cluster_ID="INTEGER",    # REFERENCES transcript_cluster(transcript_cluster_ID)
+        exon_id="INTEGER",
+        psr_id="INTEGER",
+        crosshyb_type="INTEGER",
+        number_independent_probes="INTEGER",
+        number_cross_hyb_probes="INTEGER",
+        number_nonoverlapping_probes="INTEGER",
+        level="TEXT",
+        bounded="INTEGER",
+        noBoundedEvidence="INTEGER",
+        has_cds="INTEGER",
+        fl="INTEGER",
+        mrna="INTEGER",
+        est="INTEGER",
+        vegaGene="INTEGER",
+        vegaPseudoGene="INTEGER",
+        ensGene="INTEGER",
+        sgpGene="INTEGER",
+        exoniphy="INTEGER",
+        twinscan="INTEGER",
+        geneid="INTEGER",
+        genscan="INTEGER",
+        genscanSubopt="INTEGER",
+        mouse_fl="INTEGER",
+        mouse_mrna="INTEGER",
+        rat_fl="INTEGER",
+        rat_mrna="INTEGER",
+        microRNAregistry="INTEGER",
+        rnaGene="INTEGER",
+        mitomap="INTEGER",
+        probeset_type="TEXT"
+    ),
+    col2key=c(
+        probeset_ID="PRIMARY KEY",
+        transcript_cluster_ID="REFERENCES transcript_cluster(transcript_cluster_ID)"
+    )
+)
+
+### The "PBS2mrna" table.
+### TODO: Add a UNIQUE constraint on (probeset_ID, _mrna_id).
+PBS2mrna_desc <- list(
+    col2type=c(
+        #`_PBS2mrna_id`="INTEGER",
+        assignment_seqname="TEXT",
+        assignment_score="INTEGER",
+        direct_probes="INTEGER",
+        possible_probes="INTEGER",
+        xhyb="INTEGER",
+        probeset_ID="INTEGER",          # REFERENCES probeset(probeset_ID)
+        `_mrna_id`="INTEGER"            # REFERENCES mrna(_mrna_id)
+    ),
+    col2key=c(
+        #`_PBS2mrna_id`="PRIMARY KEY",
+        probeset_ID="NOT NULL REFERENCES probeset(probeset_ID)",
+        `_mrna_id`="NOT NULL REFERENCES mrna(_mrna_id)"
+    )
+)
+
+### Global schema (16 tables).
 AFFYHUEX_DB_schema <- list(
     transcript_cluster=transcript_cluster_desc,
-    probeset=probeset_desc,
     gene=gene_desc,
     mrna=mrna_desc,
-    mrna_assignment=mrna_assignment_desc,
-    mrna_assignment_details=mrna_assignment_details_desc,
+    TR2mrna=TR2mrna_desc,
+    TR2mrna_details=TR2mrna_details_desc,
     swissprot=swissprot_desc,
     unigene=unigene_desc,
     GO_biological_process=GO_biological_process_desc,
@@ -521,8 +540,10 @@ AFFYHUEX_DB_schema <- list(
     GO_molecular_function=GO_biological_process_desc,
     pathway=pathway_desc,
     protein_domains=protein_domains_desc,
-    mrna_assignment_2_protein_domains=mrna_assignment_2_protein_domains_desc,
-    protein_families=protein_families_desc
+    TR2mrna_2_protein_domains=TR2mrna_2_protein_domains_desc,
+    protein_families=protein_families_desc,
+    probeset=probeset_desc,
+    PBS2mrna=PBS2mrna_desc
 )
 
 
@@ -545,16 +566,23 @@ dbCreateTables.AFFYHUEX_DB <- function(conn)
 
 .CSVIMPORT.VARS <- new.env(hash=TRUE, parent=emptyenv())
 
-.CSVimport.var <- function(objname, objval)
+.CSVimport.var <- function(objname, objval, defval)
 {
-    if (is.null(objval))
+    if (!is.null(objval))
+        return(assign(objname, objval, envir=.CSVIMPORT.VARS))
+    if (exists(objname, envir=.CSVIMPORT.VARS))
         return(get(objname, envir=.CSVIMPORT.VARS))
-    assign(objname, objval, envir=.CSVIMPORT.VARS)
+    defval
 }
 
 .CSVimport.verbose <- function(verbose=NULL)
 {
-    .CSVimport.var("verbose", verbose)
+    .CSVimport.var("verbose", verbose, defval=FALSE)
+}
+
+.CSVimport.chr1.only <- function(chr1.only=NULL)
+{
+    .CSVimport.var("chr1.only", chr1.only, defval=FALSE)
 }
 
 .CSVimport.infile <- function(file=NULL)
@@ -687,7 +715,7 @@ splitMatrix <- function(mat, acc2id)
         stop("first 'mat' col name must be \"accession\"")
     accessions <- mat[ , 1]
     if (!all(accessions %in% names(acc2id)))
-        stop("'mat' contains invalid accessions")
+        data_error("'mat' contains invalid accessions")
     uids <- unique(acc2id)
     id2submat <- list()
     length(id2submat) <- length(uids)
@@ -833,16 +861,16 @@ dbInsertRows.mrna <- function(conn, accessions, gene_acc2id)
     list(acc2id=acc2id, new_ids=new_ids)
 }
 
-dbInsertRows.mrna_assignment <- function(conn, transcript_cluster_ID, mrna_acc2id)
+dbInsertRows.TR2mrna <- function(conn, transcript_cluster_ID, mrna_acc2id)
 {
     acc2id <- mrna_acc2id
     acc2id[] <- ""
-    col2type <- mrna_assignment_desc$col2type
+    col2type <- TR2mrna_desc$col2type
     for (i in seq_len(length(mrna_acc2id))) {
-        id <- .db.next.id("mrna_assignment")
+        id <- .db.next.id("TR2mrna")
         row1 <- c(id, transcript_cluster_ID, mrna_acc2id[i])
         names(row1) <- names(col2type)
-        res <- try(dbInsertRow(conn, "mrna_assignment", row1, col2type), silent=TRUE)
+        res <- try(dbInsertRow(conn, "TR2mrna", row1, col2type), silent=TRUE)
         if (is(res, "try-error"))
             stop("In ", csv_current_pos(), ":\n", res, "\n")
         acc2id[i] <- id
@@ -850,16 +878,16 @@ dbInsertRows.mrna_assignment <- function(conn, transcript_cluster_ID, mrna_acc2i
     acc2id
 }
 
-dbInsertRows.mrna_assignment_details <- function(conn, mrna_assignment, mrna_assignment_acc2id)
+dbInsertRows.TR2mrna_details <- function(conn, mrna_assignment, TR2mrna_acc2id)
 {
-    col2type <- mrna_assignment_details_desc$col2type
+    col2type <- TR2mrna_details_desc$col2type
     for (i in seq_len(nrow(mrna_assignment))) {
         accession <- mrna_assignment[i, "accession"]
-        mrna_assignment.id <- mrna_assignment_acc2id[accession]
+        TR2mrna.id <- TR2mrna_acc2id[accession]
         row1 <- mrna_assignment[i, names(col2type)[1:8]]
-        row1 <- c(row1, mrna_assignment.id)
+        row1 <- c(row1, TR2mrna.id)
         names(row1) <- names(col2type)
-        res <- try(dbInsertRow(conn, "mrna_assignment_details", row1, col2type), silent=TRUE)
+        res <- try(dbInsertRow(conn, "TR2mrna_details", row1, col2type), silent=TRUE)
         if (is(res, "try-error"))
             stop("In ", csv_current_pos(), ":\n", res, "\n")
     }
@@ -941,8 +969,8 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
         data_error(msg)
     }
     mrna_insres <- dbInsertRows.mrna(conn, accessions, gene_insres$acc2id)
-    mrna_assignment_acc2id <- dbInsertRows.mrna_assignment(conn, transcript_cluster_ID, mrna_insres$acc2id)
-    dbInsertRows.mrna_assignment_details(conn, mrna_assignment, mrna_assignment_acc2id)
+    TR2mrna_acc2id <- dbInsertRows.TR2mrna(conn, transcript_cluster_ID, mrna_insres$acc2id)
+    dbInsertRows.TR2mrna_details(conn, mrna_assignment, TR2mrna_acc2id)
 
     ## Extract and insert the "swissprot" data
 
@@ -1025,6 +1053,8 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1)
         dataline_nb <- dataline_nb + 1
         .CSVimport.dataline_nb(dataline_nb)
         dataline <- unlist(data[1, ])
+        if (.CSVimport.chr1.only() && dataline["seqname"] != "chr1")
+            break
         dbImportLine.AFFYHUEX_DB.Transcript(conn, dataline)
     }
 }
@@ -1035,6 +1065,31 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, nrows=-1)
 ### E. Importation of the Probe Set CSV file (475M, aka the "big" file).
 ### -------------------------------------------------------------------------
 
+
+dbInsertRows.PBS2mrna <- function(conn, mrna_assignment, probeset_ID)
+{
+    col2type <- PBS2mrna_desc$col2type
+    for (i in seq_len(nrow(mrna_assignment))) {
+        accession <- mrna_assignment[i, "accession"]
+        row1 <- c(NA, accession, NA)
+        names(row1) <- names(mrna_desc$col2type)
+        row0 <- try(dbGetThisRow(conn, "mrna", "accession", row1, col2type), silent=TRUE)
+        if (is(row0, "try-error"))
+            stop("In ", csv_current_pos(), ":\n", row0, "\n")
+        if (is.null(row0)) {
+            msg <- paste("table \"", tablename, "\" has no record ",
+                         "with accession ", accession, sep="")
+            data_error(msg)
+        }
+        mrna.id <- row0["_mrna_id"]
+        row1 <- mrna_assignment[i, names(col2type)[1:5]]
+        row1 <- c(row1, probeset_ID, mrna.id)
+        names(row1) <- names(col2type)
+        res <- try(dbInsertRow(conn, "PBS2mrna", row1, col2type), silent=TRUE)
+        if (is(res, "try-error"))
+            stop("In ", csv_current_pos(), ":\n", res, "\n")
+    }
+}
 
 dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 {
@@ -1048,6 +1103,19 @@ dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 
     probeset_row <- dataline[names(probeset_desc$col2type)]
     dbInsertRow(conn, "probeset", probeset_row, probeset_desc$col2type)
+
+    ## Extract and insert the "mrna_assignment" data
+
+    field <- "mrna_assignment"
+    .CSVimport.field(field)
+    mrna_assignment <- multipartToMatrix(dataline[field], PBSsubfields.mrna_assignment)
+    accessions <- mrna_assignment[ , "accession"]
+    if (any(duplicated(accessions))) {
+        msg <- paste(accessions, collapse=",")
+        msg <- paste("duplicated accessions in ", msg, sep="")
+        data_warning(msg)
+    }
+    dbInsertRows.PBS2mrna(conn, mrna_assignment, probeset_ID)
 }
 
 ### File "HuEx-1_0-st-v2.na21.hg18.probeset.csv" has 1425647 lines
@@ -1078,6 +1146,8 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1)
         dataline_nb <- dataline_nb + 1
         .CSVimport.dataline_nb(dataline_nb)
         dataline <- unlist(data[1, ])
+        if (.CSVimport.chr1.only() && dataline["seqname"] != "chr1")
+            break
         dbImportLine.AFFYHUEX_DB.ProbeSet(conn, dataline)
     }
 }
@@ -1092,14 +1162,18 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1)
 ### Typical use:
 ###   > transcript_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
 ###   > probeset_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.probeset.csv"
-###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, probeset_file, "test.sqlite", 20, 40, TRUE)
+###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, probeset_file,
+###                                  "test.sqlite", chr1.only=TRUE, verbose=TRUE)
 ### To skip importation of the "Probe Set" file:
-###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, "", "test.sqlite", 20, verbose=TRUE)
+###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, "", "test.sqlite", , 20, verbose=TRUE)
 ###
 dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file,
-                                         transcript_nrows=-1, probeset_nrows=-1, verbose=FALSE)
+                                         chr1.only=FALSE,
+                                         transcript_nrows=-1, probeset_nrows=-1,
+                                         verbose=FALSE)
 {
     .CSVimport.verbose(verbose)
+    .CSVimport.chr1.only(chr1.only)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     on.exit(dbDisconnect(conn))
     dbCreateTables.AFFYHUEX_DB(conn)
