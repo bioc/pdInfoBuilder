@@ -1187,6 +1187,7 @@ split_CSV_files <- function(tr_file, pbs_file)
         cat("Saving ", file, "\n", sep="")
         save(pbs_data, file=file)
     }
+    cat("DONE.\n")
 }
 
 ### Typical use:
