@@ -1,8 +1,8 @@
 #############################################################################
 #############################################################################
 ###
-### Functions for importing the CSV files containing annotations for the
-### Affymetrix Human Exon Array probe sets and transcript clusters.
+### Functions for importing Human Exon Array CSV annotation files into a
+### database.
 ###
 ### Affymetrix provides 2 files:
 ###   1. The Probe Set CSV file (HuEx-1_0-st-v2.na21.hg18.probeset.csv)
