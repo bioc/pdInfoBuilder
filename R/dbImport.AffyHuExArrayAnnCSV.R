@@ -1028,6 +1028,7 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
 ### File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
 ### and 17 fields. To load the entire file at once:
+###   > csv_file <- "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
 ###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
 ### It takes about 1 min on gopher6.
 ###
@@ -1120,6 +1121,7 @@ dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 
 ### File "HuEx-1_0-st-v2.na21.hg18.probeset.csv" has 1425647 lines
 ### and 39 fields. Trying to load the entire file at once with:
+###   > csv_file <- "HuEx-1_0-st-v2.na21.hg18.probeset.csv"
 ###   > data <- read.table(csv_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
 ### takes 20 minutes on gladstone! (32G of RAM)
 ###
@@ -1158,28 +1160,58 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, nrows=-1)
 ### F. Importation of the 2 CSV files (Transcript + Probe Set).
 ### -------------------------------------------------------------------------
 
+split_CSV_files <- function(tr_file, pbs_file)
+{
+    cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
+    tr_table <- read.table(tr_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    cat("OK (", nrow(tr_table), " lines loaded)\n", sep="")
+
+    cat("Loading the Probe Set table from \"", pbs_file, "\"...", sep="")
+    pbs_table <- read.table(pbs_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    cat("OK (", nrow(pbs_file), " lines loaded)\n", sep="")
+
+    cat("Checking that all transcript cluster ID in the Probe Set table\n")
+    cat("belong to the Transcript table... ")
+    if (!all(pbs_table$transcript_cluster_id %in% tr_table$transcript_cluster_id))
+        stop("FAILED")
+    cat("OK\n")
+
+    seqnames <- unique(tr_table$seqname)
+    for (seqname in seqnames) {
+        tr_data <- tr_table[tr_table$seqname == seqname, ]
+        file <- paste("tr_", seqname, ".rda")
+        cat("Saving ", file, "\n", seq="")
+        save(tr_data, file=file)
+        pbs_data <- pbs_table[pbs_table$transcript_cluster_id %in% tr_data%transcript_cluster_id, ]
+        file <- paste("pbs_", seqname, ".rda")
+        cat("Saving ", file, "\n", seq="")
+        save(pbs_data, file=file)
+    }
+}
 
 ### Typical use:
-###   > transcript_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-###   > probeset_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.probeset.csv"
-###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, probeset_file,
-###                                  "test.sqlite", chr1.only=TRUE, verbose=TRUE)
+###   > tr_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.transcript.csv"
+###   > pbs_file <- "srcdata/HuEx-1_0-st-v2.na21.hg18.probeset.csv"
+###   > dbImport.AffyHuExArrayAnnCSV(tr_file, pbs_file, "test.sqlite",
+###                                  chr1.only=TRUE, verbose=TRUE)
 ### To skip importation of the "Probe Set" file:
-###   > dbImport.AffyHuExArrayAnnCSV(transcript_file, "", "test.sqlite", , 20, verbose=TRUE)
+###   > dbImport.AffyHuExArrayAnnCSV(tr_file, "", "test.sqlite", , 20, verbose=TRUE)
 ###
-dbImport.AffyHuExArrayAnnCSV <- function(transcript_file, probeset_file, db_file,
+dbImport.AffyHuExArrayAnnCSV <- function(tr_file, pbs_file, db_file,
                                          chr1.only=FALSE,
                                          transcript_nrows=-1, probeset_nrows=-1,
                                          verbose=FALSE)
 {
     .CSVimport.verbose(verbose)
     .CSVimport.chr1.only(chr1.only)
+    is_new_db <- !file.exists(db_file)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     on.exit(dbDisconnect(conn))
-    dbCreateTables.AFFYHUEX_DB(conn)
-    dbImportData.AFFYHUEX_DB.Transcript(conn, transcript_file, transcript_nrows)
-    if (is.null(probeset_file) || is.na(probeset_file) || probeset_file == "")
+    if (is_new_db)
+        dbCreateTables.AFFYHUEX_DB(conn)
+    dbImportData.AFFYHUEX_DB.Transcript(conn, tr_file, transcript_nrows)
+    if (is.null(pbs_file) || is.na(pbs_file) || pbs_file == "")
         return()
-    dbImportData.AFFYHUEX_DB.ProbeSet(conn, probeset_file, probeset_nrows)
+    dbImportData.AFFYHUEX_DB.ProbeSet(conn, pbs_file, probeset_nrows)
 }
 
