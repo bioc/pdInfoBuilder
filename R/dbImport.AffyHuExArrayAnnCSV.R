@@ -1023,6 +1023,12 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
 dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-1)
 {
+    getHeader <- function(data)
+    {
+        header <- names(data)
+        header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
+        header
+    }
     if (!is.null(csv_file)) {
         .CSVimport.infile(csv_file)
         csv_con <- file(csv_file, open="r")
@@ -1032,9 +1038,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
             if (dataline_nb == 0) {
                 data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                    nrows=1, stringsAsFactors=FALSE)
-                header <- names(data)
-                header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
-                names(data) <- header
+                names(data) <- header <- getHeader(data)
             } else {
                 data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                    col.names=header, nrows=1, stringsAsFactors=FALSE)
@@ -1052,6 +1056,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
         tmp_envir <- new.env(parent=emptyenv())
         load(infile, envir=tmp_envir)
         data <- get("tr_data", envir=tmp_envir)
+        names(data) <- getHeader(data)
         for (dataline_nb in seq_len(nrow(data))) {
             .CSVimport.dataline_nb(dataline_nb)
             dataline <- unlist(data[dataline_nb, ])
@@ -1121,6 +1126,13 @@ dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 
 dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 {
+    getHeader <- function(data)
+    {
+        header <- names(data)
+        header[header == "probeset_id"] <- "probeset_ID"
+        header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
+        header
+    }
     if (!is.null(csv_file)) {
         .CSVimport.infile(csv_file)
         csv_con <- file(csv_file, open="r")
@@ -1130,10 +1142,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
             if (dataline_nb == 0) {
                 data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                    nrows=1, stringsAsFactors=FALSE)
-                header <- names(data)
-                header[header == "probeset_id"] <- "probeset_ID"
-                header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
-                names(data) <- header
+                names(data) <- header <- getHeader(data)
             } else {
                 data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                    col.names=header, nrows=1, stringsAsFactors=FALSE)
@@ -1151,6 +1160,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
         tmp_envir <- new.env(parent=emptyenv())
         load(infile, envir=tmp_envir)
         data <- get("pbs_data", envir=tmp_envir)
+        names(data) <- getHeader(data)
         for (dataline_nb in seq_len(nrow(data))) {
             .CSVimport.dataline_nb(dataline_nb)
             dataline <- unlist(data[dataline_nb, ])
