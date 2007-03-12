@@ -1047,12 +1047,11 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
             dbImportLine.AFFYHUEX_DB.Transcript(conn, dataline)
         }
     } else {
-        objname <- paste("tr_", seqname, sep="")
-        infile <- paste(objname, ".rda", sep="")
+        infile <- paste("tr_", seqname, ".rda", sep="")
         .CSVimport.infile(infile)
         tmp_envir <- new.env(parent=emptyenv())
         load(infile, envir=tmp_envir)
-        data <- get(objname, envir=tmp_envir)
+        data <- get("tr_data", envir=tmp_envir)
         for (dataline_nb in seq_len(nrow(data))) {
             .CSVimport.dataline_nb(dataline_nb)
             dataline <- unlist(data[dataline_nb, ])
@@ -1147,12 +1146,11 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
             dbImportLine.AFFYHUEX_DB.ProbeSet(conn, dataline)
         }
     } else {
-        objname <- paste("pbs_", seqname, sep="")
-        infile <- paste(objname, ".rda", sep="")
+        infile <- paste("pbs_", seqname, ".rda", sep="")
         .CSVimport.infile(infile)
         tmp_envir <- new.env(parent=emptyenv())
         load(infile, envir=tmp_envir)
-        data <- get(objname, envir=tmp_envir)
+        data <- get("pbs_data", envir=tmp_envir)
         for (dataline_nb in seq_len(nrow(data))) {
             .CSVimport.dataline_nb(dataline_nb)
             dataline <- unlist(data[dataline_nb, ])
