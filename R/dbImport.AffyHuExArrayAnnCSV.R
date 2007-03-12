@@ -1179,12 +1179,12 @@ split_CSV_files <- function(tr_file, pbs_file)
     seqnames <- unique(tr_table$seqname)
     for (seqname in seqnames) {
         tr_data <- tr_table[tr_table$seqname == seqname, ]
-        file <- paste("tr_", seqname, ".rda")
-        cat("Saving ", file, "\n", seq="")
+        file <- paste("tr_", seqname, ".rda", sep="")
+        cat("Saving ", file, "\n", sep="")
         save(tr_data, file=file)
         pbs_data <- pbs_table[pbs_table$transcript_cluster_id %in% tr_data%transcript_cluster_id, ]
-        file <- paste("pbs_", seqname, ".rda")
-        cat("Saving ", file, "\n", seq="")
+        file <- paste("pbs_", seqname, ".rda", sep="")
+        cat("Saving ", file, "\n", sep="")
         save(pbs_data, file=file)
     }
 }
