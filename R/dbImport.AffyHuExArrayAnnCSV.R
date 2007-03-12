@@ -1066,6 +1066,23 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
 ### -------------------------------------------------------------------------
 
 
+### Affymetrix README file (HuEx-1_0-st-v2.na21.hg18.AFFX_README.NetAffx-CSV-Files.txt)
+### contains this statement:
+###   Only limited details are provided for each assigned mRNA. For more
+###   information about these mRNAs, see the corresponding entry in the
+###   transcript cluster CSV file (use the probe set's transcript cluster
+###   ID to join).
+### This strongly suggests that we can make this assumption:
+###   mRNAs linked to a given probeset_ID are also linked to the
+###   corresponding transcript_cluster_ID
+### Unfortunately, we can't!
+### For example, in HuEx-1_0-st-v2.na21.hg18.probeset.csv,
+### probeset_ID="3935513" is linked to mRNAs "GENSCAN00000012720" and
+### "GENSCAN00000040267". But in HuEx-1_0-st-v2.na21.hg18.transcript.csv,
+### transcript_cluster_ID="3935512" (the transcript cluster corresponding
+### to probeset_ID="3935513") is linked to mRNA "GENSCAN00000012720" only.
+### Even worse: HuEx-1_0-st-v2.na21.hg18.transcript.csv contains no
+### information about mRNA "GENSCAN00000040267"!
 dbInsertRows.PBS2mrna <- function(conn, mrna_assignment, probeset_ID)
 {
     col2type <- PBS2mrna_desc$col2type
@@ -1077,11 +1094,17 @@ dbInsertRows.PBS2mrna <- function(conn, mrna_assignment, probeset_ID)
         if (is(row0, "try-error"))
             stop("In ", csv_current_pos(), ":\n", row0, "\n")
         if (is.null(row0)) {
-            msg <- paste("table \"", tablename, "\" has no record ",
+            msg <- paste("table \"mrna\" has no record ",
                          "with accession ", accession, sep="")
-            data_error(msg)
+            data_warning(msg)
+            mrna.id <- .db.next.id("mrna")
+            row1["_mrna_id"] <- mrna.id
+            res <- try(dbInsertRow(conn, "mrna", row1, mrna_desc$col2type), silent=TRUE)
+            if (is(res, "try-error"))
+                stop("In ", csv_current_pos(), ":\n", res, "\n")
+        } else {
+            mrna.id <- row0["_mrna_id"]
         }
-        mrna.id <- row0["_mrna_id"]
         row1 <- mrna_assignment[i, names(col2type)[1:5]]
         row1 <- c(row1, probeset_ID, mrna.id)
         names(row1) <- names(col2type)
