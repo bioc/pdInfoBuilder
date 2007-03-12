@@ -556,6 +556,16 @@ dbCreateTables.AFFYHUEX_DB <- function(conn)
     }
 }
 
+### TODO: Implement this!
+dbInitTableIds.AFFYHUEX_DB <- function(conn)
+{
+    stop("not ready")
+    for (tablename in names(AFFYHUEX_DB_schema)) {
+        #id0 :== "SELECT max(id) FROM tablename" + 1
+        .db.set.id(tablename, id0)
+    }
+}
+
 ### Utilities for reporting errors/warnings in the CSV data
 
 .CSVIMPORT.VARS <- new.env(hash=TRUE, parent=emptyenv())
@@ -632,6 +642,14 @@ data_warning <- function(msg)
                  "*** </DATAWARNING>\n", sep="")
     cat("\n", msg, "\n", sep="")
     warning(msg)
+}
+
+getAffyHuExArrayAnnCSVHeader <- function(data)
+{
+    header <- names(data)
+    header[header == "probeset_id"] <- "probeset_ID"
+    header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
+    header
 }
 
 multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
@@ -1017,12 +1035,6 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
 dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-1)
 {
-    getHeader <- function(data)
-    {
-        header <- names(data)
-        header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
-        header
-    }
     if (!is.null(csv_file)) {
         .CSVimport.infile(csv_file)
         csv_con <- file(csv_file, open="r")
@@ -1032,7 +1044,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
             if (dataline_nb == 0) {
                 data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                    nrows=1, stringsAsFactors=FALSE)
-                names(data) <- header <- getHeader(data)
+                names(data) <- header <- getAffyHuExArrayAnnCSVHeader(data)
             } else {
                 data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                    col.names=header, nrows=1, stringsAsFactors=FALSE)
@@ -1049,8 +1061,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
         .CSVimport.infile(infile)
         tmp_envir <- new.env(parent=emptyenv())
         load(infile, envir=tmp_envir)
-        data <- get("tr_data", envir=tmp_envir)
-        names(data) <- getHeader(data)
+        data <- get("tr_table", envir=tmp_envir)
         for (dataline_nb in seq_len(nrow(data))) {
             .CSVimport.dataline_nb(dataline_nb)
             dataline <- unlist(data[dataline_nb, ])
@@ -1143,13 +1154,6 @@ dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 
 dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 {
-    getHeader <- function(data)
-    {
-        header <- names(data)
-        header[header == "probeset_id"] <- "probeset_ID"
-        header[header == "transcript_cluster_id"] <- "transcript_cluster_ID"
-        header
-    }
     if (!is.null(csv_file)) {
         .CSVimport.infile(csv_file)
         csv_con <- file(csv_file, open="r")
@@ -1159,7 +1163,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
             if (dataline_nb == 0) {
                 data <- read.table(csv_con, header=TRUE, sep=",", quote="\"",
                                    nrows=1, stringsAsFactors=FALSE)
-                names(data) <- header <- getHeader(data)
+                names(data) <- header <- getAffyHuExArrayAnnCSVHeader(data)
             } else {
                 data <- read.table(csv_con, header=FALSE, sep=",", quote="\"",
                                    col.names=header, nrows=1, stringsAsFactors=FALSE)
@@ -1176,8 +1180,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
         .CSVimport.infile(infile)
         tmp_envir <- new.env(parent=emptyenv())
         load(infile, envir=tmp_envir)
-        data <- get("pbs_data", envir=tmp_envir)
-        names(data) <- getHeader(data)
+        data <- get("pbs_table", envir=tmp_envir)
         for (dataline_nb in seq_len(nrow(data))) {
             .CSVimport.dataline_nb(dataline_nb)
             dataline <- unlist(data[dataline_nb, ])
@@ -1196,49 +1199,51 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 ### Typical use:
 ###   > tr_file <- "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
 ###   > pbs_file <- "HuEx-1_0-st-v2.na21.hg18.probeset.csv"
-###   > split_CSV_files(tr_file, pbs_file)
+###   > splitCSVFiles(tr_file, pbs_file)
 ### Should produce 2 warnings:
 ###   1: In Probe Set table: lines linked to "tr_chr6.rda" don't match
 ###      lines with seqname="chr6"
 ###   2: In Probe Set table: lines linked to "tr_chr6_cox_hap1.rda" don't match
 ###      lines with seqname="chr6_cox_hap1"
-split_CSV_files <- function(tr_file, pbs_file)
+splitCSVFiles <- function(tr_file, pbs_file)
 {
     ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
     ## and 17 fields. It takes about 1 min to load on gopher6.
     cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
-    tr_table <- read.table(tr_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
-    cat("OK (", nrow(tr_table), " lines loaded)\n", sep="")
+    tr_table0 <- read.table(tr_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    cat("OK (", nrow(tr_table0), " lines loaded)\n", sep="")
+    names(tr_table0) <- getAffyHuExArrayAnnCSVHeader(tr_table0)
 
     ## File "HuEx-1_0-st-v2.na21.hg18.probeset.csv" has 1425647 lines
     ## and 39 fields. It takes about 10 minutes to load on gladstone! (32G of RAM)
     cat("Loading the Probe Set table from \"", pbs_file, "\"...", sep="")
-    pbs_table <- read.table(pbs_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
-    cat("OK (", nrow(pbs_table), " lines loaded)\n", sep="")
+    pbs_table0 <- read.table(pbs_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    cat("OK (", nrow(pbs_table0), " lines loaded)\n", sep="")
+    names(pbs_table0) <- getAffyHuExArrayAnnCSVHeader(pbs_table0)
 
     ## This test fails because some lines in the Probe Set table have
     ## transcript_cluster_ID="0"!
-    #cat("Checking that all transcript cluster ID in the Probe Set table\n")
+    #cat("Checking that all transcript cluster IDs in the Probe Set table\n")
     #cat("belong to the Transcript table... ")
-    #if (!all(pbs_table$transcript_cluster_id %in% tr_table$transcript_cluster_id))
+    #if (!all(pbs_table0$transcript_cluster_ID %in% tr_table0$transcript_cluster_ID))
     #    stop("FAILED")
     #cat("OK\n")
 
-    seqnames <- unique(tr_table$seqname)
+    seqnames <- unique(tr_table0$seqname)
     for (seqname in seqnames) {
-        tr_data <- tr_table[tr_table$seqname == seqname, ]
+        tr_table <- tr_table0[tr_table0$seqname == seqname, ]
         file <- paste("tr_", seqname, ".rda", sep="")
         cat("Saving ", file, "\n", sep="")
-        save(tr_data, file=file)
-        pbs_linked <- pbs_table$transcript_cluster_id %in% tr_data$transcript_cluster_id
-        pbs_linked2 <- pbs_table$seqname == seqname
+        save(tr_table, file=file)
+        pbs_linked <- pbs_table0$transcript_cluster_ID %in% tr_table$transcript_cluster_ID
+        pbs_linked2 <- pbs_table0$seqname == seqname
         if (!identical(pbs_linked, pbs_linked2))
             warning("In Probe Set table: lines linked to \"", file, "\" ",
                     "don't match lines with seqname=\"", seqname, "\"")
-        pbs_data <- pbs_table[pbs_linked, ]
+        pbs_table <- pbs_table0[pbs_linked, ]
         file <- paste("pbs_", seqname, ".rda", sep="")
         cat("Saving ", file, "\n", sep="")
-        save(pbs_data, file=file)
+        save(pbs_table, file=file)
     }
     cat("DONE.\n")
 }
@@ -1258,6 +1263,8 @@ dbImport.AffyHuExArrayAnnCSV <- function(db_file, tr_file=NULL, pbs_file=NULL, s
     on.exit(dbDisconnect(conn))
     if (is_new_db)
         dbCreateTables.AFFYHUEX_DB(conn)
+    else
+        dbInitTableIds.AFFYHUEX_DB(conn)
     cat("START IMPORTING THE DATA...\n")
     dbImportData.AFFYHUEX_DB.Transcript(conn, tr_file, seqname, tr_nrows)
     if (!is.null(pbs_file) || !is.null(seqname))
