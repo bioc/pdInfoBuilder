@@ -1242,7 +1242,7 @@ dbImport.AffyHuExArrayAnnCSV <- function(db_file, tr_file=NULL, pbs_file=NULL, s
     if (is_new_db)
         dbCreateTables.AFFYHUEX_DB(conn)
     dbImportData.AFFYHUEX_DB.Transcript(conn, tr_file, seqname, tr_nrows)
-    if (is.null(pbs_file))
+    if (is.null(pbs_file) && is.null(seqname))
         return()
     dbImportData.AFFYHUEX_DB.ProbeSet(conn, pbs_file, seqname, pbs_nrows)
 }
