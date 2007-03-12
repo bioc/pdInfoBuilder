@@ -171,8 +171,8 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 ### B. CSV field description and DB schema.
 ###
 ###    3 sub-sections:
-###      B.a. CSV field description for the Transcript CSV file.
-###      B.b. CSV field description for the Probe Set CSV file.
+###      B.a. Transcript CSV file: sub-fields names for each multipart field.
+###      B.b. Probe Set CSV file: sub-fields names for each multipart field.
 ###      B.c. The DB schema.
 ###
 ###    The original field description is provided in
@@ -181,10 +181,7 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### B.a. CSV field description for the Transcript CSV file.
-###
-### The character vectors below list the CSV sub-fields for each multipart
-### field.
+### B.a. Transcript CSV file: sub-fields names for each multipart field.
 ###
 
 TRsubfields.gene_assignment <- c(
@@ -247,10 +244,7 @@ TRsubfields.protein_families <- c(
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### B.b. CSV field description for the Probe Set CSV file.
-###
-### The character vectors below list the CSV sub-fields for each multipart
-### field.
+### B.b. Probe Set CSV file: sub-fields names for each multipart field.
 ###
 
 PBSsubfields.gene_assignment <- c(
@@ -1241,9 +1235,10 @@ dbImport.AffyHuExArrayAnnCSV <- function(db_file, tr_file=NULL, pbs_file=NULL, s
     on.exit(dbDisconnect(conn))
     if (is_new_db)
         dbCreateTables.AFFYHUEX_DB(conn)
+    cat("START IMPORTING THE DATA...\n")
     dbImportData.AFFYHUEX_DB.Transcript(conn, tr_file, seqname, tr_nrows)
-    if (is.null(pbs_file) && is.null(seqname))
-        return()
-    dbImportData.AFFYHUEX_DB.ProbeSet(conn, pbs_file, seqname, pbs_nrows)
+    if (!is.null(pbs_file) || !is.null(seqname))
+        dbImportData.AFFYHUEX_DB.ProbeSet(conn, pbs_file, seqname, pbs_nrows)
+    cat("IMPORTATION COMPLETED.\n")
 }
 
