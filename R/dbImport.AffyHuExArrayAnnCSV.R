@@ -746,12 +746,15 @@ splitMatrix <- function(mat, acc2id)
 
 ### Comparison of the data contained in a character matrix ('mat') and a data
 ### frame ('dat').
-### 'mat' and 'dat' _must_ have exactly the same col names (it's an error if
-### they don't).
+### 'mat' _must_ have col names. If 'dat' is not a 0-row data frame then it
+### _must_  have col names too and they _must_ be exactly the same as 'mat'
+### col names. It's an error if one of those "_must_" is not satisfied.
 haveTheSameData <- function(mat, dat)
 {
     if (is.null(colnames(mat)))
         stop("'mat' has no col names")
+    if (nrow(dat) == 0)
+        return(nrow(mat) == 0)
     if (!identical(colnames(mat), colnames(dat)))
         stop("'mat' and 'dat' have different col names")
     if (nrow(mat) != nrow(dat))
@@ -954,7 +957,7 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     ##   if (any(duplicated(names(gene_insres$acc2id))))
     ##      stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
     ##           "\"gene_assignment\" has more than 1 part with the same accession")
-    ## For now we ignore the duplicated and issue a warning
+    ## For now we ignore the duplicated and issue a warning.
     dup_gene_acc2id <- duplicated(names(gene_insres$acc2id))
     if (any(dup_gene_acc2id)) {
         msg <- paste(names(gene_insres$acc2id), collapse=",")
@@ -1083,7 +1086,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
 ###   information about these mRNAs, see the corresponding entry in the
 ###   transcript cluster CSV file (use the probe set's transcript cluster
 ###   ID to join).
-### This strongly suggests that we can make this assumption:
+### This strongly suggests that we should be able to assume the following:
 ###   mRNAs linked to a given probeset_ID are also linked to the
 ###   corresponding transcript_cluster_ID
 ### Unfortunately, we can't!
