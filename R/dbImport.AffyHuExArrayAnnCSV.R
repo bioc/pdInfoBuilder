@@ -184,6 +184,24 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 ### B.a. Transcript CSV file: sub-fields names for each multipart field.
 ###
 
+### In HuEx-1_0-st-v2.na21.hg18.transcript.csv, the "gene_assignment" multipart
+### field is NA ("---") 89% of the time (for 278540 transcript cluster IDs).
+### The rest of the time (33828 lines), it has between 1 and 254 parts with an
+### average of 3.26 parts (254 parts for transcript cluster ID "3581637").
+### Across all lines, the total number of unique values per sub-field is:
+###   - 62220 for "accession"
+###   - 27033 for "entrez_gene_id"
+### The "accession" sub-field is always unique within the parts of the same
+### field value except for 34 lines. Among those 34 lines, 30 contain only
+### 1 duplicated accession. The 4 lines with more than 1 duplicated are:
+###
+###   transcript_cluster_ID | duplicated accessions in the "gene_assignment" field
+###   ----------------------|-----------------------------------------------------
+###   3078948               | XM_936040 (2), XM_934915 (2), XM_935763 (2)
+###   3287928               | AY704155 (2), AY704147 (2), AY704156 (2), AY704150 (2)
+###   3584443               | NR_001294 (3), NR_001292 (2), NR_001290 (2)
+###   3655450               | AK122733 (2), AK094769 (2), AK097386 (2)
+###
 TRsubfields.gene_assignment <- c(
     "accession",
     "gene_symbol",
@@ -192,6 +210,22 @@ TRsubfields.gene_assignment <- c(
     "entrez_gene_id"
 )
 
+### In HuEx-1_0-st-v2.na21.hg18.transcript.csv, the "mrna_assignment" multipart
+### field is NA ("---") 76% of the time (for 238561 transcript cluster IDs).
+### The rest of the time (73807 lines), it has between 1 and 5096 parts with an
+### average of 4.8 parts (5096 parts for transcript cluster ID "3581637", same
+### as for the max number of parts in "gene_assignment").
+### Across all lines, the total number of unique values in the "accession"
+### sub-field is 237713.
+### The "accession" sub-field is always unique within the parts of the same
+### field value except for 12 lines. In each of those 12 lines, only 1
+### accession is repeated ("NC_001807" in 10 of them + "AK097625" and
+### "GENSCAN00000038476" in the other 2 lines). Among those 12 lines there are
+### only 5 lines where the number of occurences of this repeated accession
+### is >= 3: for transcript cluster IDs "2315301" (4), "2315315" (3),
+### "3531553" (3), "4037638" (3) and "4037708" (6). In those 5 lines, the
+### repeated accession is always "NC_001807".
+###
 TRsubfields.mrna_assignment <- c(
     "accession",
     "source_name",
@@ -924,7 +958,10 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     gene_insres <- dbInsertRows.gene(conn, gene_assignment)
 
     ## There should never be more than 1 part with the same accession in the
-    ## "gene_assignment" field. Unfortunately this happens sometimes (very rarely though).
+    ## "gene_assignment" field. Unfortunately this happens sometimes (very
+    ## rarely though, see comment preceding the definition of
+    ## 'TRsubfields.gene_assignment' in sub-section B.a. for more
+    ## details about this.)
     ## For example in HuEx-1_0-st-v2.na21.hg18.transcript.csv, line 16411
     ## (transcript_cluster_ID=2718075), the "gene_assignment" field (multipart)
     ## contains the following parts:
@@ -1198,6 +1235,73 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 ### F. Importation of the 2 CSV files (Transcript + Probe Set).
 ### -------------------------------------------------------------------------
 
+checkTranscriptFile <- function(tr_file)
+{
+    ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
+    ## and 17 fields. It takes about 1 min to load on gopher6.
+    cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
+    tr_table0 <- read.table(tr_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
+    cat("OK (", nrow(tr_table0), " lines loaded)\n", sep="")
+    names(tr_table0) <- getAffyHuExArrayAnnCSVHeader(tr_table0)
+
+    gene_assignment_col <- tr_table0$gene_assignment
+    gene_assignment_col[gene_assignment_col == "---"] <- NA
+    names(gene_assignment_col) <- tr_table0$transcript_cluster_ID
+    gene_assignment_col <- gene_assignment_col[!is.na(gene_assignment_col)]
+    gene_assignment <- lapply(gene_assignment_col,
+                              function(x) multipartToMatrix(x, TRsubfields.gene_assignment))
+
+    ## We need to make sure that a given mRNA accession is _always_ mapped to the
+    ## same genes (generally 1, but sometimes 2 or even 3 (accession "NR_001294")).
+    accessions <- unique(unlist(lapply(gene_assignment, function(x) x[,"accession"])))
+    acc2ids0 <- list()
+    length(acc2ids0) <- length(accessions)
+    names(acc2ids0) <- accessions
+    n <- 0
+    for (ID in names(gene_assignment)) {
+        n <- n + 1
+        cat(n, "/", length(gene_assignment), ": ID=", ID, "\n", sep="")
+        x <- gene_assignment[[ID]]
+        acc2ids <- split(x[ , "entrez_gene_id"], x[ , "accession"])
+        for (accession in names(acc2ids)) {
+            ids <- sort(acc2ids[[accession]])
+            ids0 <- acc2ids0[[accession]]
+            if (is.null(ids0))
+                acc2ids0[[accession]] <- ids
+            else
+                if (!identical(ids, ids0))
+                    stop("ID:", ID, ", accession:", accession, ", mapped to unexpected genes")
+        }
+    }
+
+    mrna_assignment_col <- tr_table0$mrna_assignment
+    mrna_assignment_col[mrna_assignment_col == "---"] <- NA
+    names(mrna_assignment_col) <- tr_table0$transcript_cluster_ID
+    mrna_assignment_col <- mrna_assignment_col[!is.na(mrna_assignment_col)]
+    mrna_assignment <- lapply(mrna_assignment_col,
+                              function(x) multipartToMatrix(x, TRsubfields.mrna_assignment))
+
+    ## Here we check that for any accession found in the "mrna_assignment"
+    ## multipart field, then: if it is mapped to at least 1 gene then it must
+    ## appear in the "gene_assignment" multipart field too.
+    n <- 0
+    for (ID in names(mrna_assignment)) {
+        n <- n + 1
+        cat(n, "/", length(mrna_assignment), ": ID=", ID, "\n", sep="")
+        accessions <- unique(mrna_assignment[[ID]][ , "accession"])
+        for (accession in accessions) {
+            x <- gene_assignment[ID][[1]]
+            if (is.null(x))
+                is_in_gene_assignment <- FALSE
+            else
+                is_in_gene_assignment <- accession %in% x[ , "accession"]
+            if (is_in_gene_assignment != accession %in% names(acc2ids0))
+                stop("ID:", ID, ", accession:", accession, ", we are in troubles :-(")
+        }
+    }
+
+    cat("Everything looks fine. Bye!\n")
+}
 
 ### Typical use:
 ###   > tr_file <- "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
