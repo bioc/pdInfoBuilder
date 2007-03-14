@@ -8,13 +8,14 @@
 ###   1. The Probe Set CSV file (HuEx-1_0-st-v2.na21.hg18.probeset.csv)
 ###   2. The Transcript CSV file (HuEx-1_0-st-v2.na21.hg18.transcript.csv)
 ###
-### This file is divided in 6 sections:
-###   A. General purpose low-level SQL helper functions.
-###   B. CSV field description and DB schema.
-###   C. Objects and functions shared by D. and E.
-###   D. Importation of the Transcript CSV file (167M, aka the "small" file).
-###   E. Importation of the Probe Set CSV file (475M, aka the "big" file).
-###   F. Importation of the 2 CSV files (Transcript + Probe Set).
+### This file is divided in 7 sections:
+###   A. Dictionary manipulation.
+###   B. General purpose low-level SQL helper functions.
+###   C. CSV field description and DB schema.
+###   D. Objects and functions shared by E. and F.
+###   E. Importation of the Transcript CSV file (167M, aka the "small" file).
+###   F. Importation of the Probe Set CSV file (475M, aka the "big" file).
+###   G. Importation of the 2 CSV files (Transcript + Probe Set).
 ### 
 ### WARNING: This is a WORK IN PROGRESS!!! (if pdInfoBuilder had a NAMESPACE,
 ### nothing should be exported from this file for now)
@@ -24,7 +25,65 @@
 
 
 ### =========================================================================
-### A. General purpose low-level SQL helper functions (should probably go
+### A. Dictionary manipulation (should probably go somewhere else).
+### -------------------------------------------------------------------------
+
+### Create a new dictionary.
+new.dict <- function(keys)
+{
+    dict <- new.env(hash=TRUE, parent=emptyenv())
+    for (key in keys)
+        assign(key, NULL, envir=dict)
+    dict
+}
+
+dict.keys <- function(dict)
+{
+    ls(dict, all.names=TRUE)
+}
+
+dict.rm <- function(dict, keys)
+{
+    remove(list=keys, envir=dict)
+}
+
+dict.lengths <- function(dict)
+{
+    ## Slow
+    #sapply(dict.keys(dict), function(key) length(dict[[key]]))
+    ## 2x faster
+    lengths <- unlist(eapply(dict, length, all.names=TRUE))
+    lengths[dict.keys(dict)]
+}
+
+## Return a named character vector.
+dict.flatten <- function(dict, length1vals.only=FALSE)
+{
+    ans <- character(0)
+    for (key in dict.keys(dict)) {
+        val <- dict[[key]]
+        if (is.null(val) || (length1vals.only && length(val) != 1))
+            next
+        if (!is.character(val))
+            val <- as.character(val)
+        names(val) <- rep(key, length.out=length(val))
+        ans <- c(ans, val)
+    }
+    ans
+}
+
+dict.toString <- function(dict)
+{
+    ans <- sapply(dict.keys(dict),
+                  function(key)
+                      paste(key, ":", paste(dict[[key]], collapse=","), sep=""))
+    paste("[", paste(ans, collapse="|"), "]", sep="")
+}
+
+
+
+### =========================================================================
+### B. General purpose low-level SQL helper functions (should probably go
 ###    somewhere else).
 ### -------------------------------------------------------------------------
 
@@ -168,12 +227,12 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 
 
 ### =========================================================================
-### B. CSV field description and DB schema.
+### C. CSV field description and DB schema.
 ###
 ###    3 sub-sections:
-###      B.a. Transcript CSV file: sub-fields names for each multipart field.
-###      B.b. Probe Set CSV file: sub-fields names for each multipart field.
-###      B.c. The DB schema.
+###      C.a. Transcript CSV file: sub-fields names for each multipart field.
+###      C.b. Probe Set CSV file: sub-fields names for each multipart field.
+###      C.c. The DB schema.
 ###
 ###    The original field description is provided in
 ###      HuEx-1_0-st-v2.na21.hg18.AFFX_README.NetAffx-CSV-Files.txt
@@ -181,7 +240,7 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### B.a. Transcript CSV file: sub-fields names for each multipart field.
+### C.a. Transcript CSV file: sub-fields names for each multipart field.
 ###
 
 ### In HuEx-1_0-st-v2.na21.hg18.transcript.csv, the "gene_assignment" multipart
@@ -278,7 +337,7 @@ TRsubfields.protein_families <- c(
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### B.b. Probe Set CSV file: sub-fields names for each multipart field.
+### C.b. Probe Set CSV file: sub-fields names for each multipart field.
 ###
 
 PBSsubfields.gene_assignment <- c(
@@ -297,7 +356,7 @@ PBSsubfields.mrna_assignment <- c(
 
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### B.c. The DB schema.
+### C.c. The DB schema.
 ###
 ### The DB schema used for importing the annotations for the Affymetrix Human
 ### Exon Array probe sets and transcript clusters is called AFFYHUEX_DB.
@@ -588,7 +647,7 @@ AFFYHUEX_DB_schema <- list(
 
 
 ### =========================================================================
-### C. Objects and functions shared by D. and E. 
+### D. Objects and functions shared by E. and F. 
 ### -------------------------------------------------------------------------
 
 
@@ -763,58 +822,6 @@ replaceGOEvidenceByCode <- function(mat)
     mat
 }
 
-### Create a new dictionary.
-new.dict <- function(keys)
-{
-    dict <- new.env(hash=TRUE, parent=emptyenv())
-    for (key in keys)
-        assign(key, NULL, envir=dict)
-    dict
-}
-
-dict.keys <- function(dict)
-{
-    ls(dict, all.names=TRUE)
-}
-
-dict.rm <- function(dict, keys)
-{
-    remove(list=keys, envir=dict)
-}
-
-dict.lengths <- function(dict)
-{
-    ## Slow
-    #sapply(dict.keys(dict), function(key) length(dict[[key]]))
-    ## 2x faster
-    lengths <- unlist(eapply(dict, length, all.names=TRUE))
-    lengths[dict.keys(dict)]
-}
-
-## Return a named character vector.
-dict.flatten <- function(dict, length1vals.only=FALSE)
-{
-    ans <- character(0)
-    for (key in dict.keys(dict)) {
-        val <- dict[[key]]
-        if (is.null(val) || (length1vals.only && length(val) != 1))
-            next
-        if (!is.character(val))
-            val <- as.character(val)
-        names(val) <- rep(key, length.out=length(val))
-        ans <- c(ans, val)
-    }
-    ans
-}
-
-dict.toString <- function(dict)
-{
-    ans <- sapply(dict.keys(dict),
-                  function(key)
-                      paste(key, ":", paste(dict[[key]], collapse=","), sep=""))
-    paste("[", paste(ans, collapse="|"), "]", sep="")
-}
-
 ### Return a list of matrices.
 ### 'acc2id' must be a named character vector.
 splitMatrix <- function(mat, acc2id)
@@ -943,7 +950,7 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
 
 
 ### =========================================================================
-### D. Importation of the Transcript CSV file (167M, aka the "small" file).
+### E. Importation of the Transcript CSV file (167M, aka the "small" file).
 ### -------------------------------------------------------------------------
 
 
@@ -1201,7 +1208,7 @@ dbImportData.AFFYHUEX_DB.Transcript <- function(conn, csv_file, seqname, nrows=-
 
 
 ### =========================================================================
-### E. Importation of the Probe Set CSV file (475M, aka the "big" file).
+### F. Importation of the Probe Set CSV file (475M, aka the "big" file).
 ### -------------------------------------------------------------------------
 
 
@@ -1320,7 +1327,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 
 
 ### =========================================================================
-### F. Importation of the 2 CSV files (Transcript + Probe Set).
+### G. Importation of the 2 CSV files (Transcript + Probe Set).
 ### -------------------------------------------------------------------------
 
 checkTranscriptFile <- function(tr_file)
