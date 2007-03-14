@@ -1172,7 +1172,7 @@ dbInsertRows.PBS2mrna <- function(conn, mrna_assignment, probeset_ID)
     col2type <- PBS2mrna_desc$col2type
     for (i in seq_len(nrow(mrna_assignment))) {
         accession <- mrna_assignment[i, "accession"]
-        row1 <- c(NA, accession, NA)
+        row1 <- c(NA, accession)
         names(row1) <- names(mrna_desc$col2type)
         row0 <- try(dbGetThisRow(conn, "mrna", "accession", row1, mrna_desc$col2type), silent=TRUE)
         if (is(row0, "try-error"))
