@@ -828,6 +828,8 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
         data_warning(msg)
         mat <- mat[ignored_parts, , drop=FALSE]
     }
+    if (length(acc2ids) == 0)
+        return()
     nb_ids <- sapply(acc2ids, length)
     if (max(nb_ids) > 1) {
         msg <- paste(names(acc2ids)[nb_ids > 1], collapse=",")
