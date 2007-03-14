@@ -837,6 +837,7 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
         mat <- mat[mat[ , 1] %in% names(acc2ids), , drop=FALSE]
     }
     acc2id <- unlist(acc2ids)
+    names(acc2id) <- names(acc2ids)
     id2submat <- splitMatrix(mat, acc2id)
     new_ids <- insres$new_ids
     col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
@@ -928,7 +929,7 @@ dbInsertRows.mrna <- function(conn, accessions)
                 stop("In ", csv_current_pos(), ":\n", res, "\n")
             new_ids <- c(new_ids, id)
         } else {
-            id <- row0["_mrna_id"]
+            id <- row0[["_mrna_id"]] # [[ ]] to get rid of the name
         }
         acc2ids[[accession]] <- id
     }
