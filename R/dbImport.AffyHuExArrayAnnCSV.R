@@ -759,12 +759,15 @@ replaceGOEvidenceByCode <- function(mat)
 }
 
 ### Return a list of matrices.
+### 'acc2id' must be a named character vector.
 splitMatrix <- function(mat, acc2id)
 {
     if (ncol(mat) < 2)
         stop("won't split a matrix with less than 2 cols")
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
+    if (!is.character(acc2id))
+        stop("'acc2id' not a character vector")
     accessions <- mat[ , 1]
     uids <- unique(acc2id)
     id2submat <- list()
@@ -839,6 +842,8 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
         mat <- mat[mat[ , 1] %in% names(acc2ids), , drop=FALSE]
     }
     acc2id <- unlist(acc2ids)
+    if (!is.character(acc2id))
+        acc2id <- as.character(acc2id)
     names(acc2id) <- names(acc2ids)
     id2submat <- splitMatrix(mat, acc2id)
     new_ids <- insres$new_ids
@@ -924,7 +929,7 @@ dbInsertRows.mrna <- function(conn, accessions)
         if (is(row0, "try-error"))
             stop("In ", csv_current_pos(), ":\n", row0, "\n")
         if (is.null(row0)) {
-            id <- .db.next.id("mrna")
+            id <- as.character(.db.next.id("mrna"))
             row1["_mrna_id"] <- id
             res <- try(dbInsertRow(conn, "mrna", row1, col2type), silent=TRUE)
             if (is(res, "try-error"))
