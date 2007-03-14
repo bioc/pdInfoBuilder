@@ -629,6 +629,11 @@ dbInitTableIds.AFFYHUEX_DB <- function(conn)
     .CSVimport.var("verbose", verbose, defval=FALSE)
 }
 
+.CSVimport.fullmode <- function(fullmode=NULL)
+{
+    .CSVimport.var("fullmode", fullmode, defval=FALSE)
+}
+
 .CSVimport.infile <- function(file=NULL)
 {
     if (.CSVimport.verbose() && !is.null(file))
@@ -758,6 +763,58 @@ replaceGOEvidenceByCode <- function(mat)
     mat
 }
 
+### Create a new dictionary.
+new.dict <- function(keys)
+{
+    dict <- new.env(hash=TRUE, parent=emptyenv())
+    for (key in keys)
+        assign(key, NULL, envir=dict)
+    dict
+}
+
+dict.keys <- function(dict)
+{
+    ls(dict, all.names=TRUE)
+}
+
+dict.rm <- function(dict, keys)
+{
+    remove(list=keys, envir=dict)
+}
+
+dict.lengths <- function(dict)
+{
+    ## Slow
+    #sapply(dict.keys(dict), function(key) length(dict[[key]]))
+    ## 2x faster
+    lengths <- unlist(eapply(dict, length, all.names=TRUE))
+    lengths[dict.keys(dict)]
+}
+
+## Return a named character vector.
+dict.flatten <- function(dict, length1vals.only=FALSE)
+{
+    ans <- character(0)
+    for (key in dict.keys(dict)) {
+        val <- dict[[key]]
+        if (is.null(val) || (length1vals.only && length(val) != 1))
+            next
+        if (!is.character(val))
+            val <- as.character(val)
+        names(val) <- rep(key, length.out=length(val))
+        ans <- c(ans, val)
+    }
+    ans
+}
+
+dict.toString <- function(dict)
+{
+    ans <- sapply(dict.keys(dict),
+                  function(key)
+                      paste(key, ":", paste(dict[[key]], collapse=","), sep=""))
+    paste("[", paste(ans, collapse="|"), "]", sep="")
+}
+
 ### Return a list of matrices.
 ### 'acc2id' must be a named character vector.
 splitMatrix <- function(mat, acc2id)
@@ -766,14 +823,11 @@ splitMatrix <- function(mat, acc2id)
         stop("won't split a matrix with less than 2 cols")
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
-    if (!is.character(acc2id))
-        stop("'acc2id' not a character vector")
+    if (!is.character(acc2id) || is.null(names(acc2id)))
+        stop("'acc2id' is not a named character vector")
     accessions <- mat[ , 1]
-    uids <- unique(acc2id)
-    id2submat <- list()
-    length(id2submat) <- length(uids)
-    names(id2submat) <- uids
-    for (accession in accessions) {
+    id2submat <- new.dict(unique(acc2id))
+    for (accession in unique(accessions)) {
         submat <- mat[accessions == accession, -1 , drop=FALSE]
         id <- acc2id[accession]
         submat0 <- id2submat[[id]]
@@ -823,35 +877,41 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
     if (colnames(mat)[1] != "accession")
         stop("first col name in 'mat' must be \"accession\"")
     acc2ids <- insres$acc2ids
+
+    ## Remove orphan parts
     accessions <- mat[ , 1]
-    ignored_parts <- !(accessions %in% names(acc2ids))
+    ignored_parts <- !(accessions %in% dict.keys(acc2ids))
     if (any(ignored_parts)) {
         msg <- paste(accessions[ignored_parts], collapse=",")
-        msg <- paste("ignoring unlinked parts: ", msg, sep="")
+        msg <- paste("Ignoring orphan parts: ", msg, sep="")
+        msg <- paste(msg, "\nacc2ids = ", dict.toString(acc2ids), sep="")
         data_warning(msg)
         mat <- mat[ignored_parts, , drop=FALSE]
     }
     if (length(acc2ids) == 0)
         return()
-    nb_ids <- sapply(acc2ids, length)
-    if (max(nb_ids) > 1) {
-        msg <- paste(names(acc2ids)[nb_ids > 1], collapse=",")
-        msg <- paste("ignoring parts with ambiguous links: ", msg, sep="")
+
+    ## Remove ambiguous parts
+    accessions <- mat[ , 1] # might have changed
+    nb_ids <- dict.lengths(acc2ids)
+    multiid_accessions <- names(nb_ids)[nb_ids > 1]
+    ignored_parts <- accessions %in% multiid_accessions
+    if (any(ignored_parts)) {
+        msg <- paste(accessions[ignored_parts], collapse=",")
+        msg <- paste("Ignoring ambiguous parts: ", msg, sep="")
+        msg <- paste(msg, "\nacc2ids = ", dict.toString(acc2ids), sep="")
         data_warning(msg)
-        acc2ids <- acc2ids[nb_ids <= 1]
-        mat <- mat[mat[ , 1] %in% names(acc2ids), , drop=FALSE]
+        mat <- mat[ignored_parts, , drop=FALSE]
     }
-    acc2id <- unlist(acc2ids)
-    if (!is.character(acc2id))
-        acc2id <- as.character(acc2id)
-    names(acc2id) <- names(acc2ids)
+
+    acc2id <- dict.flatten(acc2ids, length1vals.only=TRUE)
     id2submat <- splitMatrix(mat, acc2id)
     new_ids <- insres$new_ids
     col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     cols0 <- paste(colnames(mat)[-1], collapse=",")
     link0 <- names(col2type)[length(col2type)]
     sql0 <- paste("SELECT ", cols0, " FROM ", tablename, " WHERE ", link0, "=", sep="")
-    for (id in names(id2submat)) {
+    for (id in dict.keys(id2submat)) {
         submat <- id2submat[[id]]
         if (id %in% new_ids) {
             if (is.null(submat))
@@ -890,9 +950,7 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
 dbInsertRows.gene <- function(conn, genes)
 {
     accessions <- unique(genes[ , "accession"])
-    acc2ids <- list()
-    length(acc2ids) <- length(accessions)
-    names(acc2ids) <- accessions
+    acc2ids <- new.dict(accessions)
     new_ids <- character(0)
     col2type <- gene_desc$col2type
     for (i in seq_len(nrow(genes))) {
@@ -917,9 +975,7 @@ dbInsertRows.gene <- function(conn, genes)
 dbInsertRows.mrna <- function(conn, accessions)
 {
     accessions <- unique(accessions)
-    acc2ids <- list()
-    length(acc2ids) <- length(accessions)
-    names(acc2ids) <- accessions
+    acc2ids <- new.dict(accessions)
     new_ids <- character(0)
     col2type <- mrna_desc$col2type
     for (accession in accessions) {
@@ -948,10 +1004,8 @@ dbInsertRows.mrna2gene <- function(conn, mrna_insres, gene_insres)
     mrna_acc2ids <- mrna_insres$acc2ids
     gene_acc2ids <- gene_insres$acc2ids
     col2type <- mrna2gene_desc$col2type
-    for (accession in names(gene_acc2ids)) {
-        mrna.id <- mrna_acc2ids[accession][[1]]
-        if (is.null(mrna.id))
-            stop("In ", csv_current_pos(), ":\nNo mrna id for accession \"", accession, "\"\n")
+    for (accession in dict.keys(mrna_acc2ids)) {
+        mrna.id <- mrna_acc2ids[[accession]] # always of length 1
         if (!(mrna.id %in% mrna_insres$new_ids))
             next
         for (entrez_gene_id in gene_acc2ids[[accession]]) {
@@ -966,10 +1020,9 @@ dbInsertRows.mrna2gene <- function(conn, mrna_insres, gene_insres)
 
 dbInsertRows.TR2mrna <- function(conn, transcript_cluster_ID, mrna_acc2ids)
 {
-    acc2ids <- mrna_acc2ids
-    acc2ids[] <- ""
+    acc2ids <- new.dict(dict.keys(mrna_acc2ids))
     col2type <- TR2mrna_desc$col2type
-    for (accession in names(mrna_acc2ids)) {
+    for (accession in dict.keys(mrna_acc2ids)) {
         id <- .db.next.id("TR2mrna")
         row1 <- c(id, transcript_cluster_ID, mrna_acc2ids[[accession]])
         names(row1) <- names(col2type)
@@ -986,7 +1039,7 @@ dbInsertRows.TR2mrna_details <- function(conn, mrna_assignment, TR2mrna_acc2ids)
     col2type <- TR2mrna_details_desc$col2type
     for (i in seq_len(nrow(mrna_assignment))) {
         accession <- mrna_assignment[i, "accession"]
-        TR2mrna.id <- TR2mrna_acc2ids[accession][[1]]
+        TR2mrna.id <- TR2mrna_acc2ids[[accession]]
         row1 <- mrna_assignment[i, names(col2type)[1:8]]
         row1 <- c(row1, TR2mrna.id)
         names(row1) <- names(col2type)
@@ -1068,23 +1121,25 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     ##
     ## 3rd and 4th parts are linked to which gene?
 
-    field <- "GO_biological_process"
-    .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
-    mat <- replaceGOEvidenceByCode(mat)
-    dbInsert_multipart_data(conn, field, mat, gene_insres)
+    if (.CSVimport.fullmode()) {
+        field <- "GO_biological_process"
+        .CSVimport.field(field)
+        mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+        mat <- replaceGOEvidenceByCode(mat)
+        dbInsert_multipart_data(conn, field, mat, gene_insres)
 
-    field <- "GO_cellular_component"
-    .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
-    mat <- replaceGOEvidenceByCode(mat)
-    dbInsert_multipart_data(conn, field, mat, gene_insres)
+        field <- "GO_cellular_component"
+        .CSVimport.field(field)
+        mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+        mat <- replaceGOEvidenceByCode(mat)
+        dbInsert_multipart_data(conn, field, mat, gene_insres)
 
-    field <- "GO_molecular_function"
-    .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
-    mat <- replaceGOEvidenceByCode(mat)
-    dbInsert_multipart_data(conn, field, mat, gene_insres)
+        field <- "GO_molecular_function"
+        .CSVimport.field(field)
+        mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+        mat <- replaceGOEvidenceByCode(mat)
+        dbInsert_multipart_data(conn, field, mat, gene_insres)
+    }
 
     ## Extract and insert the "pathway" data
 
@@ -1394,10 +1449,12 @@ splitCSVFiles <- function(tr_file, pbs_file)
 ###   > dbImport.AffyHuExArrayAnnCSV("test.sqlite", tr_file, pbs_file, verbose=TRUE)
 ### To import "tr_chr22.rda" and "pbs_chr22.rda":
 ###   > dbImport.AffyHuExArrayAnnCSV("test.sqlite", seqname="chr22", verbose=TRUE)
-dbImport.AffyHuExArrayAnnCSV <- function(db_file, tr_file=NULL, pbs_file=NULL, seqname=NULL,
+dbImport.AffyHuExArrayAnnCSV <- function(db_file, tr_file=NULL, pbs_file=NULL,
+                                         fullmode=FALSE, seqname=NULL,
                                          tr_nrows=-1, pbs_nrows=-1, verbose=FALSE)
 {
     .CSVimport.verbose(verbose)
+    .CSVimport.fullmode(fullmode)
     is_new_db <- !file.exists(db_file)
     conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
     on.exit(dbDisconnect(conn))
