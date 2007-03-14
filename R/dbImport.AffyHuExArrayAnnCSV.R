@@ -352,12 +352,22 @@ gene_desc <- list(
 mrna_desc <- list(
     col2type=c(
         `_mrna_id`="INTEGER",       # internal id (PRIMARY KEY)
-        accession="TEXT",
-        entrez_gene_id="INTEGER"    # REFERENCES gene(entrez_gene_id)
+        accession="TEXT"
     ),
     col2key=c(
         `_mrna_id`="PRIMARY KEY",
-        accession="UNIQUE",
+        accession="UNIQUE"
+    )
+)
+
+### The "mrna2gene" table.
+mrna2gene_desc <- list(
+    col2type=c(
+        `_mrna_id`="INTEGER",       # REFERENCES mrna(_mrna_id)
+        entrez_gene_id="INTEGER"    # REFERENCES gene(entrez_gene_id)
+    ),
+    col2key=c(
+        `_mrna_id`="REFERENCES mrna(_mrna_id)",
         entrez_gene_id="REFERENCES gene(entrez_gene_id)"
     )
 )
@@ -554,11 +564,12 @@ PBS2mrna_desc <- list(
     )
 )
 
-### Global schema (16 tables).
+### Global schema (17 tables).
 AFFYHUEX_DB_schema <- list(
     transcript_cluster=transcript_cluster_desc,
     gene=gene_desc,
     mrna=mrna_desc,
+    mrna2gene=mrna2gene_desc,
     TR2mrna=TR2mrna_desc,
     TR2mrna_details=TR2mrna_details_desc,
     swissprot=swissprot_desc,
@@ -755,8 +766,6 @@ splitMatrix <- function(mat, acc2id)
     if (colnames(mat)[1] != "accession")
         stop("first 'mat' col name must be \"accession\"")
     accessions <- mat[ , 1]
-    if (!all(accessions %in% names(acc2id)))
-        data_error("'mat' contains invalid accessions")
     uids <- unique(acc2id)
     id2submat <- list()
     length(id2submat) <- length(uids)
@@ -809,8 +818,25 @@ haveTheSameData <- function(mat, dat)
 dbInsert_multipart_data <- function(conn, tablename, mat, insres)
 {
     if (colnames(mat)[1] != "accession")
-        stop("first 'mat' col name must be \"accession\"")
-    acc2id <- insres$acc2id
+        stop("first col name in 'mat' must be \"accession\"")
+    acc2ids <- insres$acc2ids
+    accessions <- mat[ , 1]
+    ignored_parts <- !(accessions %in% names(acc2ids))
+    if (any(ignored_parts)) {
+        msg <- paste(accessions[ignored_parts], collapse=",")
+        msg <- paste("ignoring unlinked parts: ", msg, sep="")
+        data_warning(msg)
+        mat <- mat[ignored_parts, , drop=FALSE]
+    }
+    nb_ids <- sapply(acc2ids, length)
+    if (max(nb_ids) > 1) {
+        msg <- paste(names(acc2ids)[nb_ids > 1], collapse=",")
+        msg <- paste("ignoring parts with ambiguous links: ", msg, sep="")
+        data_warning(msg)
+        acc2ids <- acc2ids[nb_ids <= 1]
+        mat <- mat[mat[ , 1] %in% names(acc2ids), , drop=FALSE]
+    }
+    acc2id <- unlist(acc2ids)
     id2submat <- splitMatrix(mat, acc2id)
     new_ids <- insres$new_ids
     col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
@@ -855,12 +881,15 @@ dbInsert_multipart_data <- function(conn, tablename, mat, insres)
 
 dbInsertRows.gene <- function(conn, genes)
 {
-    acc2id <- character(nrow(genes))
-    names(acc2id) <- genes[ , "accession"]
+    accessions <- unique(genes[ , "accession"])
+    acc2ids <- list()
+    length(acc2ids) <- length(accessions)
+    names(acc2ids) <- accessions
     new_ids <- character(0)
     col2type <- gene_desc$col2type
     for (i in seq_len(nrow(genes))) {
-        row1 <- genes[i, names(col2type)]
+        gene <- genes[i, ]
+        row1 <- gene[names(col2type)]
         id <- row1[["entrez_gene_id"]] # [[ ]] to get rid of the name
         row0 <- try(dbGetThisRow(conn, "gene", "entrez_gene_id", row1, col2type), silent=TRUE)
         if (is(row0, "try-error"))
@@ -871,21 +900,22 @@ dbInsertRows.gene <- function(conn, genes)
                 stop("In ", csv_current_pos(), ":\n", res, "\n")
             new_ids <- c(new_ids, id)
         }
-        acc2id[i] <- id
+        accession <- gene["accession"]
+        acc2ids[[accession]] <- c(acc2ids[[accession]], id)
     }
-    list(acc2id=acc2id, new_ids=new_ids)
+    list(acc2ids=acc2ids, new_ids=new_ids)
 }
 
-dbInsertRows.mrna <- function(conn, accessions, gene_acc2id)
+dbInsertRows.mrna <- function(conn, accessions)
 {
-    acc2id <- character(length(accessions))
-    names(acc2id) <- accessions
+    accessions <- unique(accessions)
+    acc2ids <- list()
+    length(acc2ids) <- length(accessions)
+    names(acc2ids) <- accessions
     new_ids <- character(0)
     col2type <- mrna_desc$col2type
-    for (i in seq_len(length(accessions))) {
-        accession <- accessions[i]
-        entrez_gene_id <- gene_acc2id[accession]
-        row1 <- c(NA, accession, entrez_gene_id)
+    for (accession in accessions) {
+        row1 <- c(NA, accession)
         names(row1) <- names(col2type)
         row0 <- try(dbGetThisRow(conn, "mrna", "accession", row1, col2type), silent=TRUE)
         if (is(row0, "try-error"))
@@ -900,34 +930,55 @@ dbInsertRows.mrna <- function(conn, accessions, gene_acc2id)
         } else {
             id <- row0["_mrna_id"]
         }
-        acc2id[i] <- id
+        acc2ids[[accession]] <- id
     }
-    list(acc2id=acc2id, new_ids=new_ids)
+    list(acc2ids=acc2ids, new_ids=new_ids)
 }
 
-dbInsertRows.TR2mrna <- function(conn, transcript_cluster_ID, mrna_acc2id)
+dbInsertRows.mrna2gene <- function(conn, mrna_insres, gene_insres)
 {
-    acc2id <- mrna_acc2id
-    acc2id[] <- ""
+    mrna_acc2ids <- mrna_insres$acc2ids
+    gene_acc2ids <- gene_insres$acc2ids
+    col2type <- mrna2gene_desc$col2type
+    for (accession in names(gene_acc2ids)) {
+        mrna.id <- mrna_acc2ids[accession][[1]]
+        if (is.null(mrna.id))
+            stop("In ", csv_current_pos(), ":\nNo mrna id for accession \"", accession, "\"\n")
+        if (!(mrna.id %in% mrna_insres$new_ids))
+            next
+        for (entrez_gene_id in gene_acc2ids[[accession]]) {
+            row1 <- c(mrna.id, entrez_gene_id)
+            names(row1) <- names(col2type)
+            res <- try(dbInsertRow(conn, "mrna2gene", row1, col2type), silent=TRUE)
+            if (is(res, "try-error"))
+                stop("In ", csv_current_pos(), ":\n", res, "\n")
+        }
+    }
+}
+
+dbInsertRows.TR2mrna <- function(conn, transcript_cluster_ID, mrna_acc2ids)
+{
+    acc2ids <- mrna_acc2ids
+    acc2ids[] <- ""
     col2type <- TR2mrna_desc$col2type
-    for (i in seq_len(length(mrna_acc2id))) {
+    for (accession in names(mrna_acc2ids)) {
         id <- .db.next.id("TR2mrna")
-        row1 <- c(id, transcript_cluster_ID, mrna_acc2id[i])
+        row1 <- c(id, transcript_cluster_ID, mrna_acc2ids[[accession]])
         names(row1) <- names(col2type)
         res <- try(dbInsertRow(conn, "TR2mrna", row1, col2type), silent=TRUE)
         if (is(res, "try-error"))
             stop("In ", csv_current_pos(), ":\n", res, "\n")
-        acc2id[i] <- id
+        acc2ids[[accession]] <- id
     }
-    acc2id
+    acc2ids
 }
 
-dbInsertRows.TR2mrna_details <- function(conn, mrna_assignment, TR2mrna_acc2id)
+dbInsertRows.TR2mrna_details <- function(conn, mrna_assignment, TR2mrna_acc2ids)
 {
     col2type <- TR2mrna_details_desc$col2type
     for (i in seq_len(nrow(mrna_assignment))) {
         accession <- mrna_assignment[i, "accession"]
-        TR2mrna.id <- TR2mrna_acc2id[accession]
+        TR2mrna.id <- TR2mrna_acc2ids[accession][[1]]
         row1 <- mrna_assignment[i, names(col2type)[1:8]]
         row1 <- c(row1, TR2mrna.id)
         names(row1) <- names(col2type)
@@ -950,74 +1001,21 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     row1 <- dataline[names(transcript_cluster_desc$col2type)]
     dbInsertRow(conn, "transcript_cluster", row1, transcript_cluster_desc$col2type)
 
-    ## Extract and insert the "gene_assignment" data
+    ## Extract and insert the "gene_assignment" and "mrna_assignment" data
 
     field <- "gene_assignment"
     .CSVimport.field(field)
     gene_assignment <- multipartToMatrix(dataline[field], TRsubfields.gene_assignment)
     gene_insres <- dbInsertRows.gene(conn, gene_assignment)
 
-    ## There should never be more than 1 part with the same accession in the
-    ## "gene_assignment" field. Unfortunately this happens sometimes (very
-    ## rarely though, see comment preceding the definition of
-    ## 'TRsubfields.gene_assignment' in sub-section B.a. for more
-    ## details about this.)
-    ## For example in HuEx-1_0-st-v2.na21.hg18.transcript.csv, line 16411
-    ## (transcript_cluster_ID=2718075), the "gene_assignment" field (multipart)
-    ## contains the following parts:
-    ##
-    ##      accession | gene_symbol | gene_title                    | cytoband | entrez_gene_id
-    ##   -------------|-------------|-------------------------------|----------|---------------
-    ##   NM_001040448 | DEFB131     | defensin, beta 131            |   4p16.1 |         644414
-    ##      XM_938410 | DEFB131     | defensin, beta 131            |   4p16.1 |         644414
-    ##      XM_938410 | LOC649335   | similar to Beta-defensin 131..|          |         649335
-    ##   ...
-    ## This poses 2 problems: (1) the current DB schema can't handle this (a
-    ## given mrna can only be linked to 1 or 0 gene), (2) when this happens,
-    ## then the GO annotations are ambiguous (this is because Affymetrix has
-    ## choosen to link GO terms to mrnas, not to genes).
-    ## For example, on the same line (transcript_cluster_ID=2718075), the
-    ## "GO_biological_process" field (multipart) contains:
-    ##
-    ##      accession | GO_id | GO_term                                | GO_evidence_code
-    ##   -------------|-------|----------------------------------------|-----------------
-    ##   NM_001040448 |  9613 | response to pest, pathogen or parasite | IEA
-    ##   NM_001040448 | 42742 | defense response to bacteria           | IEA
-    ##      XM_938410 |  9613 | response to pest, pathogen or parasite | IEA
-    ##      XM_938410 | 42742 | defense response to bacteria           | IEA
-    ##   NM_001037804 |  9613 | response to pest, pathogen or parasite | IEA
-    ##   NM_001037804 | 42742 | defense response to bacteria           | IEA
-    ##
-    ## 3rd and 4th parts are linked to which gene?
-    ##
-    ## So we can't do this anymore:
-    ##   if (any(duplicated(names(gene_insres$acc2id))))
-    ##      stop("in CSV line for transcript_cluster_ID=", transcript_cluster_ID, ": ",
-    ##           "\"gene_assignment\" has more than 1 part with the same accession")
-    ## For now we ignore the duplicated and issue a warning.
-    dup_gene_acc2id <- duplicated(names(gene_insres$acc2id))
-    if (any(dup_gene_acc2id)) {
-        msg <- paste(names(gene_insres$acc2id), collapse=",")
-        msg <- paste(msg, " [", paste(gene_insres$acc2id, collapse=","), "]", sep="")
-        msg <- paste("\"gene_assignment\" has more than 1 part with the same accession: ",
-                     msg, sep="")
-        data_warning(msg)
-        gene_insres$acc2id <- gene_insres$acc2id[!dup_gene_acc2id]
-    }
-
-    ## Extract and insert the "mrna_assignment" data
-
     field <- "mrna_assignment"
     .CSVimport.field(field)
     mrna_assignment <- multipartToMatrix(dataline[field], TRsubfields.mrna_assignment)
-    accessions <- unique(mrna_assignment[ , "accession"])
-    if (!all(names(gene_insres$acc2id) %in% accessions)) {
-        msg <- "\"gene_assignment\" has unlinked parts"
-        data_error(msg)
-    }
-    mrna_insres <- dbInsertRows.mrna(conn, accessions, gene_insres$acc2id)
-    TR2mrna_acc2id <- dbInsertRows.TR2mrna(conn, transcript_cluster_ID, mrna_insres$acc2id)
-    dbInsertRows.TR2mrna_details(conn, mrna_assignment, TR2mrna_acc2id)
+    accessions <- mrna_assignment[ , "accession"]
+    mrna_insres <- dbInsertRows.mrna(conn, accessions)
+    dbInsertRows.mrna2gene(conn, mrna_insres, gene_insres)
+    TR2mrna_acc2ids <- dbInsertRows.TR2mrna(conn, transcript_cluster_ID, mrna_insres$acc2ids)
+    dbInsertRows.TR2mrna_details(conn, mrna_assignment, TR2mrna_acc2ids)
 
     ## Extract and insert the "swissprot" data
 
@@ -1034,6 +1032,33 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     ## Extract and insert the "GO" data
+    ##
+    ## Note that those GO annotations can be ambiguous.
+    ## For example in HuEx-1_0-st-v2.na21.hg18.transcript.csv, line 16411
+    ## (transcript_cluster_ID="2718075"), the "gene_assignment" field (multipart)
+    ## contains the following parts:
+    ##
+    ##      accession | gene_symbol | gene_title                    | cytoband | entrez_gene_id
+    ##   -------------|-------------|-------------------------------|----------|---------------
+    ##   NM_001040448 | DEFB131     | defensin, beta 131            |   4p16.1 |         644414
+    ##      XM_938410 | DEFB131     | defensin, beta 131            |   4p16.1 |         644414
+    ##      XM_938410 | LOC649335   | similar to Beta-defensin 131..|          |         649335
+    ##   ...
+    ## When this happens, then the GO annotations are ambiguous (this is
+    ## because Affymetrix has choosen to link GO terms to mrnas, not to genes).
+    ## For example, on the same line (transcript_cluster_ID="2718075"), the
+    ## "GO_biological_process" field (multipart) contains:
+    ##
+    ##      accession | GO_id | GO_term                                | GO_evidence_code
+    ##   -------------|-------|----------------------------------------|-----------------
+    ##   NM_001040448 |  9613 | response to pest, pathogen or parasite | IEA
+    ##   NM_001040448 | 42742 | defense response to bacteria           | IEA
+    ##      XM_938410 |  9613 | response to pest, pathogen or parasite | IEA
+    ##      XM_938410 | 42742 | defense response to bacteria           | IEA
+    ##   NM_001037804 |  9613 | response to pest, pathogen or parasite | IEA
+    ##   NM_001037804 | 42742 | defense response to bacteria           | IEA
+    ##
+    ## 3rd and 4th parts are linked to which gene?
 
     field <- "GO_biological_process"
     .CSVimport.field(field)
