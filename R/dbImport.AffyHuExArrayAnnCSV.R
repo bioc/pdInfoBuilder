@@ -1462,9 +1462,14 @@ dbImport.AffyHuExArrayAnnCSV <- function(db_file, tr_file=NULL, pbs_file=NULL,
 {
     .CSVimport.verbose(verbose)
     .CSVimport.fullmode(fullmode)
-    is_new_db <- !file.exists(db_file)
-    conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
-    on.exit(dbDisconnect(conn))
+    if (is(db_file, "DBIConnection")) {
+        is_new_db <- TRUE
+        conn <- db_file
+    } else {
+        is_new_db <- !file.exists(db_file)
+        conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
+        on.exit(dbDisconnect(conn))
+    }
     if (is_new_db)
         dbCreateTables.AFFYHUEX_DB(conn)
     else
