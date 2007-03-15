@@ -411,7 +411,7 @@ gene_desc <- list(
 mrna_desc <- list(
     col2type=c(
         `_mrna_id`="INTEGER",       # internal id (PRIMARY KEY)
-        accession="TEXT"
+        accession="VARCHAR(100)"
     ),
     col2key=c(
         `_mrna_id`="PRIMARY KEY",
