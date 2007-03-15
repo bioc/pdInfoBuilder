@@ -1085,6 +1085,9 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     TR2mrna_acc2ids <- dbInsertRows.TR2mrna(conn, transcript_cluster_ID, mrna_insres$acc2ids)
     dbInsertRows.TR2mrna_details(conn, mrna_assignment, TR2mrna_acc2ids)
 
+    if (!.CSVimport.fullmode())
+        return()
+
     ## Extract and insert the "swissprot" data
 
     field <- "swissprot"
@@ -1093,6 +1096,8 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     ## Extract and insert the "unigene" data
+    ## TODO: Like the "GO" stuff, the "unigene" stuff needs to be linked to the
+    ## genes not to the mrnas. This requires a change in the db schema.
 
     field <- "unigene"
     .CSVimport.field(field)
@@ -1128,25 +1133,23 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
     ##
     ## 3rd and 4th parts are linked to which gene?
 
-    if (.CSVimport.fullmode()) {
-        field <- "GO_biological_process"
-        .CSVimport.field(field)
-        mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
-        mat <- replaceGOEvidenceByCode(mat)
-        dbInsert_multipart_data(conn, field, mat, gene_insres)
+    field <- "GO_biological_process"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- replaceGOEvidenceByCode(mat)
+    dbInsert_multipart_data(conn, field, mat, gene_insres)
 
-        field <- "GO_cellular_component"
-        .CSVimport.field(field)
-        mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
-        mat <- replaceGOEvidenceByCode(mat)
-        dbInsert_multipart_data(conn, field, mat, gene_insres)
+    field <- "GO_cellular_component"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- replaceGOEvidenceByCode(mat)
+    dbInsert_multipart_data(conn, field, mat, gene_insres)
 
-        field <- "GO_molecular_function"
-        .CSVimport.field(field)
-        mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
-        mat <- replaceGOEvidenceByCode(mat)
-        dbInsert_multipart_data(conn, field, mat, gene_insres)
-    }
+    field <- "GO_molecular_function"
+    .CSVimport.field(field)
+    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- replaceGOEvidenceByCode(mat)
+    dbInsert_multipart_data(conn, field, mat, gene_insres)
 
     ## Extract and insert the "pathway" data
 
