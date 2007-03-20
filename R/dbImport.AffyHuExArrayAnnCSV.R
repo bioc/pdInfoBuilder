@@ -1343,13 +1343,20 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 
 buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
 {
-    ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
-    ## and 17 fields. It takes about 1 min to load on gopher6.
+    ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines and 17
+    ## fields. Loading takes about 44 seconds on gladstone and 1 min on gopher6.
     cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
     tr_table <- read.table(tr_file, header=TRUE, sep=",", quote="\"",
                            nrows=nrows, stringsAsFactors=FALSE)
     cat("OK (", nrow(tr_table), " lines loaded)\n", sep="")
     names(tr_table) <- getAffyHuExArrayAnnCSVHeader(tr_table)
+
+    ## Extract the transcript_cluster table
+    tr_cols <- names(transcript_cluster_desc$col2type)
+    transcript_cluster_table <- tr_table[ , tr_cols]
+    cat("Saving transcript_cluster table to transcript_cluster.rda... ")
+    save(transcript_cluster_table, file="transcript_cluster.rda")
+    cat("OK\n")
 
     mrna_assignment_list <- mvalsToMats(tr_table$mrna_assignment, TRsubfields.mrna_assignment)
     gene_assignment_list <- mvalsToMats(tr_table$gene_assignment, TRsubfields.gene_assignment)
@@ -1359,25 +1366,21 @@ buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
     cat("Extract all accessions from the \"mrna_assignment\" col... ", sep="")
     allaccs <- unique(unlist(lapply(mrna_assignment_list, function(x) x[, 1])))
     cat("OK (", length(allaccs), " accessions found)\n", sep="")
-    acc2id <- seq_len(length(allaccs))
-    names(acc2id) <- allaccs
-    cat("Saving accession index to acc2id.rda... ")
-    save(acc2id, file="acc2id.rda")
+    acc2id_dict <- new.env(hash=TRUE, parent=emptyenv(), size=length(allaccs))
+    for (i in seq_len(length(allaccs))) acc2id_dict[[allaccs[i]]] <- i
+    cat("Saving accession index to acc2id_dict.rda... ")
+    save(acc2id_dict, file="acc2id_dict.rda")
     cat("OK\n")
 
     tr_ID_col <- as.character(tr_table$transcript_cluster_ID)
-    tr_cols <- names(transcript_cluster_desc$col2type)
 
-    tr_dict <- new.dict(character(0))
-    TR2mrna_dict <- new.dict(character(0))
-    TR2mrna_details_dict <- new.dict(character(0))
-    gene_dict <- new.dict(character(0))
-    acc2genes_dict <- new.dict(character(0))
+    TR2mrna_dict <- new.env(hash=TRUE, parent=emptyenv(), size=1000000L)
+    TR2mrna_details_dict <- new.env(hash=TRUE, parent=emptyenv(), size=1000000L)
+    gene_dict <- new.env(hash=TRUE, parent=emptyenv(), size=30000L)
+    acc2genes_dict <- new.env(hash=TRUE, parent=emptyenv(), size=300000L)
     for (n in seq_len(nrow(tr_table))) {
         tr_ID <- tr_ID_col[n]
         cat(n, "/", length(tr_ID_col), ": tr_ID=", tr_ID, "\n", sep="")
-
-        tr_dict[[tr_ID]] <- tr_table[n, tr_cols[-1]]
 
         mrna_assignment <- mrna_assignment_list[[n]]
         acc2details <- split(as.data.frame(mrna_assignment[ , -1]), mrna_assignment[ , 1])
@@ -1385,7 +1388,7 @@ buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
         ## Feed TR2mrna_dict and TR2mrna_details_dict
         for (acc in accessions) {
             TR2mrna_id <- as.character(length(TR2mrna_dict) + 1)
-            TR2mrna_dict[[TR2mrna_id]] <- c(tr_ID, acc2id[acc])
+            TR2mrna_dict[[TR2mrna_id]] <- c(tr_ID, acc2id_dict[[acc]])
             TR2mrna_details_dict[[TR2mrna_id]] <- acc2details[[acc]]
         }
 
@@ -1417,9 +1420,6 @@ buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
             }
         }
     }
-    cat("Saving accession index to tr_dict.rda... ")
-    save(tr_dict, file="tr_dict.rda")
-    cat("OK\n")
     cat("Saving accession index to TR2mrna_dict.rda... ")
     save(TR2mrna_dict, file="TR2mrna_dict.rda")
     cat("OK\n")
