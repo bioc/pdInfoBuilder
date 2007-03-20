@@ -761,13 +761,14 @@ getAffyHuExArrayAnnCSVHeader <- function(data)
     header
 }
 
-multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(subfields))
+### Convert a multipart field value to a matrix.
+mvalToMat <- function(mval, subfields, min.nsubfields=length(subfields))
 {
     ncol <- length(subfields)
-    if (is.na(multipart_val)) {
+    if (is.na(mval)) {
         mat <- matrix(data=character(0), ncol=ncol)
     } else {
-        vals <- strsplit(multipart_val, " /// ", fixed=TRUE)[[1]]
+        vals <- strsplit(mval, " /// ", fixed=TRUE)[[1]]
         rows <- strsplit(vals, " // ", fixed=TRUE)
         for (i in seq_len(length(rows))) {
             nsubfields <- length(rows[[i]])
@@ -784,6 +785,13 @@ multipartToMatrix <- function(multipart_val, subfields, min.nsubfields=length(su
     }
     colnames(mat) <- subfields
     mat
+}
+
+### The vectorized form of "mvalToMat".
+mvalsToMats <- function(mvals, subfields)
+{
+    mvals[mvals == "---"] <- NA
+    lapply(mvals, function(x) mvalToMat(x, subfields))
 }
 
 ### Authority: http://www.geneontology.org/GO.evidence.shtml
@@ -1073,12 +1081,12 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
     field <- "gene_assignment"
     .CSVimport.field(field)
-    gene_assignment <- multipartToMatrix(dataline[field], TRsubfields.gene_assignment)
+    gene_assignment <- mvalToMat(dataline[field], TRsubfields.gene_assignment)
     gene_insres <- dbInsertRows.gene(conn, gene_assignment)
 
     field <- "mrna_assignment"
     .CSVimport.field(field)
-    mrna_assignment <- multipartToMatrix(dataline[field], TRsubfields.mrna_assignment)
+    mrna_assignment <- mvalToMat(dataline[field], TRsubfields.mrna_assignment)
     accessions <- mrna_assignment[ , "accession"]
     mrna_insres <- dbInsertRows.mrna(conn, accessions)
     dbInsertRows.mrna2gene(conn, mrna_insres, gene_insres)
@@ -1092,7 +1100,7 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
     field <- "swissprot"
     .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.swissprot)
+    mat <- mvalToMat(dataline[field], TRsubfields.swissprot)
     dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     ## Extract and insert the "unigene" data
@@ -1101,7 +1109,7 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
     field <- "unigene"
     .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.unigene, min.nsubfields=2)
+    mat <- mvalToMat(dataline[field], TRsubfields.unigene, min.nsubfields=2)
     dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     ## Extract and insert the "GO" data
@@ -1135,19 +1143,19 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
     field <- "GO_biological_process"
     .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- mvalToMat(dataline[field], TRsubfields.GO_biological_process)
     mat <- replaceGOEvidenceByCode(mat)
     dbInsert_multipart_data(conn, field, mat, gene_insres)
 
     field <- "GO_cellular_component"
     .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- mvalToMat(dataline[field], TRsubfields.GO_biological_process)
     mat <- replaceGOEvidenceByCode(mat)
     dbInsert_multipart_data(conn, field, mat, gene_insres)
 
     field <- "GO_molecular_function"
     .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.GO_biological_process)
+    mat <- mvalToMat(dataline[field], TRsubfields.GO_biological_process)
     mat <- replaceGOEvidenceByCode(mat)
     dbInsert_multipart_data(conn, field, mat, gene_insres)
 
@@ -1155,18 +1163,18 @@ dbImportLine.AFFYHUEX_DB.Transcript <- function(conn, dataline)
 
     field <- "pathway"
     .CSVimport.field(field)
-    mat <- multipartToMatrix(dataline[field], TRsubfields.pathway)
+    mat <- mvalToMat(dataline[field], TRsubfields.pathway)
     dbInsert_multipart_data(conn, field, mat, mrna_insres)
 
     return() # that's all for now
 
     ## The code below is not ready...
-    protein_domains <- multipartToMatrix(dataline["protein_domains"],
+    protein_domains <- mvalToMat(dataline["protein_domains"],
                                          TRsubfields.protein_domains, min.nsubfields=3)
     dbInsert_multipart_data(conn, "protein_domains", protein_domains,
                                    acc2id, new_accessions, transcript_cluster_ID)
 
-    protein_families <- multipartToMatrix(dataline["protein_families"], TRsubfields.protein_families)
+    protein_families <- mvalToMat(dataline["protein_families"], TRsubfields.protein_families)
     dbInsert_multipart_data(conn, "protein_families", protein_families,
                                    acc2id, new_accessions, transcript_cluster_ID)
 }
@@ -1280,7 +1288,7 @@ dbImportLine.AFFYHUEX_DB.ProbeSet <- function(conn, dataline)
 
     field <- "mrna_assignment"
     .CSVimport.field(field)
-    mrna_assignment <- multipartToMatrix(dataline[field], PBSsubfields.mrna_assignment)
+    mrna_assignment <- mvalToMat(dataline[field], PBSsubfields.mrna_assignment)
     accessions <- mrna_assignment[ , "accession"]
     if (any(duplicated(accessions))) {
         msg <- paste(accessions, collapse=",")
@@ -1333,6 +1341,99 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 ### G. Importation of the 2 CSV files (Transcript + Probe Set).
 ### -------------------------------------------------------------------------
 
+buildTranscriptDicts <- function(tr_file, nrows=-1)
+{
+    ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
+    ## and 17 fields. It takes about 1 min to load on gopher6.
+    cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
+    tr_table <- read.table(tr_file, header=TRUE, sep=",", quote="\"",
+                           nrows=nrows, stringsAsFactors=FALSE)
+    cat("OK (", nrow(tr_table), " lines loaded)\n", sep="")
+    names(tr_table) <- getAffyHuExArrayAnnCSVHeader(tr_table)
+
+    mrna_assignment_list <- mvalsToMats(tr_table$mrna_assignment, TRsubfields.mrna_assignment)
+    gene_assignment_list <- mvalsToMats(tr_table$gene_assignment, TRsubfields.gene_assignment)
+    gene_cols <- names(gene_desc$col2type)
+
+    ## Extract all accessions from the "mrna_assignment" col
+    cat("Extract all accessions from the \"mrna_assignment\" col... ", sep="")
+    allaccs <- unique(unlist(lapply(mrna_assignment_list, function(x) x[, 1])))
+    cat("OK (", length(allaccs), " accessions found)\n", sep="")
+    acc2id <- seq_len(length(allaccs))
+    names(acc2id) <- allaccs
+    cat("Saving accession index to acc2id.rda... ")
+    save(acc2id, file="acc2id.rda")
+    cat("OK\n")
+
+    tr_ID_col <- as.character(tr_table$transcript_cluster_ID)
+    tr_cols <- names(transcript_cluster_desc$col2type)
+
+    tr_dict <- new.dict(character(0))
+    TR2mrna_dict <- new.dict(character(0))
+    TR2mrna_details_dict <- new.dict(character(0))
+    gene_dict <- new.dict(character(0))
+    acc2genes_dict <- new.dict(character(0))
+    for (n in seq_len(nrow(tr_table))) {
+        tr_ID <- tr_ID_col[n]
+        cat(n, "/", length(tr_ID_col), ": tr_ID=", tr_ID, "\n", sep="")
+
+        tr_dict[[tr_ID]] <- tr_table[n, tr_cols[-1]]
+
+        mrna_assignment <- mrna_assignment_list[[n]]
+        acc2details <- split(as.data.frame(mrna_assignment[ , -1]), mrna_assignment[ , 1])
+        accessions <- names(acc2details)
+        ## Feed TR2mrna_dict and TR2mrna_details_dict
+        for (acc in accessions) {
+            TR2mrna_id <- as.character(length(TR2mrna_dict) + 1)
+            TR2mrna_dict[[TR2mrna_id]] <- c(tr_ID, acc2id[acc])
+            TR2mrna_details_dict[[TR2mrna_id]] <- acc2details[[acc]]
+        }
+
+        gene_assignment <- gene_assignment_list[[n]]
+        ## Feed gene_dict
+        for (i in seq_len(nrow(gene_assignment))) {
+            gene_id <- gene_assignment[i, gene_cols[1]]
+            gene <- gene_assignment[i, gene_cols[-1]]
+            gene0 <- gene_dict[[gene_id]]
+            if (is.null(gene0)) {
+                gene_dict[[gene_id]] <- gene
+            } else {
+                if (!identical(gene, gene0))
+                    stop("gene ", gene_id, " has unexpected sub-fields")
+            }
+        }
+        ## Feed acc2genes_dict
+        acc2genes <- split(gene_assignment[ , "entrez_gene_id"], gene_assignment[ , "accession"])
+        for (acc in accessions) {
+            genes <- acc2genes[[acc]]
+            if (is.null(genes))
+                genes <- character(0)
+            genes0 <- acc2genes_dict[[acc]]
+            if (is.null(genes0)) {
+                acc2genes_dict[[acc]] <- genes
+            } else {
+                if (!identical(genes, genes0))
+                    stop("accession ", acc, " mapped to unexpected genes")
+            }
+        }
+    }
+    cat("Saving accession index to tr_dict.rda... ")
+    save(tr_dict, file="tr_dict.rda")
+    cat("OK\n")
+    cat("Saving accession index to TR2mrna_dict.rda... ")
+    save(TR2mrna_dict, file="TR2mrna_dict.rda")
+    cat("OK\n")
+    cat("Saving accession index to TR2mrna_details_dict.rda... ")
+    save(TR2mrna_details_dict, file="TR2mrna_details_dict.rda")
+    cat("OK\n")
+    cat("Saving accession index to gene_dict.rda... ")
+    save(gene_dict, file="gene_dict.rda")
+    cat("OK\n")
+    cat("Saving accession index to acc2genes_dict.rda... ")
+    save(acc2genes_dict, file="acc2genes_dict.rda")
+    cat("OK\n")
+}
+
 checkTranscriptFile <- function(tr_file)
 {
     ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
@@ -1347,7 +1448,7 @@ checkTranscriptFile <- function(tr_file)
     names(gene_assignment_col) <- tr_table0$transcript_cluster_ID
     gene_assignment_col <- gene_assignment_col[!is.na(gene_assignment_col)]
     gene_assignment <- lapply(gene_assignment_col,
-                              function(x) multipartToMatrix(x, TRsubfields.gene_assignment))
+                              function(x) mvalToMat(x, TRsubfields.gene_assignment))
 
     ## We need to make sure that a given mRNA accession is _always_ mapped to the
     ## same genes (generally 1, but sometimes 2 or even 3 (accession "NR_001294")).
@@ -1377,7 +1478,7 @@ checkTranscriptFile <- function(tr_file)
     names(mrna_assignment_col) <- tr_table0$transcript_cluster_ID
     mrna_assignment_col <- mrna_assignment_col[!is.na(mrna_assignment_col)]
     mrna_assignment <- lapply(mrna_assignment_col,
-                              function(x) multipartToMatrix(x, TRsubfields.mrna_assignment))
+                              function(x) mvalToMat(x, TRsubfields.mrna_assignment))
 
     ## Here we check that for any accession found in the "mrna_assignment"
     ## multipart field, then: if it is mapped to at least 1 gene then it must
