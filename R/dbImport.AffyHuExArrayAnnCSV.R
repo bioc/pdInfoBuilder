@@ -1341,7 +1341,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 ### G. Importation of the 2 CSV files (Transcript + Probe Set).
 ### -------------------------------------------------------------------------
 
-buildTranscriptDicts <- function(tr_file, nrows=-1)
+buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
 {
     ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
     ## and 17 fields. It takes about 1 min to load on gopher6.
@@ -1392,13 +1392,13 @@ buildTranscriptDicts <- function(tr_file, nrows=-1)
         gene_assignment <- gene_assignment_list[[n]]
         ## Feed gene_dict
         for (i in seq_len(nrow(gene_assignment))) {
-            gene_id <- gene_assignment[i, gene_cols[1]]
             gene <- gene_assignment[i, gene_cols[-1]]
+            gene_id <- gene_assignment[i, gene_cols[1]]
             gene0 <- gene_dict[[gene_id]]
             if (is.null(gene0)) {
                 gene_dict[[gene_id]] <- gene
             } else {
-                if (!identical(gene, gene0))
+                if (safe && !identical(gene, gene0))
                     stop("gene ", gene_id, " has unexpected sub-fields")
             }
         }
@@ -1412,7 +1412,7 @@ buildTranscriptDicts <- function(tr_file, nrows=-1)
             if (is.null(genes0)) {
                 acc2genes_dict[[acc]] <- genes
             } else {
-                if (!identical(genes, genes0))
+                if (safe && !identical(genes, genes0))
                     stop("accession ", acc, " mapped to unexpected genes")
             }
         }
