@@ -224,6 +224,22 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
     row0
 }
 
+dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE)
+{
+    cols <- names(col2type)
+    if (!identical(names(data), cols))
+        stop("cols in data frame 'data' don't match cols in table \"", tablename, "\"")
+    values_template <- paste(paste(":", cols, sep=""), collapse=", ")
+    sql_template <- paste("INSERT INTO ", tablename, " VALUES (", values_template, ")", sep="")
+    if (verbose)
+        cat("Inserting ", nrow(data), " rows into table \"", tablename, "\"... ", sep="")
+    dbBeginTransaction(conn)
+    on.exit(dbCommit(conn))
+    dbGetPreparedQuery(conn, sql_template, bind.data=data)
+    if (verbose)
+        cat("OK\n")
+}
+
 
 
 ### =========================================================================
@@ -651,9 +667,11 @@ AFFYHUEX_DB_schema <- list(
 ### -------------------------------------------------------------------------
 
 
-dbCreateTables.AFFYHUEX_DB <- function(conn)
+dbCreateTables.AFFYHUEX_DB <- function(conn, tablenames=NULL)
 {
-    for (tablename in names(AFFYHUEX_DB_schema)) {
+    if (is.null(tablenames))
+        tablenames <- names(AFFYHUEX_DB_schema)
+    for (tablename in tablenames) {
         col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
         col2key <- AFFYHUEX_DB_schema[[tablename]]$col2key
         dbCreateTable(conn, tablename, col2type, col2key)
@@ -1383,11 +1401,15 @@ buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
         cat(n, "/", length(tr_ID_col), ": tr_ID=", tr_ID, "\n", sep="")
 
         mrna_assignment <- mrna_assignment_list[[n]]
-        acc2details <- split(as.data.frame(mrna_assignment[ , -1]), mrna_assignment[ , 1])
+        df <- data.frame(mrna_assignment[ , -1, drop=FALSE],
+                         check.names=FALSE, stringsAsFactors=FALSE)
+        acc2details <- split(df, mrna_assignment[ , 1])
         accessions <- names(acc2details)
         ## Feed TR2mrna_dict and TR2mrna_details_dict
         for (acc in accessions) {
-            TR2mrna_id <- as.character(length(TR2mrna_dict) + 1)
+            ## With 1L instead of 1 then the arg to as.character() is integer
+            ## so for 200000 it returns "200000", not "2e+05"!
+            TR2mrna_id <- as.character(length(TR2mrna_dict) + 1L)
             TR2mrna_dict[[TR2mrna_id]] <- c(tr_ID, acc2id_dict[[acc]])
             TR2mrna_details_dict[[TR2mrna_id]] <- acc2details[[acc]]
         }
@@ -1432,6 +1454,100 @@ buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
     cat("Saving accession index to acc2genes_dict.rda... ")
     save(acc2genes_dict, file="acc2genes_dict.rda")
     cat("OK\n")
+}
+
+importTranscriptDicts <- function(db_file)
+{
+    load("transcript_cluster.rda")
+    load("acc2id_dict.rda")
+    load("TR2mrna_dict.rda")
+    load("TR2mrna_details_dict.rda")
+    load("gene_dict.rda")
+    load("acc2genes_dict.rda")    
+    if (is(db_file, "DBIConnection")) {
+        is_new_db <- TRUE
+        conn <- db_file
+    } else {
+        is_new_db <- !file.exists(db_file)
+        conn <- dbConnect(dbDriver("SQLite"), dbname=db_file)
+        on.exit(dbDisconnect(conn))
+    }
+    if (is_new_db) {
+        tablenames <- c(
+            "transcript_cluster",
+            "gene",
+            "mrna",
+            "mrna2gene",
+            "TR2mrna",
+            "TR2mrna_details"
+        )
+        dbCreateTables.AFFYHUEX_DB(conn, tablenames)
+    }
+    cat("START IMPORTING THE DATA...\n")
+
+    tablename <- "transcript_cluster"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+    data <- data.frame(transcript_cluster_table, check.names=FALSE, stringsAsFactors=FALSE)
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
+
+    tablename <- "mrna"
+    if (!all(eapply(acc2id_dict, length, all.names=TRUE) == 1))
+        stop("some accessions in acc2id_dict are mapped to 0 or > 1 ids")
+    acc2id_list <- as.list(acc2id_dict, all.names=TRUE)
+    acc2id <- sort(unlist(acc2id_list))
+    accessions <- names(acc2id)
+    data <- data.frame(`_mrna_id`=acc2id, accession=accessions,
+                       check.names=FALSE, stringsAsFactors=FALSE)
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
+
+    tablename <- "TR2mrna"
+    if (!all(eapply(TR2mrna_dict, length, all.names=TRUE) == 2))
+        stop("some values in TR2mrna_dict have a length != 2")
+    keys0 <- ls(TR2mrna_dict, all.names=TRUE)
+    bad_keys <- setdiff(keys0, as.character(seq_len(length(keys0))))
+    if (length(bad_keys) != 0)
+        stop("TR2mrna_dict contains bad keys: \"", paste(bad_keys, collapse="\", \""), "\"")
+    keys1 <- as.character(sort(as.integer(keys0)))
+    data <- list(
+        `_TR2mrna_id`=keys1,
+        transcript_cluster_ID=sapply(keys1, function(key) TR2mrna_dict[[key]][[1]]),
+        `_mrna_id`=sapply(keys1, function(key) TR2mrna_dict[[key]][[2]])
+    )
+    data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
+
+    ## TR2mrna_details_dict contains data frames
+    if (!all(eapply(TR2mrna_details_dict, class) == "data.frame"))
+        stop("TR2mrna_details_dict doesn't contain only data frames")
+    tablename <- "TR2mrna_details"
+    keys2 <- ls(TR2mrna_details_dict, all.names=TRUE)
+    if (!identical(keys2, keys0))
+        stop("TR2mrna_details_dict and TR2mrna_dict don't have the same keys")
+    cols0 <- names(col2type)[1:8]
+    good_df <- eapply(TR2mrna_details_dict, function(df) identical(colnames(df), cols0))
+    if (!all(good_df))
+        stop("TR2mrna_details_dict contains invalid data frames (bad colnames)")
+    df_nrows <- eapply(TR2mrna_details_dict, nrow)
+    data <- list()
+    for (j in 1:8) {
+        cat("Extracting col \"", cols0[j], "\" from TR2mrna_details_dict... ", sep="")
+        col_as_list <- eapply(TR2mrna_details_dict, function(df) df[[j]])
+        if (!identical(names(col_as_list), names(df_nrows)))
+            stop("eapply didn't return a list with the expected names")
+        data[[j]] <- unlist(col_as_list)
+        cat("OK\n")
+    }
+    df_nrows <- unlist(df_nrows)
+    linkcol_as_list <- lapply(seq_len(length(df_nrows)),
+                              function(i) rep(names(df_nrows)[i], df_nrows[i]))
+    data[[9]] <- unlist(linkcol_as_list)
+    names(data) <- names(col2type)
+    data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
+
+    cat("IMPORTATION COMPLETED.\n")
 }
 
 checkTranscriptFile <- function(tr_file)
