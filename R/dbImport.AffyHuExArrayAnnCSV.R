@@ -1491,6 +1491,7 @@ importTranscriptDicts <- function(db_file)
     dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
     tablename <- "mrna"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     if (!all(eapply(acc2id_dict, length, all.names=TRUE) == 1))
         stop("some accessions in acc2id_dict are mapped to 0 or > 1 ids")
     acc2id_list <- as.list(acc2id_dict, all.names=TRUE)
@@ -1498,10 +1499,10 @@ importTranscriptDicts <- function(db_file)
     accessions <- names(acc2id)
     data <- data.frame(`_mrna_id`=acc2id, accession=accessions,
                        check.names=FALSE, stringsAsFactors=FALSE)
-    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
     tablename <- "TR2mrna"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     if (!all(eapply(TR2mrna_dict, length, all.names=TRUE) == 2))
         stop("some values in TR2mrna_dict have a length != 2")
     keys0 <- ls(TR2mrna_dict, all.names=TRUE)
@@ -1515,13 +1516,13 @@ importTranscriptDicts <- function(db_file)
         `_mrna_id`=sapply(keys1, function(key) TR2mrna_dict[[key]][[2]])
     )
     data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
-    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
     ## TR2mrna_details_dict contains data frames
+    tablename <- "TR2mrna_details"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
     if (!all(eapply(TR2mrna_details_dict, class) == "data.frame"))
         stop("TR2mrna_details_dict doesn't contain only data frames")
-    tablename <- "TR2mrna_details"
     keys2 <- ls(TR2mrna_details_dict, all.names=TRUE)
     if (!identical(keys2, keys0))
         stop("TR2mrna_details_dict and TR2mrna_dict don't have the same keys")
