@@ -227,7 +227,7 @@ dbGetThisRow <- function(conn, tablename, unique_col, row, col2type)
 dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE)
 {
     cols <- names(col2type)
-    if (!identical(names(data), cols))
+    if (!identical(sort(names(data)), sort(cols)))
         stop("cols in data frame 'data' don't match cols in table \"", tablename, "\"")
     values_template <- paste(paste(":", cols, sep=""), collapse=", ")
     sql_template <- paste("INSERT INTO ", tablename, " VALUES (", values_template, ")", sep="")
@@ -1359,7 +1359,7 @@ dbImportData.AFFYHUEX_DB.ProbeSet <- function(conn, csv_file, seqname, nrows=-1)
 ### G. Importation of the 2 CSV files (Transcript + Probe Set).
 ### -------------------------------------------------------------------------
 
-buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
+buildTrDicts <- function(tr_file, safe=TRUE, nrows=-1)
 {
     ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines and 17
     ## fields. Loading takes about 44 seconds on gladstone and 1 min on gopher6.
@@ -1456,14 +1456,49 @@ buildTranscriptDicts <- function(tr_file, safe=TRUE, nrows=-1)
     cat("OK\n")
 }
 
-importTranscriptDicts <- function(db_file)
+### 'dict' must be a dictionary where values are data frames or named atomic
+### vectors. 'class' can be "data.frame" or one of the atomic types
+### ("character", etc...).
+dictToDataFrame <- function(dict, class, cols, col0)
 {
-    load("transcript_cluster.rda")
-    load("acc2id_dict.rda")
-    load("TR2mrna_dict.rda")
-    load("TR2mrna_details_dict.rda")
-    load("gene_dict.rda")
-    load("acc2genes_dict.rda")    
+    good_vals <- eapply(dict,
+                        function(val)
+                            class(val) == class && identical(names(val), cols),
+                        all.names=TRUE
+                 )
+    if (!all(good_vals))
+        stop("dictionary 'dict' contains values with bad class or names")
+    data <- list()
+    for (j in seq_len(length(cols))) {
+        cat("Extracting col \"", cols[j], "\"... ", sep="")
+        col_as_list <- eapply(dict, function(val) val[[j]], all.names=TRUE)
+        ## Not sure I can trust eapply() to _always_ produce a list with the
+        ## names in the same order when applied consecutively on the same
+        ## environment! Hence the paranoid check...
+        if (!identical(names(col_as_list), names(good_vals)))
+            stop("eapply() didn't return a list with the expected names")
+        if (class == "data.frame")
+            data[[j]] <- unlist(col_as_list)
+        else
+            data[[j]] <- as(col_as_list, class)
+        cat("OK\n")
+    }
+    names(data) <- cols
+    cat("Extracting col \"", col0, "\"... ", sep="")
+    if (class == "data.frame") {
+        key2nrows <- eapply(dict, nrow, all.names=TRUE)
+        if (!identical(names(key2nrows), names(good_vals)))
+            stop("eapply() didn't return a list with the expected names")
+        data[[col0]] <- rep(names(key2nrows), unlist(key2nrows))
+    } else {
+        data[[col0]] <- names(good_vals)
+    }
+    cat("OK\n")
+    data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
+}
+
+importTrDicts <- function(db_file)
+{
     if (is(db_file, "DBIConnection")) {
         is_new_db <- TRUE
         conn <- db_file
@@ -1483,7 +1518,17 @@ importTranscriptDicts <- function(db_file)
         )
         dbCreateTables.AFFYHUEX_DB(conn, tablenames)
     }
-    cat("START IMPORTING THE DATA...\n")
+
+    cat("Loading the dictionaries... ")
+    load("transcript_cluster.rda")
+    load("acc2id_dict.rda")
+    load("TR2mrna_dict.rda")
+    load("TR2mrna_details_dict.rda")
+    load("gene_dict.rda")
+    load("acc2genes_dict.rda")
+    cat("OK\n")
+
+    cat("START IMPORTING THE DICTIONARIES...\n")
 
     tablename <- "transcript_cluster"
     col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
@@ -1496,9 +1541,12 @@ importTranscriptDicts <- function(db_file)
         stop("some accessions in acc2id_dict are mapped to 0 or > 1 ids")
     acc2id_list <- as.list(acc2id_dict, all.names=TRUE)
     acc2id <- sort(unlist(acc2id_list))
-    accessions <- names(acc2id)
-    data <- data.frame(`_mrna_id`=acc2id, accession=accessions,
-                       check.names=FALSE, stringsAsFactors=FALSE)
+    data <- list()
+    data[[1]] <- acc2id
+    names(data[[1]]) <- NULL
+    data[[2]] <- names(acc2id)
+    names(data) <- names(col2type)
+    data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
     dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
     tablename <- "TR2mrna"
@@ -1510,165 +1558,50 @@ importTranscriptDicts <- function(db_file)
     if (length(bad_keys) != 0)
         stop("TR2mrna_dict contains bad keys: \"", paste(bad_keys, collapse="\", \""), "\"")
     keys1 <- as.character(sort(as.integer(keys0)))
-    data <- list(
-        `_TR2mrna_id`=keys1,
-        transcript_cluster_ID=sapply(keys1, function(key) TR2mrna_dict[[key]][[1]]),
-        `_mrna_id`=sapply(keys1, function(key) TR2mrna_dict[[key]][[2]])
-    )
-    data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
-    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
-
-    ## TR2mrna_details_dict contains data frames
-    tablename <- "TR2mrna_details"
-    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
-    if (!all(eapply(TR2mrna_details_dict, class) == "data.frame"))
-        stop("TR2mrna_details_dict doesn't contain only data frames")
-    keys2 <- ls(TR2mrna_details_dict, all.names=TRUE)
-    if (!identical(keys2, keys0))
-        stop("TR2mrna_details_dict and TR2mrna_dict don't have the same keys")
-    cols0 <- names(col2type)[1:8]
-    good_df <- eapply(TR2mrna_details_dict, function(df) identical(colnames(df), cols0))
-    if (!all(good_df))
-        stop("TR2mrna_details_dict contains invalid data frames (bad colnames)")
-    df_nrows <- eapply(TR2mrna_details_dict, nrow)
     data <- list()
-    for (j in 1:8) {
-        cat("Extracting col \"", cols0[j], "\" from TR2mrna_details_dict... ", sep="")
-        col_as_list <- eapply(TR2mrna_details_dict, function(df) df[[j]])
-        if (!identical(names(col_as_list), names(df_nrows)))
-            stop("eapply didn't return a list with the expected names")
-        data[[j]] <- unlist(col_as_list)
-        cat("OK\n")
-    }
-    df_nrows <- unlist(df_nrows)
-    linkcol_as_list <- lapply(seq_len(length(df_nrows)),
-                              function(i) rep(names(df_nrows)[i], df_nrows[i]))
-    data[[9]] <- unlist(linkcol_as_list)
+    data[[1]] <- keys1
+    data[[2]] <- sapply(keys1, function(key) TR2mrna_dict[[key]][[1]])
+    data[[3]] <- sapply(keys1, function(key) TR2mrna_dict[[key]][[2]])
     names(data) <- names(col2type)
     data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
     dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
-    cat("IMPORTATION COMPLETED.\n")
-}
+    ## Objects in TR2mrna_details_dict are data frames
+    tablename <- "TR2mrna_details"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+    keys2 <- ls(TR2mrna_details_dict, all.names=TRUE)
+    if (!identical(keys2, keys0))
+        stop("TR2mrna_details_dict and TR2mrna_dict don't have the same keys")
+    cols <- names(col2type)[1:8]
+    col0 <- names(col2type)[9]
+    data <- dictToDataFrame(TR2mrna_details_dict, "data.frame", cols, col0)
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
-checkTranscriptFile <- function(tr_file)
-{
-    ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
-    ## and 17 fields. It takes about 1 min to load on gopher6.
-    cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
-    tr_table0 <- read.table(tr_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
-    cat("OK (", nrow(tr_table0), " lines loaded)\n", sep="")
-    names(tr_table0) <- getAffyHuExArrayAnnCSVHeader(tr_table0)
+    ## Objects in gene_dict are named character vectors
+    tablename <- "gene"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+    cols <- names(col2type)[2:4]
+    col0 <- names(col2type)[1]
+    data <- dictToDataFrame(gene_dict, "character", cols, col0)
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
-    gene_assignment_col <- tr_table0$gene_assignment
-    gene_assignment_col[gene_assignment_col == "---"] <- NA
-    names(gene_assignment_col) <- tr_table0$transcript_cluster_ID
-    gene_assignment_col <- gene_assignment_col[!is.na(gene_assignment_col)]
-    gene_assignment <- lapply(gene_assignment_col,
-                              function(x) mvalToMat(x, TRsubfields.gene_assignment))
+    tablename <- "mrna2gene"
+    col2type <- AFFYHUEX_DB_schema[[tablename]]$col2type
+    ngenes <- eapply(acc2genes_dict, length, all.names=TRUE)
+    entrez_gene_id <- as.list(acc2genes_dict, all.names=TRUE)
+    ## It seems that eapply() and as.list() collect objects in the same order
+    ## from the same environment but who knows for sure...
+    if (!identical(names(ngenes), names(entrez_gene_id)))
+        stop("eapply() and as.list() didn't return lists with the same names")
+    data <- list()
+    data[[1]] <- rep(names(ngenes), unlist(ngenes))
+    names(entrez_gene_id) <- NULL
+    data[[2]] <- unlist(entrez_gene_id)
+    names(data) <- names(col2type)
+    data <- data.frame(data, check.names=FALSE, stringsAsFactors=FALSE)
+    dbInsertDataFrame(conn, tablename, data, col2type, TRUE)
 
-    ## We need to make sure that a given mRNA accession is _always_ mapped to the
-    ## same genes (generally 1, but sometimes 2 or even 3 (accession "NR_001294")).
-    accessions <- unique(unlist(lapply(gene_assignment, function(x) x[,"accession"])))
-    acc2ids0 <- list()
-    length(acc2ids0) <- length(accessions)
-    names(acc2ids0) <- accessions
-    n <- 0
-    for (ID in names(gene_assignment)) {
-        n <- n + 1
-        cat(n, "/", length(gene_assignment), ": ID=", ID, "\n", sep="")
-        x <- gene_assignment[[ID]]
-        acc2ids <- split(x[ , "entrez_gene_id"], x[ , "accession"])
-        for (accession in names(acc2ids)) {
-            ids <- sort(acc2ids[[accession]])
-            ids0 <- acc2ids0[[accession]]
-            if (is.null(ids0))
-                acc2ids0[[accession]] <- ids
-            else
-                if (!identical(ids, ids0))
-                    stop("ID:", ID, ", accession:", accession, ", mapped to unexpected genes")
-        }
-    }
-
-    mrna_assignment_col <- tr_table0$mrna_assignment
-    mrna_assignment_col[mrna_assignment_col == "---"] <- NA
-    names(mrna_assignment_col) <- tr_table0$transcript_cluster_ID
-    mrna_assignment_col <- mrna_assignment_col[!is.na(mrna_assignment_col)]
-    mrna_assignment <- lapply(mrna_assignment_col,
-                              function(x) mvalToMat(x, TRsubfields.mrna_assignment))
-
-    ## Here we check that for any accession found in the "mrna_assignment"
-    ## multipart field, then: if it is mapped to at least 1 gene then it must
-    ## appear in the "gene_assignment" multipart field too.
-    n <- 0
-    for (ID in names(mrna_assignment)) {
-        n <- n + 1
-        cat(n, "/", length(mrna_assignment), ": ID=", ID, "\n", sep="")
-        accessions <- unique(mrna_assignment[[ID]][ , "accession"])
-        for (accession in accessions) {
-            x <- gene_assignment[ID][[1]]
-            if (is.null(x))
-                is_in_gene_assignment <- FALSE
-            else
-                is_in_gene_assignment <- accession %in% x[ , "accession"]
-            if (is_in_gene_assignment != accession %in% names(acc2ids0))
-                stop("ID:", ID, ", accession:", accession, ", we are in troubles :-(")
-        }
-    }
-
-    cat("Everything looks fine. Bye!\n")
-}
-
-### Typical use:
-###   > tr_file <- "HuEx-1_0-st-v2.na21.hg18.transcript.csv"
-###   > pbs_file <- "HuEx-1_0-st-v2.na21.hg18.probeset.csv"
-###   > splitCSVFiles(tr_file, pbs_file)
-### Should produce 2 warnings:
-###   1: In Probe Set table: lines linked to "tr_chr6.rda" don't match
-###      lines with seqname="chr6"
-###   2: In Probe Set table: lines linked to "tr_chr6_cox_hap1.rda" don't match
-###      lines with seqname="chr6_cox_hap1"
-splitCSVFiles <- function(tr_file, pbs_file)
-{
-    ## File "HuEx-1_0-st-v2.na21.hg18.transcript.csv" has 312368 lines
-    ## and 17 fields. It takes about 1 min to load on gopher6.
-    cat("Loading the Transcript table from \"", tr_file, "\"... ", sep="")
-    tr_table0 <- read.table(tr_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
-    cat("OK (", nrow(tr_table0), " lines loaded)\n", sep="")
-    names(tr_table0) <- getAffyHuExArrayAnnCSVHeader(tr_table0)
-
-    ## File "HuEx-1_0-st-v2.na21.hg18.probeset.csv" has 1425647 lines
-    ## and 39 fields. It takes about 10 minutes to load on gladstone! (32G of RAM)
-    cat("Loading the Probe Set table from \"", pbs_file, "\"...", sep="")
-    pbs_table0 <- read.table(pbs_file, header=TRUE, sep=",", quote="\"", stringsAsFactors=FALSE)
-    cat("OK (", nrow(pbs_table0), " lines loaded)\n", sep="")
-    names(pbs_table0) <- getAffyHuExArrayAnnCSVHeader(pbs_table0)
-
-    ## This test fails because some lines in the Probe Set table have
-    ## transcript_cluster_ID="0"!
-    #cat("Checking that all transcript cluster IDs in the Probe Set table\n")
-    #cat("belong to the Transcript table... ")
-    #if (!all(pbs_table0$transcript_cluster_ID %in% tr_table0$transcript_cluster_ID))
-    #    stop("FAILED")
-    #cat("OK\n")
-
-    seqnames <- unique(tr_table0$seqname)
-    for (seqname in seqnames) {
-        tr_table <- tr_table0[tr_table0$seqname == seqname, ]
-        file <- paste("tr_", seqname, ".rda", sep="")
-        cat("Saving ", file, "\n", sep="")
-        save(tr_table, file=file)
-        pbs_linked <- pbs_table0$transcript_cluster_ID %in% tr_table$transcript_cluster_ID
-        pbs_linked2 <- pbs_table0$seqname == seqname
-        if (!identical(pbs_linked, pbs_linked2))
-            warning("In Probe Set table: lines linked to \"", file, "\" ",
-                    "don't match lines with seqname=\"", seqname, "\"")
-        pbs_table <- pbs_table0[pbs_linked, ]
-        file <- paste("pbs_", seqname, ".rda", sep="")
-        cat("Saving ", file, "\n", sep="")
-        save(pbs_table, file=file)
-    }
-    cat("DONE.\n")
+    cat("IMPORT COMPLETED.\n")
 }
 
 ### Typical use:
