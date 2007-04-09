@@ -5,8 +5,8 @@ Version: @VERSION@
 Author: @AUTHOR@
 Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
 LazyLoad: yes
-Depends: R (>= 2.4.0), methods,
-         RSQLite (>= 0.4-15), oligo (>= 0.99.40)
+Depends: R (>= 2.5.0), methods,
+         RSQLite (>= 0.4-15), oligo (>= 0.99.98)
 License: @LIC@
 
 

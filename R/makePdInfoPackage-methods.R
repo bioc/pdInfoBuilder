@@ -17,7 +17,8 @@ setClass("PDInfoPkgSeed",
            chipName="character",
            manufacturer="character",
            genomebuild="character",
-           pdInfoObjectName="character"))
+           pdInfoObjectName="character",
+           geometry="integer"))
 
 setClass("AffySNPPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
@@ -55,6 +56,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
               dbFileName <- paste(pkgName, "sqlite", sep=".")
               dbFilePath <- file.path(extdataDir, dbFileName)
               seqMatFile <- file.path(extdataDir, "seqMat.rda")
+              geometry <- paste(readCdfHeader(object@cdfFile)[c("nrows", "ncols")], collapse=";")
               syms <- list(MANUF=object@manufacturer,
                            VERSION=object@version,
                            GENOMEBUILD=object@genomebuild,
@@ -65,7 +67,8 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
                            CHIPNAME=chip,
                            PKGNAME=pkgName,
                            PDINFONAME=pkgName,
-                           PDINFOCLASS="AffySNPPDInfo")
+                           PDINFOCLASS="AffySNPPDInfo",
+                           GEOMETRY=geometry)
 
               templateDir <- system.file("pd.PKG.template",
                                          package="pdInfoBuilder")

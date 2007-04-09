@@ -52,5 +52,6 @@ closeDb <- function() {
 
 @PDINFONAME@ <- new("@PDINFOCLASS@",
                     genomebuild="@GENOMEBUILD@",
-                    getdb=getDb)
+                    getdb=getDb,
+                    geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]]))
 
