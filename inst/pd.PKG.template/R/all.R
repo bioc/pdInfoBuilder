@@ -14,7 +14,7 @@ initDbConnection <- function() {
 
 
 getDb  <- function() {
-    if (!is.null(globals$dbCon))
+    if (!is.null(globals$dbCon) && isIdCurrent(globals$dbCon))
       return(globals$dbCon)
     initDbConnection()
 }
