@@ -90,7 +90,7 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
 }
 
 
-loadAffyCsv <- function(db, csvFile, batch_size=5000) {
+loadAffyCsvNOCYTOBAND <- function(db, csvFile, batch_size=5000) {
     con <- file(csvFile, open="r")
     on.exit(close(con))
 
@@ -245,3 +245,60 @@ buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile,
     printTime("sequence matrix", t[3])
     closeDb(db)
 }
+
+# hacked by VC -- original code up above in loadAffyCsvNOCYTOBAND
+#
+loadAffyCsv <- function(db, csvFile, batch_size=5000) {
+    con <- file(csvFile, open="r")
+    on.exit(close(con))
+
+    getFragLength <- function(v){
+      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[1]])
+      tmp[tmp == "---"] <- NA
+      as.integer(tmp)
+    }
+    
+    wantedCols <- c(1,2,3,4,7,8,10,12,13,17) # added 10
+    df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
+                     na.strings="---", header=TRUE)[, wantedCols]
+    header <- gsub(".", "_", names(df), fixed=TRUE)
+    names(df) <- header
+
+    FRAG_COL <- "Fragment_Length_Start_Stop"
+    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+
+    db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
+                 "physical_pos", "strand", "cytoband", "allele_a",
+                 "allele_b", "fragment_length")
+
+    val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
+                     ":Physical_Position", ":Strand", ":Cytoband", ":Allele_A",
+                     ":Allele_B", ":Fragment_Length_Start_Stop")
+
+    exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
+    sql <- paste("update featureSet set ", exprs,
+                 "where man_fsetid = :Probe_Set_ID")
+
+    dbBeginTransaction(db)
+    dbGetPreparedQuery(db, sql, bind.data=df)
+    dbCommit(db)
+
+    ## Now do the rest in batches
+    done <- FALSE
+    while (!done) {
+        df <- read.table(con, sep=",", stringsAsFactors=FALSE,
+                         nrows=batch_size, na.strings="---",
+                         header=FALSE)[, wantedCols]
+        if (nrow(df) < batch_size) {
+            done <- TRUE
+            if (nrow(df) == 0)
+              break
+        }
+        names(df) <- header
+        df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+        dbBeginTransaction(db)
+        dbGetPreparedQuery(db, sql, bind.data=df)
+        dbCommit(db)
+    }
+}
+

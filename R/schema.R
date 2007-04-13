@@ -11,6 +11,8 @@ pragma page_size = 8192;
 ## be integer and we could have a separate mapping tabel to the cromosome label
 ## (so that names are more meaningful).
 
+# NB -- VC added cytoband
+
 createSnpFeatureSetSql <- ('
 create table featureSet (
     fsetid integer primary key,
@@ -20,6 +22,7 @@ create table featureSet (
     chrom text,
     physical_pos integer,
     strand integer,
+    cytoband text,
     allele_a text,
     allele_b text,
     fragment_length integer)

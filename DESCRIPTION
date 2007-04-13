@@ -4,8 +4,8 @@ Description: Builds platform design information packages.
   These consist of a SQLite database containing feature-level
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
-  annotation data.
-Version: 0.1.22
+  annotation data.  munged vc for Cytoband
+Version: 0.1.23
 Author: Seth Falcon
 Maintainer: Seth Falcon <sfalcon@fhcrc.org>
 LazyLoad: yes
