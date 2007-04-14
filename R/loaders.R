@@ -258,7 +258,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
       as.integer(tmp)
     }
     
-    wantedCols <- c(1,2,3,4,7,8,10,12,13,17) # added 10
+    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17) # added 10/14
     df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
                      na.strings="---", header=TRUE)[, wantedCols]
     header <- gsub(".", "_", names(df), fixed=TRUE)
@@ -269,11 +269,11 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
 
     db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
                  "physical_pos", "strand", "cytoband", "allele_a",
-                 "allele_b", "fragment_length")
+                 "allele_b", "gene_assoc", "fragment_length")
 
     val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
                      ":Physical_Position", ":Strand", ":Cytoband", ":Allele_A",
-                     ":Allele_B", ":Fragment_Length_Start_Stop")
+                     ":Allele_B", ":Associated_Gene", ":Fragment_Length_Start_Stop")
 
     exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
     sql <- paste("update featureSet set ", exprs,

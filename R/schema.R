@@ -25,6 +25,7 @@ create table featureSet (
     cytoband text,
     allele_a text,
     allele_b text,
+    gene_assoc text,
     fragment_length integer)
 ')
 
