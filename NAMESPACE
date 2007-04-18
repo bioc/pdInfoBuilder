@@ -1,0 +1,16 @@
+useDynLib("pdInfoBuilder")
+
+import("methods")
+
+exportClasses(
+              "PkgSeed",
+              "PDInfoPkgSeed",
+              "AffySNPPDInfoPkgSeed"
+              )
+
+exportMethods(
+              "chipName",
+              "makePdInfoPackage",
+
+              "initialize"
+              )

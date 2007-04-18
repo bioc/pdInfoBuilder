@@ -1,3 +1,1 @@
-.First.lib <- function(libname, pkgname) {
-    library.dynam("pdInfoBuilder", package="pdInfoBuilder")
-}
+.onLoad <- function(libname, pkgname) require("methods")
