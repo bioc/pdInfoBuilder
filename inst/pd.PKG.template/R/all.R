@@ -35,17 +35,6 @@ closeDb <- function() {
     initDbConnection()
 }
 
-.onAttach <- function(libname, pkgname) {
-    ## FIXME: once we've made a more careful pass over the data, this message
-    ## should go away!
-    cat("\n\n")
-    cat("Welcome to the pd.@CHIPNAME@ prototype pdInfo package\n")
-    cat("WARNING: DO NOT USE THIS PACKAGE FOR ANY ANALYSIS.\n")
-    cat("THIS PACKAGE IS FOR INTERFACE PROTOTYPE USE ONLY!\n")
-    cat("THE DATA HAS NOT BEEN VALIDATED AND LIKELY HAS ERRORS.\n")
-    cat("Have fun!\n\n")
-}
-
 .onUnload <- function(libpath) {
     closeDb()
 }
