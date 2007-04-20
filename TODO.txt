@@ -1,0 +1,5 @@
+1) there should be a mechanism for platform-specific templates
+2) man page support for template (man page will apply to all instances
+of a class of chip)
+3) wiring in the crlmm.regions and params components coming from
+Benilton
