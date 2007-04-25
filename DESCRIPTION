@@ -5,16 +5,18 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
   annotation data.  munged vc for Cytoband
-Version: 1.1.0
+Version: 1.1.1
 Author: Seth Falcon
 Maintainer: Seth Falcon <sfalcon@fhcrc.org>
 LazyLoad: yes
-Depends: R (>= 2.5.0), methods, Biobase (>= 1.13.17),
+Depends: R (>= 2.5.0), methods, Biobase (>= 1.13.58),
          RSQLite (>= 0.4-15), affxparser (>= 1.7.2),
          oligo (>= 0.99.97)
+Imports: Biobase (>= 1.13.58)
 License: The Artistic License, Version 2.0
 Collate: AllClasses.R
          AllGenerics.R
+         initialize-methods.R
          schema.R
          initDb.R
          pmmmBlockToMat.R

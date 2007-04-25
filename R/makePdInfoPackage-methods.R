@@ -32,4 +32,12 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
               buildPdInfoDb(object@cdfFile, object@csvAnnoFile,
                             object@csvSeqFile, dbFilePath, seqMatFile,
                             batch_size=batch_size, verbose=!quiet)
+              ## copy external resource files
+              extFiles <- c(object@splineParamFile,
+                            object@crlmmInfoFile,
+                            object@referenceDistFile)
+              for (ef in extFiles) {
+                  if (nchar(ef) > 0)
+                    file.copy(ef, extdataDir)
+              }
           })

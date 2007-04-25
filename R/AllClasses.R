@@ -23,9 +23,12 @@ setClass("PDInfoPkgSeed",
 setClass("AffySNPPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           cdfFile="character",
-           csvAnnoFile="character",
-           csvSeqFile="character"
+           cdfFile="ScalarCharacter",
+           csvAnnoFile="ScalarCharacter",
+           csvSeqFile="ScalarCharacter",
+           splineParamFile="ScalarCharacter",
+           crlmmInfoFile="ScalarCharacter",
+           referenceDistFile="ScalarCharacter"
            ),
          prototype=list(manufacturer="Affymetrix"))
 

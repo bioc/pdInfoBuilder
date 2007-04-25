@@ -1,6 +1,7 @@
 useDynLib("pdInfoBuilder")
 
 import("methods")
+import("Biobase")
 
 exportClasses(
               "PkgSeed",
