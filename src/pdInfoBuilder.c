@@ -32,7 +32,7 @@ SEXP PIB_25mers_to_mat(SEXP mers)
 {
     int n;                      /* number of 25mers */
     int i, j, k;                /* index counters */
-    char *seq;
+    const char *seq;
     SEXP ans;                   /* return matrix */
     SEXP dims;
     int *mat;
