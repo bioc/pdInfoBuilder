@@ -9,7 +9,7 @@ Version: 1.1.1
 Author: Seth Falcon
 Maintainer: Seth Falcon <sfalcon@fhcrc.org>
 LazyLoad: yes
-Depends: R (>= 2.5.0), methods, Biobase (>= 1.13.58),
+Depends: R (>= 2.6.0), methods, Biobase (>= 1.13.58),
          RSQLite (>= 0.4-15), affxparser (>= 1.7.2),
          oligo (>= 0.99.97)
 Imports: Biobase (>= 1.13.58)
