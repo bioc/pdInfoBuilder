@@ -50,7 +50,9 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
                                          package="pdInfoBuilder")
               createPackage(pkgname=pkgName, destinationDir=destDir,
                             originDir=templateDir, symbolValues=syms,
-                            quiet=quiet, ...)
+# getting error on invalid use of ..., vjc 5 jul 2007
+#                            quiet=quiet, ...)
+                            quiet=quiet)
               dir.create(extdataDir, recursive=TRUE)
               buildPdInfoDb(object@cdfFile, object@csvAnnoFile,
                             object@csvSeqFile, dbFilePath, seqMatFile,
