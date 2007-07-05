@@ -8,5 +8,5 @@ LazyLoad: yes
 Depends: R (>= 2.5.0), methods,
          RSQLite (>= 0.4-15), oligo (>= 1.0.0)
 License: @LIC@
-
+biocViews: AnnotationData
 
