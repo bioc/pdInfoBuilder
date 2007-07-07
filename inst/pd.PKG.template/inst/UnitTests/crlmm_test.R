@@ -1,4 +1,4 @@
-pdinfo <- @PDINFONAME@
+pdinfo <- "@PDINFONAME@"
 
 # the command
 # eg. library(pd.mapping50k.hind240)
