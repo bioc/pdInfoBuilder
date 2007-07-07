@@ -10,7 +10,7 @@ test_crlmm <- function() {
 size = as.character(2*as.numeric(gsub(".*g(.*)k.*", "\\1", pdinfo)))
 enz = gsub(".*k.(.*$)", "\\1", pdinfo)
 enz = gsub("240", "", enz)
-hapmPackName = paste("hapmap", size, enz, sep="")
+hapmPackName = paste("hapmap", size, "k", enz, sep="")
 library(oligo)
 library(hapmPackName, character.only=TRUE)
 xxr = justSNPRMA(dir(system.file( "celFiles", package=hapmPackName), full=TRUE))
