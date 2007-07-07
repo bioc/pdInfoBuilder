@@ -2,4 +2,5 @@
 2) man page support for template (man page will apply to all instances
 of a class of chip)
 3) wiring in the crlmm.regions and params components coming from
-Benilton
+Benilton -- this is proceeding through the annotation/* svn
+dropoff -- parms_store, anno_store, data_store
