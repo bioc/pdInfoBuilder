@@ -2,7 +2,7 @@ TOP=../../..
 RUNIT_DIR=$(shell pwd)
 INST_PATH=$(shell dirname ${RUNIT_DIR})
 PKG_PATH=$(shell dirname ${INST_PATH})
-RCMD=R25
+RCMD=R
 
 all: install test
 
