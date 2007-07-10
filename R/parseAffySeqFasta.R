@@ -67,6 +67,16 @@ createSeqMat <- function(db) {
     m
 }
 
+createSeqMat.cnv <- function(db) {
+    allseq <- dbGetQuery(db, "select seq from sequenceCNV")[[1]]
+    m <- .Call("PIB_25mers_to_mat", allseq, PACKAGE="pdInfoBuilder")
+    remove(allseq)
+    allfid <- dbGetQuery(db, "select fid from sequence")[[1]]
+    rownames(m) <- allfid
+    remove(allfid)
+    m
+}
+
 
 seqToMat <- function(seq) {
     .Call("PIB_25mers_to_mat", seq, PACKAGE="pdInfoBuilder")

@@ -11,3 +11,19 @@ setMethod("initialize", "AffySNPPDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
+
+setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
+          function(.Object, cdfFile, csvAnnoFile, csvSeqFile, csvAnnoFileCnv, csvSeqFileCnv,
+                   splineParamFile="", crlmmInfoFile="",
+                   referenceDistFile="", ...) {
+              .Object@cdfFile <- new("ScalarCharacter", cdfFile)
+              .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
+              .Object@csvSeqFile <- new("ScalarCharacter", csvSeqFile)
+              .Object@csvAnnoFileCnv <- new("ScalarCharacter", csvAnnoFileCnv)
+              .Object@csvSeqFileCnv <- new("ScalarCharacter", csvSeqFileCnv)
+              .Object@splineParamFile <- new("ScalarCharacter", splineParamFile)
+              .Object@crlmmInfoFile <- new("ScalarCharacter", crlmmInfoFile)
+              .Object@referenceDistFile <- new("ScalarCharacter", referenceDistFile)
+              .Object <- callNextMethod(.Object, ...)
+              .Object
+          })

@@ -54,3 +54,35 @@ create table sequence (
     tallele text,
     seq text)
 ')
+
+
+createCnvFeatureSetSql <- ('
+create table featureSetCNV (
+    fsetid integer primary key,
+    man_fsetid text,
+    chrom text,
+    chrom_start integer,
+    chrom_stop integer,
+    strand integer,
+    cytoband text,
+    gene_assoc text,
+    fragment_length integer,
+    xpar integer)
+')
+
+createCnvFeatureSql <- ('
+create table %s (
+    fid integer primary key,
+    strand integer,
+    fsetid integer not null references "featureSetCNV" ("fsetid"),
+    x integer,
+    y integer)
+')
+
+createCnvSequenceSql <- ('
+create table sequenceCNV (
+    fid integer primary key,
+    offset integer,
+    tstrand text,
+    seq text)
+')

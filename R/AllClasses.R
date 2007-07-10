@@ -32,6 +32,20 @@ setClass("AffySNPPDInfoPkgSeed",
            ),
          prototype=list(manufacturer="Affymetrix"))
 
+setClass("AffySNPCNVPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           cdfFile="ScalarCharacter",
+           csvAnnoFile="ScalarCharacter",
+           csvSeqFile="ScalarCharacter",
+           csvAnnoFileCnv="ScalarCharacter",
+           csvSeqFileCnv="ScalarCharacter",
+           splineParamFile="ScalarCharacter",
+           crlmmInfoFile="ScalarCharacter",
+           referenceDistFile="ScalarCharacter"
+           ),
+         prototype=list(manufacturer="Affymetrix"))
+
 
 .isValidPkgSeed <- function(object) {
     email <- object@email
