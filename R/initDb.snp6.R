@@ -9,7 +9,7 @@ snp6.initDb <- function(dbname) {
     dbGetQuery(db, createCnvFeatureSetSql)
 
     dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature_tmp"))
-    dbGetQuery(db, sprintf(createCnvFeatureSql, "pmfeatureCnv_tmp"))
+    dbGetQuery(db, sprintf(createCnvFeatureSql, "pmfeatureCNV_tmp"))
 
 ##    dbGetQuery(db, sprintf(createSnpFeatureSql, "mmfeature_tmp"))
 
@@ -34,7 +34,7 @@ snp6.initDb <- function(dbname) {
 
 snp6.sortFeatureTables <- function(db) {
     dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature"))
-    dbGetQuery(db, sprintf(createCnvFeatureSql, "pmfeatureCnv"))
+    dbGetQuery(db, sprintf(createCnvFeatureSql, "pmfeatureCNV"))
 
     ## Reorder XXfeature tables
     fillSql <- paste("insert into %s select * from %s order by",
@@ -45,13 +45,13 @@ snp6.sortFeatureTables <- function(db) {
     dbBeginTransaction(db)
     fillSql <- paste("insert into %s select * from %s order by",
                      "fsetid, strand")
-    dbGetQuery(db, sprintf(fillSql, "pmfeatureCnv", "pmfeatureCnv_tmp"))
+    dbGetQuery(db, sprintf(fillSql, "pmfeatureCNV", "pmfeatureCNV_tmp"))
     dbCommit(db)
     
     ## drop temp tables
     dbBeginTransaction(db)
     dbGetQuery(db, "drop table pmfeature_tmp")
-    dbGetQuery(db, "drop table pmfeatureCnv_tmp")
+    dbGetQuery(db, "drop table pmfeatureCNV_tmp")
     dbCommit(db)
 }
 
@@ -65,7 +65,7 @@ snp6.createIndicesDb <- function(db) {
 
     ## Create DB indices and fix ordering
     makeIndex("pmf_idx_fsetid", "pmfeature", "fsetid")
-    makeIndex("pmf_idx_fsetid_cnv", "pmfeatureCnv", "fsetid")
+    makeIndex("pmf_idx_fsetid_cnv", "pmfeatureCNV", "fsetid")
 ##    makeIndex("mmf_idx_fsetid", "mmfeature", "fsetid")
 
     makeIndex("fset_idx_chrom", "featureSet", "chrom")

@@ -59,7 +59,7 @@ readCdfUnitToMat.cnv <- function(u){
 }
 
 snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
-  pmfeature <- "pmfeatureCnv_tmp"
+  pmfeature <- "pmfeatureCNV_tmp"
 
   ## Don't check PM/MM matching.
   ## SNP 5/6 is PM-only
