@@ -19,12 +19,14 @@ Collate: AllClasses.R
          initialize-methods.R
          schema.R
          initDb.R
+         initDb.snp6.R
          pmmmBlockToMat.R
          loaders.R
+         loaders.snp6.R
          dbImport.AffyHuExArrayAnnCSV.R
          parseAffySeqFasta.R
          makePdInfoPackage-methods.R
          chipName-methods.R
-	geneAssoc.R
+	 geneAssoc.R
          zzz.R
 biocViews: Annotation, Infrastructure
