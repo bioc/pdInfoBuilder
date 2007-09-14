@@ -7,13 +7,13 @@ Description: Builds platform design information packages.
   annotation data.  munged vc for Cytoband
 Version: 1.1.10
 Author: Seth Falcon
-Maintainer: Seth Falcon <sfalcon@fhcrc.org>
+Maintainer: Vince Carey <stvjc@channing.harvard.edu>
 LazyLoad: yes
 Depends: R (>= 2.6.0), methods, Biobase (>= 1.13.58),
          RSQLite (>= 0.4-15), affxparser (>= 1.7.2),
          oligo (>= 0.99.97)
 Imports: Biobase (>= 1.13.58)
-License: The Artistic License, Version 2.0
+License: Artistic-2.0
 Collate: AllClasses.R
          AllGenerics.R
          initialize-methods.R
