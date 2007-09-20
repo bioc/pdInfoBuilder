@@ -1,0 +1,36 @@
+# example
+RCMD=R26
+
+all: hind xba nsp sty
+
+hind: pd.mapping50k.hind240/inst/UnitTests/tested.txt
+
+pd.mapping50k.hind240/inst/UnitTests/tested.txt: pd.mapping50k.hind240/DESCRIPTION
+	cd pd.mapping50k.hind240/inst/UnitTests; make; touch tested.txt
+
+pd.mapping50k.hind240/DESCRIPTION:
+	cd pdBuilders; cat runPDIB50kHind.R | ${RCMD} --vanilla > hindout.txt
+
+xba: pd.mapping50k.xba240/inst/UnitTests/tested.txt
+
+pd.mapping50k.xba240/inst/UnitTests/tested.txt: pd.mapping50k.xba240/DESCRIPTION
+	cd pd.mapping50k.xba240/inst/UnitTests; make; touch tested.txt
+
+pd.mapping50k.xba240/DESCRIPTION:
+	cd pdBuilders; cat runPDIB50kXba.R | ${RCMD} --vanilla > xbaout.txt
+
+nsp: pd.mapping250k.nsp/inst/UnitTests/tested.txt
+
+pd.mapping250k.nsp/inst/UnitTests/tested.txt: pd.mapping250k.nsp/DESCRIPTION
+	cd pd.mapping250k.nsp/inst/UnitTests; make; touch tested.txt
+
+pd.mapping250k.nsp/DESCRIPTION:
+	cd pdBuilders; cat runPDIB250kNsp.R | ${RCMD} --vanilla > nspout.txt
+
+sty: pd.mapping250k.sty/inst/UnitTests/tested.txt
+
+pd.mapping250k.sty/inst/UnitTests/tested.txt: pd.mapping250k.sty/DESCRIPTION
+	cd pd.mapping250k.sty/inst/UnitTests; make; touch tested.txt
+
+pd.mapping250k.sty/DESCRIPTION:
+	cd pdBuilders; cat runPDIB250kSty.R | ${RCMD} --vanilla > styout.txt

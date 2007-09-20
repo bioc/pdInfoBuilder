@@ -1,0 +1,3 @@
+this dir holds exemplars of scripts calling pdInfoBuilder
+utilities to build new packages.  sits in the annotation/pkgs
+subdir of Bioconductor svn repository.
