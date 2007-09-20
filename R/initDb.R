@@ -59,6 +59,7 @@ createIndicesDb <- function(db) {
     makeIndex("mmf_idx_fsetid", "mmfeature", "fsetid")
 
     makeIndex("fset_idx_chrom", "featureSet", "chrom")
+    makeIndex("fset_idx_fsetid", "featureSet", "fsetid")
 
     ## finally, run analyze (SQLite specific?)
     dbGetQuery(db, "analyze")

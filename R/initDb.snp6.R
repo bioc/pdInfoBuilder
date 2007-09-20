@@ -70,7 +70,9 @@ snp6.createIndicesDb <- function(db) {
 
     makeIndex("fset_idx_chrom", "featureSet", "chrom")
     makeIndex("fset_idx_chrom_cnv", "featureSetCNV", "chrom")
-
+    makeIndex("fset_idx_fsetid", "featureSet", "fsetid")
+    makeIndex("fset_idx_fsetid_cnv", "featureSetCnv", "fsetid")
+    
     ## finally, run analyze (SQLite specific?)
     dbGetQuery(db, "analyze")
 }
