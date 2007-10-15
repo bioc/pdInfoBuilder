@@ -11,3 +11,8 @@ setMethod("chipName", "AffySNPCNVPDInfoPkgSeed",
               header <- readCdfHeader(object@cdfFile)
               header$chiptype
           })
+
+setMethod("chipName", "NgsPDInfoPkgSeed",
+          function(object) {
+            strsplit(tolower(object@ndfFile), ".ndf")[[1]]
+          })

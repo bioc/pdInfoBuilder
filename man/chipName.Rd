@@ -1,6 +1,9 @@
 \name{chipName}
 \alias{chipName}
 \alias{chipName,AffySNPPDInfoPkgSeed-method}
+\alias{chipName,NgsPDInfoPkgSeed-method}
+\alias{chipName,NgsExpressionPDInfoPkgSeed-method}
+\alias{chipName,NgsTilingPDInfoPkgSeed-method}
 
 \title{Return an Official Chip/Platform Name}
 \description{

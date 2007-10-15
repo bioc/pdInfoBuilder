@@ -7,12 +7,14 @@ exportClasses(
               "PkgSeed",
               "PDInfoPkgSeed",
               "AffySNPPDInfoPkgSeed",
-              "AffySNPCNVPDInfoPkgSeed"
+              "AffySNPCNVPDInfoPkgSeed",
+              "NgsPDInfoPkgSeed",
+              "NgsExpressionPDInfoPkgSeed",
+              "NgsTilingPDInfoPkgSeed"
               )
 
 exportMethods(
               "chipName",
               "makePdInfoPackage",
-
               "initialize"
               )

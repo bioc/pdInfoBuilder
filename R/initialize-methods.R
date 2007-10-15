@@ -27,3 +27,12 @@ setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
+
+setMethod("initialize", "NgsPDInfoPkgSeed",
+          function(.Object, ndfFile, posFile, xysFile, ...) {
+              .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+              .Object@posFile <- new("ScalarCharacter", posFile)
+              .Object@xysFile <- new("ScalarCharacter", xysFile)
+              .Object <- callNextMethod(.Object, ...)
+              .Object
+          })

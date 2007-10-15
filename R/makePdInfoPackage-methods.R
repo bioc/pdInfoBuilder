@@ -109,3 +109,101 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed",
                     file.copy(ef, extdataDir)
               }
           })
+
+setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
+          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
+              chip <- chipName(object)
+              pkgName <- cleanPlatformName(chip)
+              extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+              dbFileName <- paste(pkgName, "sqlite", sep=".")
+              dbFilePath <- file.path(extdataDir, dbFileName)
+              ## FIXME!!! need geometry
+              ## Awww... it would be great if NGS had a header describing the array.
+              ## ndfdata was supposed to appear only on loadByBatch
+              ## appears here to avoid reading the same file twice
+              ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
+              xysdata <- read.delim(object@xysFile, as.is=TRUE, header=TRUE, comment.char="#")
+              geometry <- paste(max(ndfdata$Y), max(ndfdata$X), sep=";")
+              nx <- max(ndfdata$X)
+              ndf.idx <- as.integer(ndfdata$X+(ndfdata$Y-1)*nx)
+              xys.idx <- as.integer(xysdata$X+(xysdata$Y-1)*nx)
+              idx <- match(xys.idx, ndf.idx)
+              ndfdata <- ndfdata[idx,]
+              idx <- which(is.na(xysdata$SIGNAL))
+              ndfdata[idx, "CONTAINER"] <- "OLIGO_CONTROL"
+              ndfdata <- cbind(fid=as.integer(ndfdata$X+(ndfdata$Y-1)*nx), ndfdata)
+              ndfdata <- as.data.frame(ndfdata)
+              ndfdata <- ndfdata[order(ndfdata[["fid"]]),]
+              ndfdata[["fid"]] <- 1:nrow(ndfdata)
+              rm(xysdata, ndf.idx, xys.idx, idx)
+              syms <- list(MANUF=object@manufacturer,
+                           VERSION=object@version,
+                           GENOMEBUILD=object@genomebuild,
+                           AUTHOR=object@author,
+                           AUTHOREMAIL=object@email,
+                           LIC=object@license,
+                           DBFILE=dbFileName,
+                           CHIPNAME=chip,
+                           PKGNAME=pkgName,
+                           PDINFONAME=pkgName,
+                           PDINFOCLASS="NgsExpressionPDInfo",
+                           GEOMETRY=geometry)
+
+              templateDir <- system.file("pd.PKG.template",
+                                         package="pdInfoBuilder")
+              createPackage(pkgname=pkgName, destinationDir=destDir,
+                            originDir=templateDir, symbolValues=syms,
+                            quiet=quiet)
+              dir.create(extdataDir, recursive=TRUE)
+              buildPdInfoDb.ngs(ndfdata, object@posFile, dbFilePath,
+                                batch_size=batch_size, verbose=!quiet)
+          })
+
+setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
+          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
+              chip <- chipName(object)
+              pkgName <- cleanPlatformName(chip)
+              extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+              dbFileName <- paste(pkgName, "sqlite", sep=".")
+              dbFilePath <- file.path(extdataDir, dbFileName)
+              ## FIXME!!! need geometry
+              ## Awww... it would be great if NGS had a header describing the array.
+              ## ndfdata was supposed to appear only on loadByBatch
+              ## appears here to avoid reading the same file twice
+              ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
+              xysdata <- read.delim(object@xysFile, as.is=TRUE, header=TRUE, comment.char="#")
+              geometry <- paste(max(ndfdata$Y), max(ndfdata$X), sep=";")
+              nx <- max(ndfdata$X)
+              ndf.idx <- as.integer(ndfdata$X+(ndfdata$Y-1)*nx)
+              xys.idx <- as.integer(xysdata$X+(xysdata$Y-1)*nx)
+              idx <- match(xys.idx, ndf.idx)
+              ndfdata <- ndfdata[idx,]
+              idx <- which(is.na(xysdata$SIGNAL))
+              ndfdata[idx, "CONTAINER"] <- "OLIGO_CONTROL"
+              ndfdata <- cbind(fid=as.integer(ndfdata$X+(ndfdata$Y-1)*nx), ndfdata)
+              ndfdata <- as.data.frame(ndfdata)
+              ndfdata <- ndfdata[order(ndfdata[["fid"]]),]
+              ndfdata[["fid"]] <- 1:nrow(ndfdata)
+              rm(xysdata, ndf.idx, xys.idx, idx)
+              syms <- list(MANUF=object@manufacturer,
+                           VERSION=object@version,
+                           GENOMEBUILD=object@genomebuild,
+                           AUTHOR=object@author,
+                           AUTHOREMAIL=object@email,
+                           LIC=object@license,
+                           DBFILE=dbFileName,
+                           CHIPNAME=chip,
+                           PKGNAME=pkgName,
+                           PDINFONAME=pkgName,
+                           PDINFOCLASS="NgsTilingPDInfo",
+                           GEOMETRY=geometry)
+
+              templateDir <- system.file("pd.PKG.template",
+                                         package="pdInfoBuilder")
+              createPackage(pkgname=pkgName, destinationDir=destDir,
+                            originDir=templateDir, symbolValues=syms,
+                            quiet=quiet)
+              dir.create(extdataDir, recursive=TRUE)
+              buildPdInfoDb.ngs(ndfdata, object@posFile, dbFilePath,
+                                batch_size=batch_size, verbose=!quiet)
+          })

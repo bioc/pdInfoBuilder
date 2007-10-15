@@ -53,3 +53,17 @@ setClass("AffySNPCNVPDInfoPkgSeed",
       return("invalid email address")
     TRUE
 }
+
+setClass("NgsPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           ndfFile="ScalarCharacter",
+           posFile="ScalarCharacter",
+           xysFile="ScalarCharacter"
+           ),
+         prototype=list(manufacturer="NimbleGen"))
+
+setClass("NgsExpressionPDInfoPkgSeed",
+         contains="NgsPDInfoPkgSeed")
+setClass("NgsTilingPDInfoPkgSeed",
+         contains="NgsPDInfoPkgSeed")
