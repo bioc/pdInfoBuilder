@@ -6,6 +6,7 @@ import("Biobase")
 exportClasses(
               "PkgSeed",
               "PDInfoPkgSeed",
+              "AffyExpressionPDInfoPkgSeed",
               "AffySNPPDInfoPkgSeed",
               "AffySNPCNVPDInfoPkgSeed",
               "NgsPDInfoPkgSeed",

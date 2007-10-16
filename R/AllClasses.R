@@ -67,3 +67,11 @@ setClass("NgsExpressionPDInfoPkgSeed",
          contains="NgsPDInfoPkgSeed")
 setClass("NgsTilingPDInfoPkgSeed",
          contains="NgsPDInfoPkgSeed")
+
+setClass("AffyExpressionPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           cdfFile="ScalarCharacter",
+           csvAnnoFile="ScalarCharacter",
+           tabSeqFile="ScalarCharacter"),
+         prototype=list(manufacturer="Affymetrix"))

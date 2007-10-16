@@ -36,3 +36,13 @@ setMethod("initialize", "NgsPDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
+
+setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
+          function(.Object, cdfFile, csvAnnoFile, tabSeqFile, ...) {
+              .Object@cdfFile <- new("ScalarCharacter", cdfFile)
+              .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
+              .Object@tabSeqFile <- new("ScalarCharacter", tabSeqFile)
+              .Object <- callNextMethod(.Object, ...)
+              .Object
+          })
+

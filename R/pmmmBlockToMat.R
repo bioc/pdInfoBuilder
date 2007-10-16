@@ -74,3 +74,18 @@ readCdfUnitToMat <- function(u, verify.pmmm=TRUE) {
     mat
 }
 
+
+readCdfUnitToMat.affyExpr <- function(u, verify.pmmm=TRUE) {
+  cols <- c("x", "y", "indices", "pbase", "tbase", "atom", "ispm")
+  bases <- c("A", "C", "G", "T")
+  u$groups[[1]][["pbase"]] <- match(u$groups[[1]]$pbase, bases)
+  u$groups[[1]][["tbase"]] <- match(u$groups[[1]]$tbase, bases)
+  mat <- do.call(cbind, u$groups[[1]][cols])
+  if (verify.pmmm) {
+    ## verify pm/mm match
+    ispm <- as.logical(mat[, "ispm"])
+    stopifnot(all(mat[ispm, "atom"] == mat[!ispm, "atom"]))
+  }
+  mat
+}
+
