@@ -5,5 +5,8 @@ of a class of chip)
 Benilton -- this is proceeding through the annotation/* svn
 dropoff -- parms_store, anno_store, data_store
 4) waiting for affyio:::read.celfile to read SNP6-CEL files so i can
-   test the prototype for pdInfo on SNP 6.
-5) still need to handle the QC units on SNP6.
+   test the prototype for pdInfo on SNP 6. (done)
+5) still need to handle the QC units on SNP6. (done, afaik)
+6) waiting for parsers for Exon arrays (affxparser??)
+7) add support to SNP 5.0?
+

@@ -46,3 +46,11 @@ setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
               .Object
           })
 
+setMethod("initialize", "AffyTilingPDInfoPkgSeed",
+          function(.Object, bpmapFile, cifFile, ...) {
+              .Object@bpmapFile <- new("ScalarCharacter", bpmapFile)
+              .Object@cifFile <- new("ScalarCharacter", cifFile)
+              .Object <- callNextMethod(.Object, ...)
+              .Object
+          })
+

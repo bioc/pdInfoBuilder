@@ -75,3 +75,10 @@ setClass("AffyExpressionPDInfoPkgSeed",
            csvAnnoFile="ScalarCharacter",
            tabSeqFile="ScalarCharacter"),
          prototype=list(manufacturer="Affymetrix"))
+
+setClass("AffyTilingPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           bpmapFile="ScalarCharacter",
+           cifFile="ScalarCharacter"),
+         prototype=list(manufacturer="Affymetrix"))

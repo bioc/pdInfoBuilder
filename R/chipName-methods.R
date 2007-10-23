@@ -23,3 +23,9 @@ setMethod("chipName", "AffyExpressionPDInfoPkgSeed",
               header <- readCdfHeader(object@cdfFile)
               header$chiptype
           })
+
+setMethod("chipName", "AffyTilingPDInfoPkgSeed",
+          function(object) {
+              ## compute chip name from the CDF file
+            strsplit(tolower(object@bpmapFile), ".bpmap")[[1]]
+          })

@@ -5,13 +5,13 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
   annotation data.  munged vc for Cytoband
-Version: 1.3.3
+Version: 1.3.4
 Author: Seth Falcon
 Maintainer: Vince Carey <stvjc@channing.harvard.edu>
 LazyLoad: yes
 Depends: R (>= 2.6.0), methods, Biobase (>= 1.13.58),
          RSQLite (>= 0.4-15), affxparser (>= 1.7.2),
-         oligo (>= 0.99.97)
+         oligo (>= 1.2.0)
 Imports: Biobase (>= 1.13.58)
 License: Artistic-2.0
 Collate: AllClasses.R
@@ -34,5 +34,8 @@ Collate: AllClasses.R
          affyExpr.initDb.R
          affyExpr.loaders.R
          affyExpr.schema.R
+         affyTiling.initDb.R
+         affyTiling.loaders.R
+         affyTiling.schema.R
          zzz.R
 biocViews: Annotation, Infrastructure
