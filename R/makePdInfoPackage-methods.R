@@ -68,7 +68,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
           })
 
 setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed",
-          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
+          function(object, destDir=".", batch_size=1000, quiet=FALSE) {
               chip <- chipName(object)
               pkgName <- cleanPlatformName(chip)
               extdataDir <- file.path(destDir, pkgName, "inst", "extdata")

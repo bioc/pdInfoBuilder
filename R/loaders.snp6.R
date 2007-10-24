@@ -58,7 +58,7 @@ readCdfUnitToMat.cnv <- function(u){
                   }))
 }
 
-snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
+snp6.loadUnits.cnv2 <- function(db, batch, isQc=FALSE) {
   pmfeature <- "pmfeatureCNV_tmp"
 
   ## Don't check PM/MM matching.
@@ -74,7 +74,44 @@ snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
   sql <- paste("select fsetid from featureSetCNV where man_fsetid in (",
                paste('"', names(batch), '"', sep="", collapse=","),
                ") order by fsetid")
+
   batchIds <- dbGetQuery(db, sql)[[1]]
+  batchIds <- rep(batchIds, batchLens)
+  batchMat <- cbind(batchMat, fsetid=batchIds)
+  
+  ## Insert pm 
+  isPm <- as.logical(batchMat[, "ispm"])
+  values <- "(:indices, :strand, :fsetid, :x, :y)"
+  sql <- paste("insert into", pmfeature, "values", values)
+  dbBeginTransaction(db)
+  rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
+  dbClearResult(rset)
+  dbCommit(db)
+}
+
+snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
+  pmfeature <- "pmfeatureCNV_tmp"
+
+  ## Don't check PM/MM matching.
+  ## SNP 5/6 is PM-only
+  batchMat <- do.call(rbind, lapply(batch, readCdfUnitToMat.cnv))
+
+  snp6.loadUnitNames.cnv(db, names(batch))
+
+  ## Find internal featureSet IDs for these features
+  batchLens <- sapply(batch, function(x)
+                      sum(sapply(x$groups, function(y)
+                                 length(y$indices))))
+  theNames <- names(batch)
+  sets <- split(theNames, rep(1:length(theNames), each=1000, length.out=length(theNames)))
+  batchIds <- NULL
+  for (i in 1:length(sets)){
+    sql <- paste("select fsetid from featureSetCNV where man_fsetid in (",
+                 paste('"', sets[[i]], '"', sep="", collapse=","),
+                 ") order by fsetid")
+    batchIds <- c(batchIds, dbGetQuery(db, sql)[[1]])
+  }
+##  batchIds <- dbGetQuery(db, sql)[[1]]
   batchIds <- rep(batchIds, batchLens)
   batchMat <- cbind(batchMat, fsetid=batchIds)
   
@@ -273,6 +310,8 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
   sql <- paste("update featureSet set ", exprs,
                "where man_fsetid = :Probe_Set_ID")
 
+  df[["Affy_SNP_ID"]] <- as.character(df[["Affy_SNP_ID"]])
+  
   dbBeginTransaction(db)
   dbGetPreparedQuery(db, sql, bind.data=df)
   dbCommit(db)
@@ -290,6 +329,7 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     }
     names(df) <- header
     df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+    df[["Affy_SNP_ID"]] <- as.character(df[["Affy_SNP_ID"]])
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)
@@ -309,7 +349,7 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
     PAR <- rep(0, nrow(theDF))
     PAR[theDF[["ChrX_pseudo_autosomal_region_1"]] == 1] <- 1
     PAR[theDF[["ChrX_pseudo_autosomal_region_2"]] == 2] <- 2
-    theDF[["XPAR"]] <- PAR
+    theDF[["XPAR"]] <- as.integer(PAR)
     theDF[["ChrX_pseudo_autosomal_region_1"]] <- NULL
     theDF[["ChrX_pseudo_autosomal_region_2"]] <- NULL
     theDF
@@ -325,11 +365,13 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   header <- gsub(".", "_", names(df), fixed=TRUE)
   names(df) <- header
 
+  df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
+  
   FRAG_COL <- "Fragment_Length_Start_Stop"
   df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
 
   df <- getPAR(df)
-  df[["Strand"]] <- ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE)
+  df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
   db_cols <- c("chrom", "chrom_start", "chrom_stop", "strand",
                "cytoband", "gene_assoc", "fragment_length", "xpar")
   
@@ -357,9 +399,10 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
         break
     }
     names(df) <- header
+    df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
     df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
     df <- getPAR(df)
-    df[["Strand"]] <- ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE)
+    df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)
