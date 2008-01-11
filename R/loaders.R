@@ -258,22 +258,30 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
       as.integer(tmp)
     }
     
-    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17) # added 10/14
+    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17, 22, 23) # added 10/14
+
+    ## BC: added 22/23 - above - dbSNP relation (50K/250K)
+    
     df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
                      na.strings="---", header=TRUE)[, wantedCols]
     header <- gsub(".", "_", names(df), fixed=TRUE)
     names(df) <- header
-
+    df[["Affy_SNP_ID"]] <- as.integer(df[["Affy_SNP_ID"]])
+    df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
+    df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
+    df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
     FRAG_COL <- "Fragment_Length_Start_Stop"
     df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
 
     db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
                  "physical_pos", "strand", "cytoband", "allele_a",
-                 "allele_b", "gene_assoc", "fragment_length")
+                 "allele_b", "gene_assoc", "fragment_length",
+                 "dbsnp", "cnv")
 
     val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
                      ":Physical_Position", ":Strand", ":Cytoband", ":Allele_A",
-                     ":Allele_B", ":Associated_Gene", ":Fragment_Length_Start_Stop")
+                     ":Allele_B", ":Associated_Gene", ":Fragment_Length_Start_Stop",
+                     ":Strand_Versus_dbSNP", ":Copy_Number_Variation")
 
     exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
     sql <- paste("update featureSet set ", exprs,
@@ -295,6 +303,10 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
               break
         }
         names(df) <- header
+        df[["Affy_SNP_ID"]] <- as.integer(df[["Affy_SNP_ID"]])
+        df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
+        df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
+        df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
         df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
         dbBeginTransaction(db)
         dbGetPreparedQuery(db, sql, bind.data=df)

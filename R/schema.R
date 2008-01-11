@@ -26,7 +26,28 @@ create table featureSet (
     allele_a text,
     allele_b text,
     gene_assoc text,
-    fragment_length integer)
+    fragment_length integer,
+    dbsnp integer,
+    cnv text)
+')
+
+createSnp6FeatureSetSql <- ('
+create table featureSet (
+    fsetid integer primary key,
+    man_fsetid text,
+    affy_snp_id integer,
+    dbsnp_rs_id text,
+    chrom text,
+    physical_pos integer,
+    strand integer,
+    cytoband text,
+    allele_a text,
+    allele_b text,
+    gene_assoc text,
+    fragment_length integer,
+    fragment_length2 integer,
+    dbsnp integer,
+    cnv text)
 ')
 
 createSnpFeatureSql <- ('
@@ -67,6 +88,20 @@ create table featureSetCNV (
     cytoband text,
     gene_assoc text,
     fragment_length integer,
+    xpar integer)
+')
+
+createCnv6FeatureSetSql <- ('
+create table featureSetCNV (
+    fsetid integer primary key,
+    man_fsetid text,
+    chrom text,
+    chrom_start integer,
+    chrom_stop integer,
+    strand integer,
+    cytoband text,
+    gene_assoc text,
+    fragment_length text,
     xpar integer)
 ')
 

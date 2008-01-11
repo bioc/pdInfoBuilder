@@ -289,29 +289,66 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     
 ##    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17) # added 10/14
 
-  wantedCols <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 15)
+  wantedCols <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 15, 20, 21)
   df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
                    na.strings="---", header=TRUE)[, wantedCols]
   header <- gsub(".", "_", names(df), fixed=TRUE)
   names(df) <- header
-
-  FRAG_COL <- "Fragment_Length_Start_Stop"
-  df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+  df[["Affy_SNP_ID"]] <- as.integer(df[["Affy_SNP_ID"]])
+  df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
+  df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
+  df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
   
-  db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
-               "physical_pos", "strand", "cytoband", "allele_a",
-               "allele_b", "gene_assoc", "fragment_length")
+  FRAG_COL <- "Fragment_Enzyme_Length_Start_Stop"
+  
+##   tmp.length <- t(sapply(strsplit(df[, FRAG_COL], "///"),
+##   function(y) sapply(y, function(z)
+##   suppressWarnings(as.integer(strsplit(z, "//")[[1]][1])))))
+##   colnames(tmp.length) <- NULL
+
+  getFragLength.na24 <- function(v){
+    tmp <- strsplit(v, " /// ")
+    t(sapply(tmp,
+             function(y){
+               at.snp <- strsplit(y, " // ")
+               n <- length(at.snp)
+               enzymes <- toupper(sapply(at.snp, "[[", 1))
+               if(all(c(n==2, enzymes == "---")))
+                 stop("2 enzymes missing IDs")
+               out <- rep(NA, 2)
+               i <- grep("NSP", enzymes)
+               if (length(i) > 0) out[1] <- as.integer(at.snp[[i]][2])
+               i <- grep("STY", enzymes)
+               if (length(i) > 0) out[2] <- as.integer(at.snp[[i]][2])
+               i <- grep("---", enzymes)
+               if (length(i) > 0) out[1] <- as.integer(at.snp[[i]][2])
+               out
+             }))
+  }
+  tmp.length <- getFragLength.na24(df[[FRAG_COL]])
+  
+  df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
+  df[["frag1"]] <- tmp.length[,1]
+  df[["frag2"]] <- tmp.length[,2]
+  df[[FRAG_COL]] <- NULL
+
+  ##  df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+  
+  db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom", "physical_pos",
+               "strand", "cytoband", "allele_a", "allele_b",
+               "gene_assoc", "dbsnp", "cnv", "fragment_length",
+               "fragment_length2")
 
   val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
-                   ":Physical_Position", ":Strand", ":Cytoband", ":Allele_A",
-                   ":Allele_B", ":Associated_Gene", ":Fragment_Length_Start_Stop")
+                   ":Physical_Position", ":Strand", ":Cytoband",
+                   ":Allele_A", ":Allele_B", ":Associated_Gene",
+                   ":Strand_Versus_dbSNP", ":Copy_Number_Variation",
+                   ":frag1", ":frag2")
 
   exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
   sql <- paste("update featureSet set ", exprs,
                "where man_fsetid = :Probe_Set_ID")
 
-  df[["Affy_SNP_ID"]] <- as.character(df[["Affy_SNP_ID"]])
-  
   dbBeginTransaction(db)
   dbGetPreparedQuery(db, sql, bind.data=df)
   dbCommit(db)
@@ -328,11 +365,28 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
         break
     }
     names(df) <- header
-    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
-    df[["Affy_SNP_ID"]] <- as.character(df[["Affy_SNP_ID"]])
+    df[["Affy_SNP_ID"]] <- as.integer(df[["Affy_SNP_ID"]])
+    df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
+    df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
+    df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
+
+##     tmp.length <- t(sapply(strsplit(df[, FRAG_COL], "///"),
+##     function(y) sapply(y, function(z)
+##     suppressWarnings(as.integer(strsplit(z, "//")[[1]][1])))))
+## 
+##     colnames(tmp.length) <- NULL
+    
+    tmp.length <- getFragLength.na24(df[[FRAG_COL]])
+    df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
+    df[["frag1"]] <- tmp.length[,1]
+    df[["frag2"]] <- tmp.length[,2]
+    df[[FRAG_COL]] <- NULL
+    
+##    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)
+
   }
 }
 
@@ -368,16 +422,29 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
   
   FRAG_COL <- "Fragment_Length_Start_Stop"
-  df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+  
+##   tmp.length <- t(sapply(strsplit(df[, FRAG_COL], "///"),
+##   function(y) sapply(y, function(z)
+##   suppressWarnings(as.integer(strsplit(z, "//")[[1]][1])))))
+##   colnames(tmp.length) <- NULL
+
+  ## Affy is not being consistent on the way they are
+  ## annotating
+  getFragLengthsCNV <- function(v)
+    sapply(strsplit(v, " /// "), function(y) paste(sapply(strsplit(y, " // "), "[[", 1), collapse=";"))
+  
+##  df[[FRAG_COL]] <- getFragLength(df[ , FRAG_COL])
 
   df <- getPAR(df)
   df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
+  df[["frag"]] <- getFragLengthsCNV(df[[FRAG_COL]])
+  
   db_cols <- c("chrom", "chrom_start", "chrom_stop", "strand",
-               "cytoband", "gene_assoc", "fragment_length", "xpar")
+               "cytoband", "gene_assoc", "xpar", "fragment_length")
   
   val_holders <- c(":Chromosome", ":Chromosome_Start", ":Chromosome_Stop",
                    ":Strand", ":Cytoband", ":Associated_Gene",
-                   ":Fragment_Length_Start_Stop", ":XPAR")
+                   ":XPAR", ":frag")
   
   exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
   sql <- paste("update featureSetCNV set ", exprs,
@@ -400,9 +467,19 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
     }
     names(df) <- header
     df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+
+##     tmp.length <- t(sapply(strsplit(df[, FRAG_COL], "///"),
+##     function(y) sapply(y, function(z)
+##     suppressWarnings(as.integer(strsplit(z, "//")[[1]][1])))))
+##     
+##     colnames(tmp.length) <- NULL
+  
+##  df[[FRAG_COL]] <- getFragLength(df[ , FRAG_COL])
+
     df <- getPAR(df)
     df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
+    df[["frag"]] <- getFragLengthsCNV(df[[FRAG_COL]])
+    df[[FRAG_COL]] <- NULL
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)

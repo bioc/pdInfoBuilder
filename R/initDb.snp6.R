@@ -5,8 +5,8 @@ snp6.initDb <- function(dbname) {
     dbGetQuery(db, setPageSizeSql)
 
     ## Create tables
-    dbGetQuery(db, createSnpFeatureSetSql)
-    dbGetQuery(db, createCnvFeatureSetSql)
+    dbGetQuery(db, createSnp6FeatureSetSql)
+    dbGetQuery(db, createCnv6FeatureSetSql)
 
     dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature_tmp"))
     dbGetQuery(db, sprintf(createCnvFeatureSql, "pmfeatureCNV_tmp"))
