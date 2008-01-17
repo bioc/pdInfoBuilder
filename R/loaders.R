@@ -252,13 +252,18 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     con <- file(csvFile, open="r")
     on.exit(close(con))
 
+    ## Affy changed the format... now gotta use [[2]]
     getFragLength <- function(v){
-      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[1]])
+      ## affy changed once more...
+      v[is.na(v)] <- "--- // --- // --- // ---"
+      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[2]])
       tmp[tmp == "---"] <- NA
       as.integer(tmp)
     }
     
-    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17, 22, 23) # added 10/14
+##    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17, 22, 23) # added 10/14
+    ## Affy changed the format once more.
+    wantedCols <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 15, 20, 21)
 
     ## BC: added 22/23 - above - dbSNP relation (50K/250K)
     
@@ -270,8 +275,10 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
     df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
     df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-    FRAG_COL <- "Fragment_Length_Start_Stop"
-    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+
+    ## Affy changed the same of the field
+    FRAG_COL <- "Fragment_Enzyme_Length_Start_Stop"
+    df[[FRAG_COL]] <- getFragLength(df[[FRAG_COL]])
 
     db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
                  "physical_pos", "strand", "cytoband", "allele_a",
@@ -280,7 +287,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
 
     val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
                      ":Physical_Position", ":Strand", ":Cytoband", ":Allele_A",
-                     ":Allele_B", ":Associated_Gene", ":Fragment_Length_Start_Stop",
+                     ":Allele_B", ":Associated_Gene", ":Fragment_Enzyme_Length_Start_Stop",
                      ":Strand_Versus_dbSNP", ":Copy_Number_Variation")
 
     exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
@@ -307,7 +314,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
         df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
         df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
         df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-        df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
+        df[[FRAG_COL]] <- getFragLength(df[[FRAG_COL]])
         dbBeginTransaction(db)
         dbGetPreparedQuery(db, sql, bind.data=df)
         dbCommit(db)
