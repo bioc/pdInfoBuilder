@@ -14,9 +14,9 @@ test_table_set <- function() {
                            "qcmmfeature", "qcpm_qcmm", "qcpmfeature",
                            "sequence", "sqlite_stat1", "table_info"))
   }else{
-    all.tabs.sort <- sort(c("featureSet", "pmfeature", "sequence",
+    alltabs.sort <- sort(c("featureSet", "pmfeature", "sequence",
                             "table_info", "featureSetCNV",
-                            "pmfeatureCNV", "sequenceCNV"))
+                            "pmfeatureCNV", "sequenceCNV", "sqlite_stat1"))
   }
     
     dd  <- pdinfo@getdb()
@@ -71,14 +71,14 @@ test_geom <- function() {
     xylim = pdinfo@geometry
     xs = dbGetQuery(dd, "select x from pmfeature")[[1]]
     ys = dbGetQuery(dd, "select y from pmfeature")[[1]]
-    checkTrue(max(xs) <= xylim[1]) # zero offset?
-    checkTrue(max(ys) <= xylim[2]) # zero offset?
+    checkTrue(max(xs) <= xylim[2]) # zero offset?
+    checkTrue(max(ys) <= xylim[1]) # zero offset?
 
     if(genomewide){
       xs = dbGetQuery(dd, "select x from pmfeatureCNV")[[1]]
       ys = dbGetQuery(dd, "select y from pmfeatureCNV")[[1]]
-      checkTrue(max(xs) <= xylim[1]) # zero offset?
-      checkTrue(max(ys) <= xylim[2]) # zero offset?
+      checkTrue(max(xs) <= xylim[2]) # zero offset?
+      checkTrue(max(ys) <= xylim[1]) # zero offset?
     }
 }
 
