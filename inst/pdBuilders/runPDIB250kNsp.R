@@ -18,14 +18,14 @@ try(system( paste(c("gunzip", dir(patt="gz$")), collapse=" ")))
 setwd(curd)
 
 cdfFile <- pat2("Mapping250K_Nsp.cdf")
-csvAnno <- pat2("Mapping250K_Nsp.na22.annot.csv")
+csvAnno <- pat2("Mapping250K_Nsp.na24.annot.csv")
 csvSeq <- pat2("Mapping250K_Nsp_probe_tab")
 spline <- pat("pd.mapping250k.nsp.spline.params.rda")
 refd <- pat("pd.mapping250k.nspRef.rda")
 crlmmInf <- pat("pd.mapping250k.nspCrlmmInfo.rda")
 
 pkg <- new("AffySNPPDInfoPkgSeed",
-           version="0.3.4",
+           version="0.3.5",
            author="Vince Carey", email="stvjc@channing.harvard.edu",
            biocViews="AnnotationData",
            genomebuild="NCBI Build 36",

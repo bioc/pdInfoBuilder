@@ -1,12 +1,12 @@
 
 library("pdInfoBuilder")
 
-targ = "../pd.mapping50k.hind240"
+targ = "../pd.genomewidesnp.6"
 
 if (file.exists(targ)) stop(paste("cannot have folder", targ,
    "present if you want to build there"))
-parms_pref = "../../parms_store/pd.mapping50k.hind240"  # should be in parms_store
-anno_pref = "../../anno_store/pd.mapping50k.hind240"
+parms_pref = "../../parms_store/pd.genomewidesnp.6"  # should be in parms_store
+anno_pref = "../../anno_store/pd.genomewidesnp.6"
 pat = function(x) paste(parms_pref, x, sep="/")
 pat2 = function(x) paste(anno_pref, x, sep="/")
 
@@ -17,22 +17,25 @@ try(system( paste(c("gunzip", dir(patt="gz$")), collapse=" ")))
 setwd(curd)
 
 # REMEMBER TO GUNZIP for NOW ... eventually use gzfiles?
-cdfFile <- pat2("Mapping50K_Hind240.cdf")
-csvAnno <- pat2("Mapping50K_Hind240.na24.annot.csv")
-csvSeq <- pat2("Mapping50K_Hind_probe_tab")
-spline <- pat("pd.mapping50k.hind240.spline.params.rda")
-refd <- pat("pd.mapping50k.hind240Ref.rda")
-crlmmInf <- pat("pd.mapping50k.hind240CrlmmInfo.rda")
+cdfFile <- pat2("GenomeWideSNP_6.cdf")
+csvAnno <- pat2("GenomeWideSNP_6.na24.annot.csv")
+csvSeq <- pat2("GenomeWideSNP_6.probe_tab")
+#../../anno_store/pd.genomewidesnp.6/GenomeWideSNP_6.probe_tab
+csvAnnoCnv <- pat2("GenomeWideSNP_6.cn.na24.annot.csv")
+csvSeqCnv <- pat2("GenomeWideSNP_6.CN_probe_tab")
+spline <- pat("pd.genomewidesnp.6.spline.params.rda")
+refd <- pat("pd.genomewidesnp.6Ref.rda")
+crlmmInf <- pat("pd.genomewidesnp.6CrlmmInfo.rda")
 
-pkg <- new("AffySNPPDInfoPkgSeed",
+pkg <- new("AffySNPCNVPDInfoPkgSeed",
            version="0.3.5",
            author="Vince Carey", email="stvjc@channing.harvard.edu",
            biocViews="AnnotationData",
            genomebuild="NCBI Build 36",
            cdfFile=cdfFile, csvAnnoFile=csvAnno, csvSeqFile=csvSeq,
-           splineParamFile=spline, crlmmInfoFile=crlmmInf,
-           referenceDistFile=refd)
-
+           csvAnnoFileCnv=csvAnnoCnv, csvSeqFileCnv=csvSeqCnv,
+           splineParamFile=spline,
+           crlmmInfoFile=crlmmInf, referenceDistFile=refd)
 
 makePdInfoPackage(pkg, destDir="..")
 

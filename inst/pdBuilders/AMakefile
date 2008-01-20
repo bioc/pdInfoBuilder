@@ -34,3 +34,20 @@ pd.mapping250k.sty/inst/UnitTests/tested.txt: pd.mapping250k.sty/DESCRIPTION
 
 pd.mapping250k.sty/DESCRIPTION:
 	cd pdBuilders; cat runPDIB250kSty.R | ${RCMD} --vanilla > styout.txt
+
+snp5: pd.genomewidesnp.5/inst/UnitTests/tested.txt
+
+pd.genomewidesnp.5/inst/UnitTests/tested.txt: pd.genomewidesnp.5/DESCRIPTION
+        cd pd.genomewidesnp.5/inst/UnitTests; make; touch tested.txt
+
+pd.genomewidesnp.5/DESCRIPTION:
+        cd pdBuilders; cat runPDIBSnp5.R | ${RCMD} --vanilla > styout.txt
+
+snp6: pd.genomewidesnp.6/inst/UnitTests/tested.txt
+
+pd.genomewidesnp.6/inst/UnitTests/tested.txt: pd.genomewidesnp.6/DESCRIPTION
+        cd pd.genomewidesnp.6/inst/UnitTests; make; touch tested.txt
+
+pd.genomewidesnp.6/DESCRIPTION:
+        cd pdBuilders; cat runPDIBSnp6.R | ${RCMD} --vanilla > styout.txt
+

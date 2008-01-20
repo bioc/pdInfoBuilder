@@ -19,14 +19,14 @@ setwd(curd)
 
 
 cdfFile <- pat2("Mapping50K_Xba240.cdf")
-csvAnno <- pat2("Mapping50K_Xba240.na22.annot.csv")
+csvAnno <- pat2("Mapping50K_Xba240.na24.annot.csv")
 csvSeq <- pat2("Mapping50K_Xba_probe_tab")
 spline <- pat("pd.mapping50k.xba240.spline.params.rda")
 refd <- pat("pd.mapping50k.xba240Ref.rda")
 crlmmInf <- pat("pd.mapping50k.xba240CrlmmInfo.rda")
 
 pkg <- new("AffySNPPDInfoPkgSeed",
-           version="0.3.4",
+           version="0.3.5",
            author="Vince Carey", email="stvjc@channing.harvard.edu",
            biocViews="AnnotationData",
            genomebuild="NCBI Build 36",
