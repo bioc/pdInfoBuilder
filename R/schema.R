@@ -88,7 +88,8 @@ create table featureSetCNV (
     cytoband text,
     gene_assoc text,
     fragment_length integer,
-    xpar integer)
+    xpar integer,
+    cnv text)
 ')
 
 createCnv6FeatureSetSql <- ('
@@ -102,7 +103,8 @@ create table featureSetCNV (
     cytoband text,
     gene_assoc text,
     fragment_length text,
-    xpar integer)
+    xpar integer,
+    cnv text)
 ')
 
 createCnvFeatureSql <- ('

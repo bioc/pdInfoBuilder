@@ -413,7 +413,7 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   con <- file(csvFile, open="r")
   on.exit(close(con))
   
-  wantedCols <- c(1, 2, 3, 4, 5, 6, 7, 8, 10, 13)
+  wantedCols <- c(1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 11)
   df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
                    na.strings="---", header=TRUE)[, wantedCols]
   header <- gsub(".", "_", names(df), fixed=TRUE)
@@ -438,13 +438,14 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   df <- getPAR(df)
   df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
   df[["frag"]] <- getFragLengthsCNV(df[[FRAG_COL]])
+  df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
   
   db_cols <- c("chrom", "chrom_start", "chrom_stop", "strand",
-               "cytoband", "gene_assoc", "xpar", "fragment_length")
+               "cytoband", "gene_assoc", "xpar", "fragment_length", "cnv")
   
   val_holders <- c(":Chromosome", ":Chromosome_Start", ":Chromosome_Stop",
                    ":Strand", ":Cytoband", ":Associated_Gene",
-                   ":XPAR", ":frag")
+                   ":XPAR", ":frag", ":Copy_Number_Variation")
   
   exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
   sql <- paste("update featureSetCNV set ", exprs,
@@ -479,7 +480,8 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
     df <- getPAR(df)
     df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
     df[["frag"]] <- getFragLengthsCNV(df[[FRAG_COL]])
-    df[[FRAG_COL]] <- NULL
+    df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
+
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)
