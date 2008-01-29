@@ -181,7 +181,8 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         mmSql <- paste("select mm_fid, pm_fid from pm_mm where pm_fid in (",
                        paste(pmdf[["fid"]], collapse=","), ")")
         pairedIds <- dbGetQuery(db, mmSql)
-        foundIdIdx <- match(pmdf[["fid"]], pairedIds[["pm_fid"]], 0)
+##        foundIdIdx <- match(pmdf[["fid"]], pairedIds[["pm_fid"]], 0)
+        foundIdIdx <- match(pairedIds[["pm_fid"]], pmdf[["fid"]], 0)
         mmdf <- pmdf[foundIdIdx, ]
         mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
 
