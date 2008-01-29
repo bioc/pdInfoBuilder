@@ -191,7 +191,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         types <- apply(table(mmdf$fset.name, mmdf$tallele)>0, 1,
                        function(v) paste(c("A", "C", "G", "T")[v], collapse=""))
         types <- rep(types, as.integer(table(mmdf$fset.name)))
-        isSpecial <- (types == "AT" | types == "AG") & mmdf$offset == 0
+        isSpecial <- (types == "AT" | types == "CG") & mmdf$offset == 0
         rm(types)
         midbase[isSpecial] <- complementBase(midbase[isSpecial], T)
         midbase[!isSpecial] <- complementBase(midbase[!isSpecial])
