@@ -82,3 +82,12 @@ setClass("AffyTilingPDInfoPkgSeed",
            bpmapFile="ScalarCharacter",
            cifFile="ScalarCharacter"),
          prototype=list(manufacturer="Affymetrix"))
+
+setClass("AffyGeneSTPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           pgfFile="ScalarCharacter",
+           clfFile="ScalarCharacter",
+           probeFile="ScalarCharacter",
+           transFile="ScalarCharacter"),
+         prototype=list(manufacturer="Affymetrix"))

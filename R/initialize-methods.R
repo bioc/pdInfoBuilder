@@ -54,3 +54,13 @@ setMethod("initialize", "AffyTilingPDInfoPkgSeed",
               .Object
           })
 
+setMethod("initialize", "AffyGeneSTPDInfoPkgSeed",
+          function(.Object, pgfFile, clfFile, probeFile, transFile, ...) {
+              .Object@pgfFile <- new("ScalarCharacter", pgfFile)
+              .Object@clfFile <- new("ScalarCharacter", clfFile)
+              .Object@probeFile <- new("ScalarCharacter", probeFile)
+              .Object@transFile <- new("ScalarCharacter", transFile)
+              .Object <- callNextMethod(.Object, ...)
+              .Object
+          })
+
