@@ -178,6 +178,7 @@ readTranscriptFile <- function(filename){
   if (length(missing.fields)>0) for (i in missing.fields) transcript[[i]] <- NA
   reorder <- match(expected, names(transcript))
   transcript <- transcript[order(transcript[["probeset_id"]]),]
+  transcript[["crosshyb_type"]] <- as.integer(transcript[["crosshyb_type"]])
   return(transcript[, reorder])
 }
 
