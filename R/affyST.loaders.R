@@ -133,6 +133,7 @@ readProbeFile <- function(filename){
   if (length(not.expected)>0) for (i in  not.expected) probes[[i]] <- NULL
   reorder <- match(expected, names(probes))
   probes <- probes[order(probes[["probe_id"]]),]
+  probes[["transcript_cluster_id"]] <- as.integer(probes[["transcript_cluster_id"]])
   return(probes[,reorder])
 }
 
