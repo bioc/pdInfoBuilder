@@ -33,5 +33,5 @@ setMethod("chipName", "AffyTilingPDInfoPkgSeed",
 setMethod("chipName", "AffyGenePDInfoPkgSeed",
           function(object) {
               ## compute chip name from the PGF file
-            readPgf(object@pgfFile, readBody = FALSE)$header$lib_set_name
+            readPgfEnv(object@pgfFile, readBody = FALSE)$header$lib_set_name
           })

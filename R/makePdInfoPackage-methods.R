@@ -359,7 +359,7 @@ setMethod("makePdInfoPackage", "AffyGenePDInfoPkgSeed",
               dbFilePath <- file.path(extdataDir, dbFileName)
               seqMatFile <- file.path(extdataDir, "seqMat.rda")
 
-              clf <- readClf(object@clfFile, readBody=FALSE)
+              clf <- readClfEnv(object@clfFile, readBody=FALSE)
               nx <- clf$header$cols
               ny <- clf$header$rows
               rm(clf)

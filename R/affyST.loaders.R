@@ -212,8 +212,8 @@ buildPdInfoDb.affyST <- function(pgfFile, clfFile, probeFile, transFile, dbFile,
             cat(sprintf(m, t))
         }
     }
-    clf <- readClf(clfFile)
-    pgf <- readPgf(pgfFile)
+    clf <- readClfEnv(clfFile)
+    pgf <- readPgfEnv(pgfFile)
 
     db <- initDb.affyST(dbFile)
 
