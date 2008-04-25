@@ -94,33 +94,44 @@ loadUnits.affyST <- function(db, pgf, clf) {
       dbBeginTransaction(db)
       dbSendPreparedQuery(db, sql, subset(probes.table, pm == 0)[,-lastCol])
       dbCommit(db)
+
+      pm.info <- probes.table[probes.table[["pm"]]==1, "fsetid"]
+      mm.info <- probes.table[probes.table[["pm"]]==0, "fsetid"]
+      set <- intersect(pm.info, mm.info)
+      f.split <- function(i){
+        tmp <- subset(probes.table[, c("fid", "atom", "pm")], probes.table$fsetid == i)
+        pm.fid <- subset(tmp, pm==1)[,-3]
+        mm.fid <- subset(tmp, pm==0)[,-3]
+        common <- sort(intersect(pm.fid[["atom"]], mm.fid[["atom"]]))
+        pm.i <- match(common, pm.fid[["atom"]])
+        mm.i <- match(common, mm.fid[["atom"]])
+        data.frame(pmi=pm.fid[["fid"]][pm.i], mmi=mm.fid[["fid"]][mm.i])
+      }
+      link <- do.call("rbind", lapply(set, f.split))
+      
+      ## Insert pm <--> mm link
+      values <- "(:pmi, :mmi)"
+      sql <- paste("insert into pm_mm values", values)
+      dbBeginTransaction(db)
+      rset <- dbSendPreparedQuery(db, sql, link)
+      dbClearResult(rset)
+      dbCommit(db)
     }
-    
-    #### FIXME!!!
-    #### ADD PM-MM LINK FOR ARRAYS THAT CONTAIN MM PROBES
-    ## Insert pm <--> mm link
-##     values <- "(:pmi, :mmi)"
-##     sql <- paste("insert into", pmmm, "values", values)
-##     dbBeginTransaction(db)
-##     rset <- dbSendPreparedQuery(db, sql,
-##                                 data.frame(pmi=batchMat[isPm, "indices"],
-##                                            mmi=batchMat[!isPm, "indices"]))
-##     dbClearResult(rset)
-##     dbCommit(db)
 }
 
 readProbeFile <- function(filename){
-  header <- as.character(read.table(filename, nrow=1, stringsAsFactors=FALSE, header=FALSE, sep="\t"))
-  header <- tolower(gsub(" ", "_", header))
+  probes <- read.table(filename, stringsAsFactors=FALSE, header=TRUE, sep="\t")
+  header <- tolower(gsub("\\.", "_", names(probes)))
+  names(probes) <- header
   expected <- c("probe_id", "transcript_cluster_id", "probe_x",
                 "probe_y", "assembly", "seqname", "start", "stop",
                 "strand", "probe_sequence", "target_strandedness",
                 "category")
-  stopifnot(identical(sort(header), sort(expected)))
-  reorder <- match(expected, header)
-  classes <- rep(rep(c("integer", "character"), 2), c(4, 2, 2, 4))
-  probes <- read.table(filename, skip=1, header=FALSE, colClasses=classes, sep="\t", na.string="---")
-  names(probes) <- header
+  missing.fields <- expected[!(expected %in% header)]
+  if (length(missing.fields)>0) for (i in missing.fields) probes[[i]] <- NA
+  not.expected <- names(probes)[!names(probes) %in% expected]
+  if (length(not.expected)>0) for (i in  not.expected) probes[[i]] <- NULL
+  reorder <- match(expected, names(probes))
   probes <- probes[order(probes[["probe_id"]]),]
   return(probes[,reorder])
 }
@@ -162,8 +173,9 @@ readTranscriptFile <- function(filename){
                 "GO_cellular_component", "GO_molecular_function",
                 "pathway", "protein_domains", "crosshyb_type",
                 "category")
-  stopifnot(identical(sort(names(transcript)), sort(expected)))
   transcript[["strand"]] <- as.integer(ifelse(transcript[["strand"]] == "+", SENSE, ANTISENSE))
+  missing.fields <- expected[!(expected %in% names(transcript))]
+  if (length(missing.fields)>0) for (i in missing.fields) transcript[[i]] <- NA
   reorder <- match(expected, names(transcript))
   transcript <- transcript[order(transcript[["probeset_id"]]),]
   return(transcript[, reorder])

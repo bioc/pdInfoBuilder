@@ -83,7 +83,7 @@ setClass("AffyTilingPDInfoPkgSeed",
            cifFile="ScalarCharacter"),
          prototype=list(manufacturer="Affymetrix"))
 
-setClass("AffyGeneSTPDInfoPkgSeed",
+setClass("AffyGenePDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
            pgfFile="ScalarCharacter",

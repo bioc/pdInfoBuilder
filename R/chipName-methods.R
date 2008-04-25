@@ -30,8 +30,8 @@ setMethod("chipName", "AffyTilingPDInfoPkgSeed",
             strsplit(tolower(object@bpmapFile), ".bpmap")[[1]]
           })
 
-setMethod("chipName", "AffyGeneSTPDInfoPkgSeed",
+setMethod("chipName", "AffyGenePDInfoPkgSeed",
           function(object) {
               ## compute chip name from the PGF file
-            readPgf(object@pgfFile, readBody = FALSE)$header$chip_type
+            readPgf(object@pgfFile, readBody = FALSE)$header$lib_set_name
           })

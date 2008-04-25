@@ -327,7 +327,7 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
                                        batch_size=batch_size, verbose=!quiet)
           })
 
-setMethod("makePdInfoPackage", "AffyGeneSTPDInfoPkgSeed",
+setMethod("makePdInfoPackage", "AffyGenePDInfoPkgSeed",
           function(object, destDir=".", batch_size=1, quiet=FALSE) {
               validInput <- function(x, destPath) {
                   msg <- NULL
@@ -375,7 +375,7 @@ setMethod("makePdInfoPackage", "AffyGeneSTPDInfoPkgSeed",
                            CHIPNAME=chip,
                            PKGNAME=pkgName,
                            PDINFONAME=pkgName,
-                           PDINFOCLASS="AffyGeneSTPDInfo",
+                           PDINFOCLASS="AffyGenePDInfo",
                            GEOMETRY=geometry)
 
               templateDir <- system.file("pd.PKG.template",
