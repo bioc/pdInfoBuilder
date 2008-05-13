@@ -302,7 +302,7 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
               ny <- as.integer(unlist(strsplit(cif[grep("Rows", cif)], "="))[2])
               rm(cif)
               
-              geometry <- paste(ny, nx, collapse=";")
+              geometry <- paste(ny, nx, sep=";")
               syms <- list(MANUF=object@manufacturer,
                            VERSION=object@version,
                            GENOMEBUILD=object@genomebuild,
@@ -364,7 +364,7 @@ setMethod("makePdInfoPackage", "AffyGenePDInfoPkgSeed",
               ny <- clf$header$rows
               rm(clf)
               
-              geometry <- paste(ny, nx, collapse=";")
+              geometry <- paste(ny, nx, sep=";")
               syms <- list(MANUF=object@manufacturer,
                            VERSION=object@version,
                            GENOMEBUILD=object@genomebuild,

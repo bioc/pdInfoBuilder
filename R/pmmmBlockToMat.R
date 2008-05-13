@@ -109,26 +109,38 @@ readCdfUnitToMat.affyTiling <- function(u, nx, verify.pmmm=TRUE) {
   cols.pm <- c("pmx", "pmy", "strand", "startpos")
   cols.mm <- c("mmx", "mmy", "strand", "startpos")
 
-  mat <- rbind(cbind(do.call(cbind, u[cols.pm]), atom=1:length(u[[2]]), ispm=1),
-               cbind(do.call(cbind, u[cols.mm]), atom=1:length(u[[2]]), ispm=0))
+  if (u$seqInfo$mapping == "pmmm"){
+    mat <- rbind(cbind(do.call(cbind, u[cols.pm]), atom=1:length(u[[2]]), ispm=1),
+                 cbind(do.call(cbind, u[cols.mm]), atom=1:length(u[[2]]), ispm=0))
+  } else if (u$seqInfo$mapping == "onlypm"){
+    mat <- cbind(do.call(cbind, u[cols.pm]), atom=1:length(u[[2]]), ispm=1)
+  } else {
+    stop("u$seqInfo$mapping is something other than pmmm/onlypm")
+  }
+  
   colnames(mat) <- c("x", "y", "strand", "startpos", "atom", "ispm")
   mat <- cbind(mat, indices=(mat[,"x"]+1+mat[,"y"]*nx))
   mat <- as.data.frame(mat)
 
   pm.seq <- u[["probeseq"]]
-  mid.base <- substr(pm.seq, 13, 13)
-  iA <- which(toupper(mid.base) == "A")
-  iC <- which(toupper(mid.base) == "C")
-  iG <- which(toupper(mid.base) == "G")
-  iT <- which(toupper(mid.base) == "T")
-  mid.base[iA] <- "T"
-  mid.base[iC] <- "G"
-  mid.base[iG] <- "C"
-  mid.base[iT] <- "A"
-  mm.seq <- paste(substr(pm.seq, 1, 12), mid.base,
-                  substr(pm.seq, 14, 25), sep="")
-  mat <- data.frame(mat, probeseq=c(pm.seq, mm.seq),
-                    stringsAsFactors=FALSE)
+  if (u$seqInfo$mapping == "pmmm"){
+    mid.base <- substr(pm.seq, 13, 13)
+    iA <- which(toupper(mid.base) == "A")
+    iC <- which(toupper(mid.base) == "C")
+    iG <- which(toupper(mid.base) == "G")
+    iT <- which(toupper(mid.base) == "T")
+    mid.base[iA] <- "T"
+    mid.base[iC] <- "G"
+    mid.base[iG] <- "C"
+    mid.base[iT] <- "A"
+    mm.seq <- paste(substr(pm.seq, 1, 12), mid.base,
+                    substr(pm.seq, 14, 25), sep="")
+    mat <- data.frame(mat, probeseq=c(pm.seq, mm.seq),
+                      stringsAsFactors=FALSE)
+  }else{
+    mat <- data.frame(mat, probeseq=pm.seq, stringsAsFactors=FALSE)
+    verify.pmmm <- FALSE
+  }
   
   if (verify.pmmm) {
     ## verify pm/mm match
