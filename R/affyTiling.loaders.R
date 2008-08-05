@@ -74,7 +74,7 @@ loadUnits.affyTiling <- function(db, batch, nx, isQc=FALSE) {
     rm(theDups)
     
     ## Insert pm and mm into respective tables
-    isPm <- as.logical(batchMat[, "ispm"])
+    isPm <- as.logical(batchMat[, "ispm"]) 
     values <- "(:indices, :fsetid, :strand, :startpos,  :atom, :x, :y)"
     sql <- paste("insert into", pmfeature, "values", values)
     dbBeginTransaction(db)

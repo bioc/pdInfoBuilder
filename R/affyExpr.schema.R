@@ -34,7 +34,7 @@ create table %s (
 createAffyExprSequenceSql <- ('
 create table sequence (
     fid integer primary key,
-    tstrand integer,
+        tstrand integer,
     interrogation_position integer,
     seq text)
 ')

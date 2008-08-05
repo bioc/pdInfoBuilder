@@ -1,15 +1,20 @@
-\name{NgsPDInfoPkgSeed-class}
+\name{NgsExpressionPDInfoPkgSeed-class}
 \docType{class}
-\alias{NgsPDInfoPkgSeed-class}
+\alias{NgsExpressionPDInfoPkgSeed-class}
+\alias{initialize,NgsExpressionPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,NgsExpressionPDInfoPkgSeed-method}
 
-\title{Class "NgsPDInfoPkgSeed"}
-\description{PDInfo package Seed for NimbleGen arrays}
+\title{Class "NgsExpressionPDInfoPkgSeed"}
+\description{PDInfo package Seed for NimbleGen Expression arrays}
 \section{Objects from the Class}{
-Objects can be created by calls of the form \code{new("NgsPDInfoPkgSeed", ndfFile, ...)}.
+Objects can be created by calls of the form \code{new("NgsExpressionPDInfoPkgSeed", ndfFile, pairFile, xysFile, ngdFile ...)}.
 }
 \section{Slots}{
 	 \describe{
     \item{\code{ndfFile}:}{NDF (NimbleGen Design) file}
+    \item{\code{pairFile}:}{PAIR (pair) file - used as template}
+    \item{\code{xysFile}:}{XYS File - used as template}
+    \item{\code{ngdFile}:}{NGD File - annotation data}
     \item{\code{chipName}:}{Design identifier}
     \item{\code{manufacturer}:}{Manufacturer: Affymetrix/NimbleGen}
     \item{\code{genomebuild}:}{Genome Build}
@@ -35,6 +40,6 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 	 }
 }
 \examples{
-showClass("NgsPDInfoPkgSeed")
+showClass("NgsExpressionPDInfoPkgSeed")
 }
 \keyword{classes}

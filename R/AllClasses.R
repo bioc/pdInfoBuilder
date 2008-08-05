@@ -53,20 +53,33 @@ setClass("AffySNPCNVPDInfoPkgSeed",
       return("invalid email address")
     TRUE
 }
-
+## at this point only using pair/xys file for chipName in header
+## can also get chipName from ndf filename 
+## modified by Matt Settles June 2,2008
 setClass("NgsPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           ndfFile="ScalarCharacter",
-           posFile="ScalarCharacter",
-           xysFile="ScalarCharacter"
+           ndfFile="ScalarCharacter"         
            ),
          prototype=list(manufacturer="NimbleGen"))
 
+## modified by Matt Settles June 2,2008
 setClass("NgsExpressionPDInfoPkgSeed",
-         contains="NgsPDInfoPkgSeed")
+         contains="NgsPDInfoPkgSeed",
+         representation=representation(
+           xysFile="ScalarCharacter", ## backwards capatablilty
+           pairFile="ScalarCharacter",
+           ngdFile="ScalarCharacter"
+           ))
+			
+## modified by Matt Settles June 2,2008
 setClass("NgsTilingPDInfoPkgSeed",
-         contains="NgsPDInfoPkgSeed")
+         contains="NgsPDInfoPkgSeed",
+         representation=representation(
+           pairFile="ScalarCharacter",
+           posFile="ScalarCharacter"
+           ))
+
 
 setClass("AffyExpressionPDInfoPkgSeed",
          contains="PDInfoPkgSeed",

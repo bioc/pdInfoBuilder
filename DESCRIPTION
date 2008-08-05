@@ -5,7 +5,7 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID.  The database also incorporates featureSet-level
   annotation data.  munged vc for Cytoband
-Version: 1.5.1
+Version: 1.5.2
 Author: Seth Falcon
 Maintainer: Benilton Carvalho <bcarvalh@jhsph.edu>
 LazyLoad: yes
@@ -28,6 +28,7 @@ Collate: AllClasses.R
          makePdInfoPackage-methods.R
          chipName-methods.R
 	 geneAssoc.R
+         readNimblegen.R
          ngs.InitDb.R
          ngs.loader.R
          ngs.schema.R
@@ -42,3 +43,4 @@ Collate: AllClasses.R
          affyST.schema.R
          zzz.R
 biocViews: Annotation, Infrastructure
+Packaged: Wed Jun 18 08:00:15 2008; msettles
