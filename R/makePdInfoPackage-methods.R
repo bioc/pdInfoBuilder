@@ -208,93 +208,62 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
 ## modified by Matt Settles June 2,2008
 setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE) {
-              validInput <- function(x, destPath) {
-                  msg <- NULL
-                  ok <- sapply(c("pairFile", "xysFile"),
-                               function(slt) file.exists(slot(x, slt)))
-                  if (all(!ok))
-                    msg <-
-                      "Must specify one of: pairFile or xysFile"
-                  
-                  else if(all(ok))
-                    msg <- 
-                    	 "Must specify ONLY one of: pairFile or xysFile"
-                  ok <- sapply(c("ndfFile","posFile"),
-                               function(slt) file.exists(slot(x, slt)))
-                  if (!all(ok))
-                    msg <-
-                      paste(msg,"\n","missing file(s):",
-                            paste(sapply(names(ok[!ok]), function(slt) slt),
-                                  "='",
-                                  sapply(names(ok[!ok]),function(slt) slot(x, slt)),
-                                  "'",
-                                  collapse=", ", sep=""))
-                  if (file.exists(destPath))
-                    msg <-
-                      c(msg,
-                        paste("destination exists, remove or rename: '",
-                              destPath, "'", sep=""))
-                  if (is.null(msg)) TRUE else msg
-              }
-              chip <- chipName(object)
-              pkgName <- cleanPlatformName(chip)
-              valid <- validInput(object, file.path(destDir, pkgName))
-              if (!identical(valid, TRUE))
-                stop(paste(valid, collapse="\n  "))
-              extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
-              dbFileName <- paste(pkgName, "sqlite", sep=".")
-              dbFilePath <- file.path(extdataDir, dbFileName)
-				  ## without geometry in header file this is the best alternative - MS
-              ## FIXME!!! need geometry 
-              ## Awww... it would be great if NGS had a header describing the array.
-              ## ndfdata was supposed to appear only on loadByBatch
-              ## appears here to avoid reading the same file twice
-              ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
-              geometry <- paste(max(ndfdata$Y), max(ndfdata$X), sep=";")
-              nx <- max(ndfdata$X)
-              ndf.idx <- as.integer(ndfdata$X+(ndfdata$Y-1)*nx)
-              if(file.exists(object@pairFile)) { # pairFile used
-              	  pairdata <- read.delim(object@pairFile, as.is=TRUE, header=TRUE, comment.char="#")
-	           	  pair.idx <- as.integer(pairdata$X+(pairdata$Y-1)*nx)
-              	  idx <- match(pair.idx, ndf.idx) ## match ndf to pair
-              	  ndfdata <- ndfdata[idx,]
-   	           idx <- which(is.na(pairdata$PM))
-   	           rm(pairdata,pair.idx) 
-              }else if (file.exists(object@xysfile)) { #xysFile used
-	              xysdata <- read.delim(object@xysFile, as.is=TRUE, header=TRUE, comment.char="#")
-	              xys.idx <- as.integer(xysdata$X+(xysdata$Y-1)*nx)
-              	  idx <- match(xys.idx, ndf.idx) ## match ndf to pair
-              	  ndfdata <- ndfdata[idx,]
-   	           idx <- which(is.na(xysdata$SIGNAL))
-   	           rm(xysdata,xys.idx) 
-	           }
-              if(length(idx) > 0) ndfdata[idx, "CONTAINER"] <- "OLIGO_CONTROL" # added if statement - MS                
-				  ndfdata <- cbind(fid=as.integer(ndfdata$X+(ndfdata$Y-1)*nx), ndfdata)
-              ndfdata <- as.data.frame(ndfdata)
-              ndfdata <- ndfdata[order(ndfdata[["fid"]]),]
-              ndfdata[["fid"]] <- 1:nrow(ndfdata)
-              rm(ndf.idx, idx);gc();gc()
-              syms <- list(MANUF=object@manufacturer,
-                           VERSION=object@version,
-                           GENOMEBUILD=object@genomebuild,
-                           AUTHOR=object@author,
-                           AUTHOREMAIL=object@email,
-                           LIC=object@license,
-                           DBFILE=dbFileName,
-                           CHIPNAME=chip,
-                           PKGNAME=pkgName,
-                           PDINFONAME=pkgName,
-                           PDINFOCLASS="NgsTilingPDInfo",
-                           GEOMETRY=geometry)
-
-              templateDir <- system.file("pd.PKG.template",
-                                         package="pdInfoBuilder")
-              createPackage(pkgname=pkgName, destinationDir=destDir,
-                            originDir=templateDir, symbolValues=syms,
-                            quiet=quiet)
-              dir.create(extdataDir, recursive=TRUE)
-              buildPdInfoDb.ngsTiling(ndfdata, object@posFile, dbFilePath, ## changed to buildPdInfoDb.ngsTiling - MS
-                            batch_size=batch_size, verbose=!quiet) 
+            ## the validInput that was once here was moved to setValidity
+            chip <- chipName(object)
+            pkgName <- cleanPlatformName(chip)
+            extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+            dbFileName <- paste(pkgName, "sqlite", sep=".")
+            dbFilePath <- file.path(extdataDir, dbFileName)
+            ## without geometry in header file this is the best alternative - MS
+            ## FIXME!!! need geometry 
+            ## Awww... it would be great if NGS had a header describing the array.
+            ## ndfdata was supposed to appear only on loadByBatch
+            ## appears here to avoid reading the same file twice
+            ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
+            geometry <- paste(max(ndfdata$Y), max(ndfdata$X), sep=";")
+            nx <- max(ndfdata$X)
+            ndf.idx <- as.integer(ndfdata$X+(ndfdata$Y-1)*nx)
+            if(file.exists(object@pairFile)) { # pairFile used
+              pairdata <- read.delim(object@pairFile, as.is=TRUE, header=TRUE, comment.char="#")
+              pair.idx <- as.integer(pairdata$X+(pairdata$Y-1)*nx)
+              idx <- match(pair.idx, ndf.idx) ## match ndf to pair
+              ndfdata <- ndfdata[idx,]
+              idx <- which(is.na(pairdata$PM))
+              rm(pairdata,pair.idx) 
+            }else if (file.exists(object@xysFile)) { #xysFile used
+              xysdata <- read.delim(object@xysFile, as.is=TRUE, header=TRUE, comment.char="#")
+              xys.idx <- as.integer(xysdata$X+(xysdata$Y-1)*nx)
+              idx <- match(xys.idx, ndf.idx) ## match ndf to xys
+              ndfdata <- ndfdata[idx,]
+              idx <- which(is.na(xysdata$SIGNAL))
+              rm(xysdata,xys.idx) 
+            }
+            if(length(idx) > 0) ndfdata[idx, "CONTAINER"] <- "OLIGO_CONTROL" # added if statement - MS                
+            ndfdata <- cbind(fid=as.integer(ndfdata$X+(ndfdata$Y-1)*nx), ndfdata)
+            ndfdata <- as.data.frame(ndfdata)
+            ndfdata <- ndfdata[order(ndfdata[["fid"]]),]
+            ndfdata[["fid"]] <- 1:nrow(ndfdata)
+            rm(ndf.idx, idx);gc();gc()
+            syms <- list(MANUF=object@manufacturer,
+                         VERSION=object@version,
+                         GENOMEBUILD=object@genomebuild,
+                         AUTHOR=object@author,
+                         AUTHOREMAIL=object@email,
+                         LIC=object@license,
+                         DBFILE=dbFileName,
+                         CHIPNAME=chip,
+                         PKGNAME=pkgName,
+                         PDINFONAME=pkgName,
+                         PDINFOCLASS="NgsTilingPDInfo",
+                         GEOMETRY=geometry)
+            templateDir <- system.file("pd.PKG.template",
+                                       package="pdInfoBuilder")
+            createPackage(pkgname=pkgName, destinationDir=destDir,
+                          originDir=templateDir, symbolValues=syms,
+                          quiet=quiet)
+            dir.create(extdataDir, recursive=TRUE)
+            buildPdInfoDb.ngsTiling(ndfdata, object@posFile, dbFilePath, ## changed to buildPdInfoDb.ngsTiling - MS
+                                    batch_size=batch_size, verbose=!quiet) 
           })
 
 

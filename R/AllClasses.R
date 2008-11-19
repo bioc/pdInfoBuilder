@@ -53,21 +53,17 @@ setClass("AffySNPCNVPDInfoPkgSeed",
       return("invalid email address")
     TRUE
 }
-## at this point only using pair/xys file for chipName in header
-## can also get chipName from ndf filename 
-## modified by Matt Settles June 2,2008
+
 setClass("NgsPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
-         representation=representation(
-           ndfFile="ScalarCharacter"         
-           ),
          prototype=list(manufacturer="NimbleGen"))
 
 ## modified by Matt Settles June 2,2008
 setClass("NgsExpressionPDInfoPkgSeed",
          contains="NgsPDInfoPkgSeed",
          representation=representation(
-           xysFile="ScalarCharacter", ## backwards capatablilty
+           ndfFile="ScalarCharacter",
+           xysFile="ScalarCharacter", ## BC, 11/18/08
            pairFile="ScalarCharacter",
            ngdFile="ScalarCharacter"
            ))
@@ -76,9 +72,26 @@ setClass("NgsExpressionPDInfoPkgSeed",
 setClass("NgsTilingPDInfoPkgSeed",
          contains="NgsPDInfoPkgSeed",
          representation=representation(
+           ndfFile="ScalarCharacter",
+           xysFile="ScalarCharacter", ## BC, 11/18/08
            pairFile="ScalarCharacter",
            posFile="ScalarCharacter"
            ))
+
+
+validNgsTilingPDInfoPkgSeed <- function(object){
+  ndf <-  nchar(slot(object, "ndfFile")) > 0
+  xys <-  nchar(slot(object, "xysFile")) > 0
+  pair <- nchar(slot(object, "pairFile"))> 0
+  if (pair & xys) stop("Specify only one: XYS or PAIR file.")
+  if (!ndf) stop("NDF must be given.")
+  stopifnot(file.exists(slot(object, "ndfFile")))
+  if (xys) stopifnot(file.exists(slot(object, "xysFile")))
+  if (pair) stopifnot(file.exists(slot(object, "pairFile")))
+  TRUE
+}
+setValidity("NgsTilingPDInfoPkgSeed", validNgsTilingPDInfoPkgSeed)
+
 
 
 setClass("AffyExpressionPDInfoPkgSeed",

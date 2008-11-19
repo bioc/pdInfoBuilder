@@ -16,14 +16,15 @@ create table featureSet (
 createNgsFeatureSql <- ('
 create table %s (
     fid integer primary key,
-    fsetid integer not null references "featureSet" ("fsetid"),
-    x integer,
-    y integer,
     container text,
-    atom integer,
     unit_id integer,
     match_index integer,
-    probe_id text)
+    atom integer,
+    probe_id text,
+    x integer,
+    y integer,
+    position integer,
+    fsetid integer not null references "featureSet" ("fsetid"))
 ')
 
 ##

@@ -12,26 +12,31 @@ setMethod("chipName", "AffySNPCNVPDInfoPkgSeed",
               header$chiptype
           })
 
-## modified by Matt Settles June 2,2008
-#setMethod("chipName", "NgsPDInfoPkgSeed",
-#          function(object) {
-#            strsplit(tolower(object@ndfFile), ".ndf")[[1]]
-#          })
+## ## modified by Matt Settles June 2,2008
+## #setMethod("chipName", "NgsPDInfoPkgSeed",
+## #          function(object) {
+## #            strsplit(tolower(object@ndfFile), ".ndf")[[1]]
+## #          })
+## 
+## ## modified by Matt Settles June 2,2008
+## setMethod("chipName", "NgsExpressionPDInfoPkgSeed",
+##           function(object) {
+##               ## compute chip name from the Pair file
+##               header <- readPairHeader(object@pairFile)
+##               header$DesignName
+##           })
+## 
+## ## modified by Matt Settles June 2,2008
 
-## modified by Matt Settles June 2,2008
-setMethod("chipName", "NgsExpressionPDInfoPkgSeed",
+setMethod("chipName", "NgsPDInfoPkgSeed",
           function(object) {
+            if(nchar(slot(object, "pairFile"))> 0){
               ## compute chip name from the Pair file
               header <- readPairHeader(object@pairFile)
-              header$DesignName
-          })
-
-## modified by Matt Settles June 2,2008
-setMethod("chipName", "NgsTilingPDInfoPkgSeed",
-          function(object) {
-              ## compute chip name from the Pair file
-              header <- readPairHeader(object@pairFile)
-              header$DesignName
+              return(header$DesignName)
+            }else{
+              strsplit(tolower(object@ndfFile), ".ndf")[[1]]
+            }
           })
 
 setMethod("chipName", "AffyExpressionPDInfoPkgSeed",

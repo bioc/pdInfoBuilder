@@ -1,17 +1,17 @@
-"loadUnitNames.ngs" <- 
-function(db, unames) {
-    dbBeginTransaction(db)
-    ## To use an auto-incrementing field via RSQLite, you need
-    ## to be careful to pass integer NA's
-    df <- data.frame(id=rep(as.integer(NA), length(unames)), name=unames)
-    values <- "(:id, :name)"
-    sql <- "insert into featureSet (fsetid, man_fsetid) values"
-    dbGetPreparedQuery(db, paste(sql, values), bind.data=df)
-    dbCommit(db)
+loadUnitNames.ngs <- function(db, unames) {
+  dbBeginTransaction(db)
+  ## To use an auto-incrementing field via RSQLite, you need
+  ## to be careful to pass integer NA's
+  df <- data.frame(id=rep(as.integer(NA), length(unames)), name=unames)
+  values <- "(:id, :name)"
+  sql <- "insert into featureSet (fsetid, man_fsetid) values"
+  dbGetPreparedQuery(db, paste(sql, values), bind.data=df)
+  dbCommit(db)
 }
 
-"loadUnits.ngs" <- 
-function(db, batch, isQc=FALSE) {
+
+## URGENT
+loadUnits.ngs <- function(db, batch, isQc=FALSE) {
 ## debug
 #batch = ndfdata[-controls,]
 #isQc=FALSE
@@ -32,12 +32,12 @@ function(db, batch, isQc=FALSE) {
     ## fill featureSet object with SEQ_ID
     loadUnitNames.ngs(db, unique(batch[["SEQ_ID"]]))
    
-    batch <- batch[order(batch$CONTAINER,batch$SEQ_ID,batch$POSITION),]
-    pcounts <- table(paste(batch$CONTAINER,batch$SEQ_ID,sep="."))
-    batch$ATOM <- unlist(sapply(pcounts,function(x) 1:x))
+    batch <- batch[order(batch$CONTAINER, batch$SEQ_ID, batch$POSITION),]
+    pcounts <- table(paste(batch$CONTAINER, batch$SEQ_ID, sep="."))
+    batch$ATOM <- unlist(sapply(pcounts, function(x) 1:x))
     batch <- batch[order(batch$fid),]
 
-    batchMat <- batch[, c("fid", "CONTAINER", "FEATURE_ID", "MISMATCH", "MATCH_INDEX", "ATOM", "PROBE_ID", "X", "Y")]
+    batchMat <- batch[, c("fid", "CONTAINER", "FEATURE_ID", "MISMATCH", "MATCH_INDEX", "ATOM", "PROBE_ID", "X", "Y", "POSITION")]
     ## Find internal featureSet IDs for these feature
     fset <- dbGetQuery(db, "SELECT fsetid, man_fsetid FROM featureSet")
     batchIds <- fset[match(batch[["SEQ_ID"]], fset[["man_fsetid"]]), "fsetid"]
@@ -48,10 +48,10 @@ function(db, batch, isQc=FALSE) {
     isMm <- batchMat[["MISMATCH"]] > 0 & batchMat[["MISMATCH"]] < 10000 ## NGS can have mismatch values > 10000; May be overridden by users if MISMATCH in probe file >= 10,000.
     
     batchMat[["MISMATCH"]] <- NULL
-    names(batchMat) <- c("fid", "container", "unit_id", "match_index", "atom", "probe_id", "x", "y", "fsetid")
+    names(batchMat) <- c("fid", "container", "unit_id", "match_index", "atom", "probe_id", "x", "y", "position", "fsetid")
 
     ## insert Pm value
-    values <- "(:fid, :container, :unit_id, :match_index, :atom, :probe_id, :x, :y, :fsetid)"
+    values <- "(:fid, :container, :unit_id, :match_index, :atom, :probe_id, :x, :y, :position, :fsetid)"
     sql <- paste("insert into", pmfeature, "values", values)
     dbBeginTransaction(db)
     rset <- dbSendPreparedQuery(db, sql, batchMat[isPm, ])
@@ -85,8 +85,7 @@ function(db, batch, isQc=FALSE) {
 
 ## loadUnitsByBatch.ngs <- function(db, ndfFile, batch_size=10000,
 ##                              max_units=NULL, verbose=FALSE) {
-"loadUnitsByBatch.ngs" <- 
-function(db, ndfdata, batch_size=10000,
+loadUnitsByBatch.ngs <- function(db, ndfdata, batch_size=10000,
                              max_units=NULL, verbose=FALSE) {
 ## debug
 #max_units=NULL
@@ -127,34 +126,35 @@ function(db, ngdfile){ ## I had to fix ngdfile, there as a bad character somewhe
     dbGetPreparedQuery(db, sql, bind.data=ngddata)
     dbCommit(db)
 }
+
 ## TODO: fix for tiling arrays
-"loadPos.ngs" <- 
-function(db, posfile){
-    posdata <- read.delim(posfile, as.is=TRUE, header=TRUE)
-    posdata <- posdata[, c("SEQ_ID", "PROBE_ID", "POSITION")]
-    posdata[["id"]] <- paste(posdata[["SEQ_ID"]], posdata[["PROBE_ID"]], sep=":::")
-    posdata <- posdata[order(posdata[["id"]]),]
-    df1 <- dbGetQuery(db, "SELECT fid, man_fsetid, probe_id FROM pmfeature_tmp, featureSet WHERE pmfeature_tmp.fsetid = featureSet.fsetid")
+## DOING
+loadPos.ngs <- function(db, posfile){
+  posdata <- read.delim(posfile, as.is=TRUE, header=TRUE)
+  posdata <- posdata[, c("SEQ_ID", "PROBE_ID", "POSITION")]
+  posdata[["id"]] <- paste(posdata[["SEQ_ID"]], posdata[["PROBE_ID"]], sep=":::")
+  posdata <- posdata[order(posdata[["id"]]),]
+  df1 <- dbGetQuery(db, "SELECT fid, man_fsetid, probe_id FROM pmfeature_tmp, featureSet WHERE pmfeature_tmp.fsetid = featureSet.fsetid")
+  df1[["id"]] <- paste(df1[["man_fsetid"]], df1[["probe_id"]], sep=":::")
+  idx <- match(posdata[["id"]], df1[["id"]])
+  df1 <- df1[idx,]
+  tmp1 <- data.frame(fid=as.integer(df1$fid), position=as.integer(posdata$POSITION))
+  sql <- "UPDATE pmfeature_tmp SET position = :position WHERE fid = :fid"
+  dbBeginTransaction(db)
+  dbGetPreparedQuery(db, sql, bind.data=tmp1)
+  dbCommit(db)
+    
+  df1 <- dbGetQuery(db, "SELECT fid, man_fsetid, probe_id FROM mmfeature_tmp, featureSet WHERE mmfeature_tmp.fsetid = featureSet.fsetid")
+  if (nrow(df1) > 0){
     df1[["id"]] <- paste(df1[["man_fsetid"]], df1[["probe_id"]], sep=":::")
     idx <- match(posdata[["id"]], df1[["id"]])
     df1 <- df1[idx,]
     tmp1 <- data.frame(fid=as.integer(df1$fid), position=as.integer(posdata$POSITION))
-    sql <- "UPDATE pmfeature_tmp SET position = :position WHERE fid = :fid"
+    sql <- "UPDATE mmfeature_tmp SET position = :position WHERE fid = :fid"
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=tmp1)
     dbCommit(db)
-    
-    df1 <- dbGetQuery(db, "SELECT fid, man_fsetid, probe_id FROM mmfeature_tmp, featureSet WHERE mmfeature_tmp.fsetid = featureSet.fsetid")
-    if (nrow(df1) > 0){
-        df1[["id"]] <- paste(df1[["man_fsetid"]], df1[["probe_id"]], sep=":::")
-        idx <- match(posdata[["id"]], df1[["id"]])
-        df1 <- df1[idx,]
-        tmp1 <- data.frame(fid=as.integer(df1$fid), position=as.integer(posdata$POSITION))
-        sql <- "UPDATE mmfeature_tmp SET position = :position WHERE fid = :fid"
-        dbBeginTransaction(db)
-        dbGetPreparedQuery(db, sql, bind.data=tmp1)
-        dbCommit(db)
-    }
+  }
 }
 
 
@@ -199,9 +199,9 @@ function(ndfdata, ngdFile, dbFile,
 }
 
 ## TODO: Fix for tiling arrays
-"buildPdInfoDb.ngsTiling" <- 
-function(ndfdata, posFile, dbFile,
-                          batch_size=10000, verbose=FALSE) {
+## DOING
+buildPdInfoDb.ngsTiling <- function(ndfdata, posFile, dbFile,
+                                    batch_size=10000, verbose=FALSE) {
     ST <- system.time
     printTime <- function(msg, t) {
       if (verbose) {

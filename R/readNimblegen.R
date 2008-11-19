@@ -25,24 +25,22 @@
 ## (b)	"auto":
 
 ## readPairHeader works with xys files or pair files
-"readPairHeader" <- 
-function (file)
-{
-    firstfield <- scan(file, what = "", sep = "\t", quote = "\"", #"
-        nlines = 100, flush = TRUE, quiet = TRUE, blank.lines.skip = FALSE,
-        multi.line = FALSE, allowEscape = FALSE)
-    NHeaderRecords <- grep("# software=", firstfield)
-    txt <- scan(file, what = "", sep = "\t", quote = "\"", nlines = NHeaderRecords, #"
-     quiet = TRUE, allowEscape = FALSE)
-    substring(text=txt[1],first=3)
-    txt <- strsplit(txt,split="=")
+readPairHeader <- function (file){
+  firstfield <- scan(file, what = "", sep = "\t", quote = "\"", #"
+                     nlines = 100, flush = TRUE, quiet = TRUE, blank.lines.skip = FALSE,
+                     multi.line = FALSE, allowEscape = FALSE)
+  NHeaderRecords <- grep("# software=", firstfield)
+  txt <- scan(file, what = "", sep = "\t", quote = "\"", nlines = NHeaderRecords, #"
+              quiet = TRUE, allowEscape = FALSE)
+  substring(text=txt[1],first=3)
+  txt <- strsplit(txt,split="=")
     txt <- data.frame(Value=sapply(txt,function(x) x[2]),row.names=sapply(txt,function(x) x[1]),stringsAsFactors=FALSE)
-    out <- list(NHeaderRecords = NHeaderRecords, BeginRawData = NHeaderRecords)
-    out$Version <- txt["version",]
-    out$Date <- txt["date",]
-    out$DesignName <- txt["designname",]
-    out$DesignId <- txt["designid",]
-    out
+  out <- list(NHeaderRecords = NHeaderRecords, BeginRawData = NHeaderRecords)
+  out$Version <- txt["version",]
+  out$Date <- txt["date",]
+  out$DesignName <- txt["designname",]
+  out$DesignId <- txt["designid",]
+  out
 }#readNimbleGenHeader
 
 # XYS Contents in CAPITAL - contains Header 

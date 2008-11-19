@@ -27,36 +27,30 @@ setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
-## modified by Matt Settles June 2,2008
-#setMethod("initialize", "NgsPDInfoPkgSeed",
-#          function(.Object, ndfFile, posFile, pairFile, ...) {
-#              .Object@ndfFile <- new("ScalarCharacter", ndfFile)
-#              .Object@posFile <- new("ScalarCharacter", posFile)
-#              .Object@pairFile <- new("ScalarCharacter", pairFile)
-#              .Object <- callNextMethod(.Object, ...)
-#              .Object
-#          })
 
-## modified by Matt Settles June 2,2008
-## must specify one of pairFile or xysFile
 setMethod("initialize", "NgsExpressionPDInfoPkgSeed",
-          function(.Object, ndfFile, pairFile="", xysFile="", ngdFile="", ...) {
-              .Object@ndfFile <- new("ScalarCharacter", ndfFile)
-              .Object@pairFile <- new("ScalarCharacter", pairFile)
+          function(.Object, ndfFile, xysFile, pairFile, ngdFile, ...) {
+            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+            if (!missing(xysFile))
               .Object@xysFile <- new("ScalarCharacter", xysFile)
-              .Object@ngdFile <- new("ScalarCharacter", ngdFile)
-              .Object <- callNextMethod(.Object, ...)
-              .Object
+            if (!missing(pairFile))
+              .Object@pairFile <- new("ScalarCharacter", pairFile)
+            .Object@ngdFile <- new("ScalarCharacter", ngdFile)
+            callNextMethod(.Object, ...)
+            .Object <- callNextMethod(.Object, ...)
+            .Object
           })
 
-## modified by Matt Settles June 2,2008 ## do you combine multiple arrays sets?
+
 setMethod("initialize", "NgsTilingPDInfoPkgSeed",
-          function(.Object, ndfFile, posFile, pairFile, ...) {
-              .Object@ndfFile <- new("ScalarCharacter", ndfFile)
-              .Object@posFile <- new("ScalarCharacter", posFile)
+          function(.Object, ndfFile, xysFile, pairFile, posFile, ...) {
+            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+            if (!missing(xysFile))
+              .Object@xysFile <- new("ScalarCharacter", xysFile)
+            if (!missing(pairFile))
               .Object@pairFile <- new("ScalarCharacter", pairFile)
-              .Object <- callNextMethod(.Object, ...)
-              .Object
+            .Object@posFile <- new("ScalarCharacter", posFile)
+            callNextMethod(.Object, ...)
           })
 
 setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
@@ -85,4 +79,29 @@ setMethod("initialize", "AffyGenePDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
+
+## modified by Matt Settles June 2,2008
+## must specify one of pairFile or xysFile
+## setMethod("initialize", "NgsExpressionPDInfoPkgSeed",
+##           function(.Object, ndfFile, pairFile="", xysFile="", ngdFile="", ...) {
+##               .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+##               .Object@pairFile <- new("ScalarCharacter", pairFile)
+##               .Object@xysFile <- new("ScalarCharacter", xysFile)
+##               .Object@ngdFile <- new("ScalarCharacter", ngdFile)
+##               .Object <- callNextMethod(.Object, ...)
+##               .Object
+##           })
+
+## modified by Matt Settles June 2,2008 ## do you combine multiple arrays sets?
+## setMethod("initialize", "NgsTilingPDInfoPkgSeed",
+##           function(.Object, ndfFile, posFile, xysFile, pairFile, ...) {
+##               .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+##               .Object@posFile <- new("ScalarCharacter", posFile)
+##               if (!missing(xysFile))
+##                 .Object@xysFile <- new("ScalarCharacter", xysFile) ## BC 11/18/2008
+##               if (!missing(pairFile))
+##                 .Object@pairFile <- new("ScalarCharacter", pairFile)
+##               .Object <- callNextMethod(.Object, ...)
+##               .Object
+##           })
 
