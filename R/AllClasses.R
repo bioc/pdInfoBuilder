@@ -1,24 +1,41 @@
+
 setClass("PkgSeed",
-         representation=representation(
-           name="character",
-           version="character",
-           license="character",
-           author="character",
-           email="character",
-           url="character",
-           biocViews="character"),
-         prototype=prototype(
-           license="Artistic License, Version 2.0"),
-         validity=function(object) .isValidPkgSeed(object))
+        representation=representation(
+                name="character",
+                version="character",
+                license="character",
+                author="character",
+                email="character",
+                biocViews="character"),
+        prototype=prototype(
+                name=as.character(NA),
+                version=as.character(NA),
+                license="Artistic License, Version 2.0",
+                author=as.character(NA),
+                email=as.character(NA),
+                biocViews=as.character(NA)),
+        validity=function(object) .isValidPkgSeed(object))
 
 setClass("PDInfoPkgSeed",
-         contains="PkgSeed",
-         representation=representation(
-           chipName="character",
-           manufacturer="character",
-           genomebuild="character",
-           pdInfoObjectName="character",
-           geometry="integer"))
+        contains="PkgSeed",
+        representation=representation(
+                chipName="character",
+                manufacturer="character",
+                url="character",        ## manufacturere url
+                genomebuild="character",
+                organism = "character",## added by M.Settles: 11/14/08
+                species = "character"), ## added by M.Settles: 11/14/08
+        ###pdInfoObjectName="character", Removed, was never used M.Settles:11/11/08
+        ###geometry="integer"), , Removed, was never used M.Settles:11/11/08
+        prototype=prototype(
+                chipName=as.character(NA),
+                manufacturer=as.character(NA),
+                url=as.character(NA),
+                genomebuild=as.character(NA),
+                organism=as.character(NA),
+                species=as.character(NA))
+)
+
 
 setClass("AffySNPPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
@@ -97,23 +114,41 @@ setValidity("NgsTilingPDInfoPkgSeed", validNgsTilingPDInfoPkgSeed)
 setClass("AffyExpressionPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           cdfFile="ScalarCharacter",
-           csvAnnoFile="ScalarCharacter",
-           tabSeqFile="ScalarCharacter"),
-         prototype=list(manufacturer="Affymetrix"))
+                 cdfFile="ScalarCharacter",
+                 csvAnnoFile="ScalarCharacter",
+                 tabSeqFile="ScalarCharacter"),
+         prototype=prototype(
+                 manufacturer="Affymetrix",
+                 cdfFile=mkScalar(as.character(NA)),
+                 csvAnnoFile=mkScalar(as.character(NA)),
+                 tabSeqFile=mkScalar(as.character(NA))))
 
-setClass("AffyTilingPDInfoPkgSeed",
+ ## changed cif file to cel file, cif doesn't seem to really provide anything, expanted prototype
+ setClass("AffyTilingPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           bpmapFile="ScalarCharacter",
-           cifFile="ScalarCharacter"),
-         prototype=list(manufacturer="Affymetrix"))
+                 bpmapFile="ScalarCharacter",
+                 celFile="ScalarCharacter"),
+         prototype=prototype(
+                 manufacturer="Affymetrix",
+                 bpmapFile=mkScalar(as.character(NA)),
+                 celFile=mkScalar(as.character(NA))))
 
-setClass("AffyGenePDInfoPkgSeed",
+setClass("AffySTPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           pgfFile="ScalarCharacter",
-           clfFile="ScalarCharacter",
-           probeFile="ScalarCharacter",
-           transFile="ScalarCharacter"),
-         prototype=list(manufacturer="Affymetrix"))
+                 pgfFile="ScalarCharacter",
+                 clfFile="ScalarCharacter",
+                 probeFile="ScalarCharacter",
+                 transFile="ScalarCharacter"),
+         prototype=prototype(
+                 manufacturer="Affymetrix",
+                 pgfFile=mkScalar(as.character(NA)),
+                 clfFile=mkScalar(as.character(NA)),
+                 probeFile=mkScalar(as.character(NA)),
+                 transFile=mkScalar(as.character(NA))))
+ 
+ setClass("AffyExonPDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
+ setClass("AffyGenePDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
+ 
+ 

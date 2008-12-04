@@ -49,11 +49,11 @@ setMethod("chipName", "AffyExpressionPDInfoPkgSeed",
 setMethod("chipName", "AffyTilingPDInfoPkgSeed",
           function(object) {
               ## compute chip name from the CDF file
-            strsplit(tolower(object@bpmapFile), ".bpmap")[[1]]
+              readCelHeader(object@celFile)$chiptype
           })
-
-setMethod("chipName", "AffyGenePDInfoPkgSeed",
+  
+setMethod("chipName", "AffySTPDInfoPkgSeed",
           function(object) {
               ## compute chip name from the PGF file
-            readPgfEnv(object@pgfFile, readBody = FALSE)$header$lib_set_name
+              readPgfHeader(object@pgfFile)$header$chip_type[[1]]
           })

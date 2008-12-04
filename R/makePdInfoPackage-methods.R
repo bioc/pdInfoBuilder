@@ -2,7 +2,7 @@
 ## CDF file and oligo::cleanPlatformName.
 
 setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
-          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
+          function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
               validInput <- function(x, destPath) {
                   msg <- NULL
                   ok <- sapply(c("cdfFile", "csvAnnoFile", "csvSeqFile"),
@@ -68,7 +68,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
           })
 
 setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed",
-          function(object, destDir=".", batch_size=1000, quiet=FALSE) {
+          function(object, destDir=".", batch_size=1000, quiet=FALSE, unlink=FALSE) {
               chip <- chipName(object)
               pkgName <- cleanPlatformName(chip)
               extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
@@ -112,7 +112,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed",
           
 ## modified by Matt Settles June 2,2008
 setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
-    function(object, destDir=".", batch_size=10000, quiet=FALSE) {
+    function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
   
 ## debug
 #object = pkg
@@ -207,7 +207,7 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
 ## TODO: fix for tiling arrays
 ## modified by Matt Settles June 2,2008
 setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
-          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
+          function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
             ## the validInput that was once here was moved to setValidity
             chip <- chipName(object)
             pkgName <- cleanPlatformName(chip)
@@ -268,186 +268,117 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
 
 
 setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
-          function(object, destDir=".", batch_size=10000, quiet=FALSE) {
-              validInput <- function(x, destPath) {
-                  msg <- NULL
-                  ok <- sapply(c("cdfFile", "csvAnnoFile", "tabSeqFile"),
-                               function(slt) file.exists(slot(x, slt)))
-                  if (!all(ok))
-                    msg <-
-                      paste("missing file(s):",
-                            paste(sapply(names(ok[!ok]), function(slt) slt),
-                                  "='",
-                                  sapply(names(ok[!ok]),
-                                         function(slt) slot(x, slt)),
-                                  "'",
-                                  collapse=", ", sep=""))
-                  if (file.exists(destPath))
-                    msg <-
-                      c(msg,
-                        paste("destination exists, remove or rename: '",
-                              destPath, "'", sep=""))
-                  if (is.null(msg)) TRUE else msg
-              }
-              chip <- chipName(object)
-              pkgName <- cleanPlatformName(chip)
-              valid <- validInput(object, file.path(destDir, pkgName))
-              if (!identical(valid, TRUE))
-                stop(paste(valid, collapse="\n  "))
-              extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
-              dbFileName <- paste(pkgName, "sqlite", sep=".")
-              dbFilePath <- file.path(extdataDir, dbFileName)
-              seqMatFile <- file.path(extdataDir, "seqMat.rda")
-              geometry <- paste(readCdfHeader(object@cdfFile)[c("nrows", "ncols")], collapse=";")
-              syms <- list(MANUF=object@manufacturer,
-                           VERSION=object@version,
-                           GENOMEBUILD=object@genomebuild,
-                           AUTHOR=object@author,
-                           AUTHOREMAIL=object@email,
-                           LIC=object@license,
-                           DBFILE=dbFileName,
-                           CHIPNAME=chip,
-                           PKGNAME=pkgName,
-                           PDINFONAME=pkgName,
-                           PDINFOCLASS="AffyExpressionPDInfo",
-                           GEOMETRY=geometry)
+    function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+        valid <- validInput(object,c("cdfFile"), c("csvAnnoFile", "tabSeqFile"))
+        if (!identical(valid, TRUE))
+            stop(paste(valid, collapse="\n  "))
 
-              templateDir <- system.file("pd.PKG.template",
-                                         package="pdInfoBuilder")
-              createPackage(pkgname=pkgName, destinationDir=destDir,
-                            originDir=templateDir, symbolValues=syms,
-                            quiet=quiet)
-              dir.create(extdataDir, recursive=TRUE)
-              buildPdInfoDb.affyExpr(object@cdfFile, object@csvAnnoFile,
-                                     object@tabSeqFile, dbFilePath, seqMatFile,
-                                     batch_size=batch_size, verbose=!quiet)
-          })
+        if(is.na(object@chipName)) object@chipName <- chipName(object)
+        pkgName <- cleanPlatformName(object@chipName)
+        
+        dbFileName <- paste(pkgName, "sqlite", sep=".")        
+        setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+        
+        extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+        dbFilePath <- file.path(extdataDir, dbFileName)
+        seqMatFile <- file.path(extdataDir, "seqMat.rda")
+        
+        buildPdInfoDb.affyExpr(
+                object@cdfFile, 
+                object@csvAnnoFile,
+                object@tabSeqFile, 
+                dbFilePath, 
+                seqMatFile,
+                batch_size=batch_size, 
+                verbose=!quiet)
+})
 
+          
 setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
-          function(object, destDir=".", batch_size=1, quiet=FALSE) {
-              validInput <- function(x, destPath) {
-                  msg <- NULL
-                  ok <- sapply(c("bpmapFile", "cifFile"),
-                               function(slt) file.exists(slot(x, slt)))
-                  if (!all(ok))
-                    msg <-
-                      paste("missing file(s):",
-                            paste(sapply(names(ok[!ok]), function(slt) slt),
-                                  "='",
-                                  sapply(names(ok[!ok]),
-                                         function(slt) slot(x, slt)),
-                                  "'",
-                                  collapse=", ", sep=""))
-                  if (file.exists(destPath))
-                    msg <-
-                      c(msg,
-                        paste("destination exists, remove or rename: '",
-                              destPath, "'", sep=""))
-                  if (is.null(msg)) TRUE else msg
-              }
-              chip <- chipName(object)
-              pkgName <- cleanPlatformName(chip)
-              valid <- validInput(object, file.path(destDir, pkgName))
-              if (!identical(valid, TRUE))
-                stop(paste(valid, collapse="\n  "))
-              extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
-              dbFileName <- paste(pkgName, "sqlite", sep=".")
-              dbFilePath <- file.path(extdataDir, dbFileName)
-              seqMatFile <- file.path(extdataDir, "seqMat.rda")
-
-              cif <- scan(object@cifFile, what="c", quiet=TRUE)
-              nx <- as.integer(unlist(strsplit(cif[grep("Cols", cif)], "="))[2])
-              ny <- as.integer(unlist(strsplit(cif[grep("Rows", cif)], "="))[2])
-              rm(cif)
+    function(object, destDir=".", batch_size=1, quiet=FALSE, unlink=FALSE) {
+## debug
+#destDir="."; batch_size=1; quiet=FALSE; unlink=TRUE
+## end debug
+        valid <- validInput(object,c("bpmapFile", "celFile"))
+        if (!identical(valid, TRUE))
+            stop(paste(valid, collapse="\n  "))
               
-              geometry <- paste(ny, nx, sep=";")
-              syms <- list(MANUF=object@manufacturer,
-                           VERSION=object@version,
-                           GENOMEBUILD=object@genomebuild,
-                           AUTHOR=object@author,
-                           AUTHOREMAIL=object@email,
-                           LIC=object@license,
-                           DBFILE=dbFileName,
-                           CHIPNAME=chip,
-                           PKGNAME=pkgName,
-                           PDINFONAME=pkgName,
-                           PDINFOCLASS="AffyTilingPDInfo",
-                           GEOMETRY=geometry)
-
-              templateDir <- system.file("pd.PKG.template",
-                                         package="pdInfoBuilder")
-              createPackage(pkgname=pkgName, destinationDir=destDir,
-                            originDir=templateDir, symbolValues=syms,
-                            quiet=quiet)
-              dir.create(extdataDir, recursive=TRUE)
-              buildPdInfoDb.affyTiling(object@bpmapFile, object@cifFile,
-                                       dbFilePath, seqMatFile,
-                                       batch_size=batch_size, verbose=!quiet)
-          })
-
-setMethod("makePdInfoPackage", "AffyGenePDInfoPkgSeed",
-          function(object, destDir=".", batch_size=1, quiet=FALSE) {
-              validInput <- function(x, destPath) {
-                  msg <- NULL
-                  ok <- sapply(c("pgfFile", "clfFile", "probeFile", "transFile"),
-                               function(slt) file.exists(slot(x, slt)))
-                  if (!all(ok))
-                    msg <-
-                      paste("missing file(s):",
-                            paste(sapply(names(ok[!ok]), function(slt) slt),
-                                  "='",
-                                  sapply(names(ok[!ok]),
-                                         function(slt) slot(x, slt)),
-                                  "'",
-                                  collapse=", ", sep=""))
-                  if (file.exists(destPath))
-                    msg <-
-                      c(msg,
-                        paste("destination exists, remove or rename: '",
-                              destPath, "'", sep=""))
-                  if (is.null(msg)) TRUE else msg
-              }
-              chip <- chipName(object)
-              pkgName <- cleanPlatformName(chip)
-              valid <- validInput(object, file.path(destDir, pkgName))
-              if (!identical(valid, TRUE))
-                stop(paste(valid, collapse="\n  "))
-              extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
-              dbFileName <- paste(pkgName, "sqlite", sep=".")
-              dbFilePath <- file.path(extdataDir, dbFileName)
-              seqMatFile <- file.path(extdataDir, "seqMat.rda")
-
-              clf <- readClfEnv(object@clfFile, readBody=FALSE)
-              nx <- clf$header$cols
-              ny <- clf$header$rows
-              rm(clf)
+        if(is.na(object@chipName)) object@chipName <- chipName(object)
+        pkgName <- cleanPlatformName(object@chipName)
               
-              geometry <- paste(ny, nx, sep=";")
-              syms <- list(MANUF=object@manufacturer,
-                           VERSION=object@version,
-                           GENOMEBUILD=object@genomebuild,
-                           AUTHOR=object@author,
-                           AUTHOREMAIL=object@email,
-                           LIC=object@license,
-                           DBFILE=dbFileName,
-                           CHIPNAME=chip,
-                           PKGNAME=pkgName,
-                           PDINFONAME=pkgName,
-                           PDINFOCLASS="AffyGenePDInfo",
-                           GEOMETRY=geometry)
+        dbFileName <- paste(pkgName, "sqlite", sep=".")        
+        setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+        
+        extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+        dbFilePath <- file.path(extdataDir, dbFileName)
+        seqMatFile <- file.path(extdataDir, "seqMat.rda")
+              
+        buildPdInfoDb.affyTiling(
+                object@bpmapFile, 
+                object@celFile,
+                dbFilePath, 
+                seqMatFile,
+                batch_size=batch_size, 
+                verbose=!quiet)
+})
 
-              templateDir <- system.file("pd.PKG.template",
-                                         package="pdInfoBuilder")
-              createPackage(pkgname=pkgName, destinationDir=destDir,
-                            originDir=templateDir, symbolValues=syms,
-                            quiet=quiet)
-              dir.create(extdataDir, recursive=TRUE)
-              
-              buildPdInfoDb.affyST(object@pgfFile, object@clfFile,
-                                   object@probeFile,
-                                   object@transFile, dbFilePath,
-                                   seqMatFile,
-                                   batch_size=batch_size,
-                                   verbose=!quiet)
-              
-          })
+
+setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
+    function(object, destDir=".", batch_size=1, quiet=FALSE, unlink=FALSE) {
+## debug
+#destDir="."; batch_size=1; quiet=FALSE; unlink=TRUE
+## end debug
+
+        valid <- validInput(object,c("pgfFile", "clfFile"),c("probeFile", "transFile"))
+        if (!identical(valid, TRUE))
+            stop(paste(valid, collapse="\n  "))
+      
+        if(is.na(object@chipName)) object@chipName <- chipName(object)
+        pkgName <- cleanPlatformName(object@chipName)
+      
+        dbFileName <- paste(pkgName, "sqlite", sep=".")        
+        setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+            
+        extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+        dbFilePath <- file.path(extdataDir, dbFileName)
+        seqMatFile <- file.path(extdataDir, "seqMat.rda")
+        
+#        buildPdInfoDb.affyST(
+#                object@pgfFile, 
+#                object@clfFile,
+#                object@probeFile,
+#                object@transFile, 
+#                dbFilePath,
+#                seqMatFile,
+#                batch_size=batch_size,
+#                verbose=!quiet)
+            clf <- readClfEnv(object@clfFile)
+            pgf <- readPgfEnv(object@pgfFile)
+            
+            db <- initDb.affyST(dbFilePath)
+            t <- ST(loadUnits.affyST(db, pgf, clf))
+            if (!quiet) printTime("loadUnitsByBatch", t[3])
+            if(!is.na(slot(object,"transFile"))){
+                t <- ST(loadAffyCsv.affyST(db, object@transFile, batch_size=batch_size))
+                if (!quiet) printTime("loadAffyCsv", t[3])
+            }
+            if(!is.na(slot(object,"probeFile"))){
+            t <- ST(loadAffySeqCsv.affyST(db, object@probeFile, pgf, batch_size=batch_size))
+            if (!quiet) printTime("loadAffySeqCsv", t[3])
+            }
+            t <- ST({
+                        sortFeatureTables.affyST(db)
+                        createIndicesDb.affyST(db)
+                        createTableInfoTable.affyST(db)
+                        createFeatureTableInfo.affyST(db)
+                    })
+            if (!quiet) printTime("DB sort, index creation", t[3])
+            
+            ##     t <- ST({
+            ##         seqMat <- createSeqMat(db)
+            ##         save(seqMat, file=matFile, compress=TRUE)
+            ##     })
+            ##     printTime("sequence matrix", t[3])
+            closeDb(db)
+})
+

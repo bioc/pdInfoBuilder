@@ -18,7 +18,6 @@ Objects can be created by calls of the form \code{new("PkgSeed", ...)}.
     \item{\code{license}:}{The license of the package}
     \item{\code{author}:}{Author of the package}
     \item{\code{email}:}{An email address to use in the Maintainer field}
-    \item{\code{url}:}{URL}
     \item{\code{biocViews}:}{Character data for the biocViews field of
     the DESCRIPTION file}
   }

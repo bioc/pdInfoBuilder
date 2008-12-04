@@ -62,24 +62,28 @@ setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
               .Object
           })
 
+  
 setMethod("initialize", "AffyTilingPDInfoPkgSeed",
-          function(.Object, bpmapFile, cifFile, ...) {
+          function(.Object, bpmapFile, celFile, ...) {
               .Object@bpmapFile <- new("ScalarCharacter", bpmapFile)
-              .Object@cifFile <- new("ScalarCharacter", cifFile)
+              .Object@celFile <- new("ScalarCharacter", celFile)
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
-
-setMethod("initialize", "AffyGenePDInfoPkgSeed",
+  
+setMethod("initialize", "AffySTPDInfoPkgSeed",
           function(.Object, pgfFile, clfFile, probeFile, transFile, ...) {
               .Object@pgfFile <- new("ScalarCharacter", pgfFile)
               .Object@clfFile <- new("ScalarCharacter", clfFile)
-              .Object@probeFile <- new("ScalarCharacter", probeFile)
-              .Object@transFile <- new("ScalarCharacter", transFile)
+              ## probeFile and transFile are optional
+              if (!missing(probeFile))
+                  .Object@probeFile <- new("ScalarCharacter", probeFile)
+              if (!missing(transFile))
+                  .Object@transFile <- new("ScalarCharacter", transFile)
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
-
+  
 ## modified by Matt Settles June 2,2008
 ## must specify one of pairFile or xysFile
 ## setMethod("initialize", "NgsExpressionPDInfoPkgSeed",

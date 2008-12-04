@@ -10,14 +10,17 @@ exportClasses(
               "AffyTilingPDInfoPkgSeed",
               "AffySNPPDInfoPkgSeed",
               "AffySNPCNVPDInfoPkgSeed",
+              "AffySTPDInfoPkgSeed",
+              "AffyExonPDInfoPkgSeed",
               "AffyGenePDInfoPkgSeed",
-	      "NgsPDInfoPkgSeed",
+	          "NgsPDInfoPkgSeed",
               "NgsExpressionPDInfoPkgSeed",
               "NgsTilingPDInfoPkgSeed"
               )
 
 exportMethods(
               "chipName",
+              "getGeometry",
               "makePdInfoPackage",
               "initialize"
               )

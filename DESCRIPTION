@@ -17,6 +17,7 @@ License: Artistic-2.0
 Collate: AllClasses.R
          AllGenerics.R
          initialize-methods.R
+         utils.R
          schema.R
          initDb.R
          initDb.snp6.R
@@ -27,7 +28,8 @@ Collate: AllClasses.R
          parseAffySeqFasta.R
          makePdInfoPackage-methods.R
          chipName-methods.R
-	 geneAssoc.R
+         getGeometry-methods.R
+	     geneAssoc.R
          readNimblegen.R
          ngs.InitDb.R
          ngs.loader.R

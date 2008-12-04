@@ -1,0 +1,14 @@
+### CHANGE log for package pdInfoBuilder ###
+
+Changes made by Matt Settles 12-4-2008
+** All changes should generally have effect on only Affy Tiling, ST and expression arrays.
+Changes made that effect, but not break, all objects
+	moved url from PkgSeed to PDInfoPkgSeed
+	added organism and species to PDINfoPkgSeed, default provided
+Changes currently isolated to Affy tiling and ST and expression arrays
+	added new generic function getGeometry
+	added utils file, contains some general functions
+	modifed chipName function for affy tiling and affy st arrays
+	moved affy tiling cif file to cel file, may change back, in general the cif file appears to contain no relevant information
+	added new pdInfo.PKG.template folde inst, I'm trying something out
+	modified package building proceedures for tiling, st and expression arrays

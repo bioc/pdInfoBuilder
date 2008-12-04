@@ -1,14 +1,14 @@
-\name{AffyGenePDInfoPkgSeed-class}
+\name{AffySTPDInfoPkgSeed-class}
 \docType{class}
-\alias{AffyGenePDInfoPkgSeed-class}
-\alias{chipName,AffyGenePDInfoPkgSeed-method}
-\alias{initialize,AffyGenePDInfoPkgSeed-method}
-\alias{makePdInfoPackage,AffyGenePDInfoPkgSeed-method}
+\alias{AffySTPDInfoPkgSeed-class}
+\alias{chipName,AffySTPDInfoPkgSeed-method}
+\alias{initialize,AffySTPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,AffySTPDInfoPkgSeed-method}
 
-\title{Class "AffyGenePDInfoPkgSeed" for the Sense Target gene-level array }
+\title{Class "AffySTPDInfoPkgSeed" for the Sense Target gene-level array }
 \description{	 container for parameters related to pdmapping package construction for ST gene level array}
 \section{Objects from the Class}{
-Objects can be created by calls of the form \code{new("AffyGenePDInfoPkgSeed", pgfFile, clfFile, probeFile, transFile, ...)}.
+Objects can be created by calls of the form \code{new("AffySTPDInfoPkgSeed", pgfFile, clfFile, probeFile, transFile, ...)}.
 }
 \section{Slots}{
 	 \describe{
@@ -36,9 +36,9 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 }
 \section{Methods}{
   \describe{
-    \item{chipName}{\code{signature(object = "AffyGenePDInfoPkgSeed")}: ... }
-    \item{initialize}{\code{signature(.Object = "AffyGenePDInfoPkgSeed")}: ... }
-    \item{makePdInfoPackage}{\code{signature(object = "AffyGenePDInfoPkgSeed")}: ... }
+    \item{chipName}{\code{signature(object = "AffySTPDInfoPkgSeed")}: ... }
+    \item{initialize}{\code{signature(.Object = "AffySTPDInfoPkgSeed")}: ... }
+    \item{makePdInfoPackage}{\code{signature(object = "AffySTPDInfoPkgSeed")}: ... }
 	 }
 }
 %\references{ ~put references to the literature/web site here ~ }
@@ -52,6 +52,6 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 %	or \code{\linkS4class{CLASSNAME}} for links to other classes
 %}
 \examples{
-showClass("AffyGenePDInfoPkgSeed")
+showClass("AffySTPDInfoPkgSeed")
 }
 \keyword{classes}

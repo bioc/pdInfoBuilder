@@ -163,7 +163,7 @@ loadUnitsByBatch.affyTiling <- function(db, bpmapFile, batch_size=1, nx,
 }
 
 
-buildPdInfoDb.affyTiling <- function(bpmapFile,  cifFile, dbFile, matFile,
+buildPdInfoDb.affyTiling <- function(bpmapFile,  cefFile, dbFile, matFile,
                           batch_size=10000, verbose=FALSE) {
 
     ST <- system.time
@@ -176,9 +176,9 @@ buildPdInfoDb.affyTiling <- function(bpmapFile,  cifFile, dbFile, matFile,
 
     db <- initDb.affyTiling(dbFile)
 
-    cif <- scan(cifFile, what="c", quiet=TRUE)
-    nx <- as.integer(unlist(strsplit(cif[grep("Cols", cif)], "="))[2])
-    rm(cif)
+    celh <- readCelHeader(celFile)
+    nx <- as.integer(celh$cols)
+    rm(celh)
     
     t <- ST(loadUnitsByBatch.affyTiling(db, bpmapFile, batch_size=batch_size, nx=nx))
     printTime("loadUnitsByBatch", t[3])

@@ -207,6 +207,7 @@ loadAffyCsv.affyST <- function(db, transFile, batch_size=5000) {
 buildPdInfoDb.affyST <- function(pgfFile, clfFile, probeFile, transFile, dbFile, matFile,
                           batch_size=10000, verbose=FALSE) {
 
+    cat("starting Build process\n")
     ST <- system.time
     printTime <- function(msg, t) {
         if (verbose) {
@@ -214,17 +215,23 @@ buildPdInfoDb.affyST <- function(pgfFile, clfFile, probeFile, transFile, dbFile,
             cat(sprintf(m, t))
         }
     }
+    cat("ReadClfEnv\n")
     clf <- readClfEnv(clfFile)
+    cat("ReadpgfEnv\n")
     pgf <- readPgfEnv(pgfFile)
 
+    cat("initDB\n")
     db <- initDb.affyST(dbFile)
-
+    cat("loadUnits\n") 
     t <- ST(loadUnits.affyST(db, pgf, clf))
     printTime("loadUnitsByBatch", t[3])
+    cat("lodAffyCsv\n")
     t <- ST(loadAffyCsv.affyST(db, transFile, batch_size=batch_size))
     printTime("loadAffyCsv", t[3])
+    cat("loadAffySeq\n")
     t <- ST(loadAffySeqCsv.affyST(db, probeFile, pgf, batch_size=batch_size))
     printTime("loadAffySeqCsv", t[3])
+    cat("Sort\n")
     t <- ST({
         sortFeatureTables.affyST(db)
         createIndicesDb.affyST(db)

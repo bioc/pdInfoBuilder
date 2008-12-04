@@ -13,7 +13,7 @@ Objects can be created by calls of the form \code{new("AffyTilingPDInfoPkgSeed",
 \section{Slots}{
 	 \describe{
     \item{\code{bpmapFile}:}{BPMAP File - provided by Affymetrix}
-    \item{\code{cifFile}:}{CIF File - provided by Affymetrix}
+    \item{\code{celFile}:}{CEL File - provided by Affymetrix}
     \item{\code{chipName}:}{Automatically determined.}
     \item{\code{manufacturer}:}{Automatically determined.}
     \item{\code{genomebuild}:}{Genome Build.}

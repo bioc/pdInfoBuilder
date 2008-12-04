@@ -15,9 +15,12 @@ Objects can be created by calls of the form \code{new("PDInfoPkgSeed", ...)}.
     \item{\code{manufacturer}:}{chip/platform manufacturer}
     \item{\code{genomebuild}:}{The genome build this platform is based
     upon.}
-    \item{\code{pdInfoObjectName}:}{Name of the R object that will be
-    made available in a generated pdInfo package.}
-    \item{\code{geometry}:}{Used to describe the geometry of the platform. }
+    \item{\code{url}:}{chip URL}
+  
+%% these were never used : MS  
+%%     \item{\code{pdInfoObjectName}:}{Name of the R object that will be
+%%    made available in a generated pdInfo package.}
+%%   \item{\code{geometry}:}{Used to describe the geometry of the platform. }
 
 %% these are from PkgSeed-class, bummer for the duplication :-(
     \item{\code{name}:}{The name of the package.}

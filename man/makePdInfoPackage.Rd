@@ -27,6 +27,9 @@ makePdInfoPackage(object, destDir, batch_size = 10000, quiet = FALSE)
   used as well).}
   \item{quiet}{A logical value.  When \code{TRUE}, diagnostic and
   status messages are not printed.}
+  \item{unlink}{A logical value. If 'TRUE', and 'destDir' already contains a
+          file or directory with the name 'pkgname', try to unlink
+          (remove) it.}
 }
 \details{
         In general, creating the SQLite database will be a time and
