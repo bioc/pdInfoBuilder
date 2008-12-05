@@ -1,0 +1,6 @@
+import(methods)
+import(oligoClasses)
+
+export(
+       '@PDINFONAME@'
+       )

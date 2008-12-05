@@ -1,0 +1,15 @@
+Package: @PKGNAME@
+Title: Platform Design Info for @MANUF@ @CHIPNAME@
+Description: @PKGNAME@ assembled using data from public data
+Version: @PKGVERSION@
+Author: @AUTHOR@
+Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
+Depends: R (>= 2.7.0), methods, RSQLite (>= 0.4-15), oligoClasses (>= @OLIGOCVERSION@)
+Imports: methods, oligoClasses
+License: @LIC@
+organism: @ORGANISM@ @GENOMEBUILD@
+species: @SPECIES@
+manufacturer: @MANUF@
+chipName: @CHIPNAME@
+manufacturerUrl: @MANUFURL@
+biocViews: @BIOCVIEWS@
