@@ -87,6 +87,3 @@ createFeatureTableInfo.affyExpr <- function(db, tname) {
     ## FIXME: add code to determine offsets of sorted
     ## strand and allele
 }
-
-
-closeDb <- function(db) dbDisconnect(db)

@@ -21,6 +21,5 @@ exportClasses(
 exportMethods(
               "chipName",
               "getGeometry",
-              "makePdInfoPackage",
-              "initialize"
+              "makePdInfoPackage"
               )

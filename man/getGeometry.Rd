@@ -1,9 +1,11 @@
-\name{chipName}
+\name{getGeometry}
 \alias{getGeometry}
 \alias{getGeometry,AffySNPPDInfoPkgSeed-method}
+\alias{getGeometry,AffySNPCNVPDInfoPkgSeed-method}
+\alias{getGeometry,AffyExpressionPDInfoPkgSeed-method}
+\alias{getGeometry,AffyTilingPDInfoPkgSeed-method}
+\alias{getGeometry,AffySTPDInfoPkgSeed-method}
 \alias{getGeometry,NgsPDInfoPkgSeed-method}
-\alias{getGeometry,NgsExpressionPDInfoPkgSeed-method}
-\alias{getGeometry,NgsTilingPDInfoPkgSeed-method}
 
 \title{Return the Chip/Platform geometry}
 \description{
@@ -24,7 +26,7 @@ getGeometry(object)
   to extract the geometry.
 }
 \value{
-  A character vector of length one giving the "rows;cols"
+ A list with two elements nrows and ncols
 }
 
 \author{Matt Settles}

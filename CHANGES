@@ -1,5 +1,12 @@
 ### CHANGE log for package pdInfoBuilder ###
 
+Changes made by Matt Settles 12-8-08
+moved closeDb function from many instances in XinitDb.R to one instance in utils.R
+added connectDb function in utils.R
+changed getGeometry to return a list with nrow and ncols instead of character nrows;ncols
+updated man pages 
+more work on Affy Tiling and ST arrays
+
 Changes made by Matt Settles 12-4-2008
 ** All changes should generally have effect on only Affy Tiling, ST and expression arrays.
 Changes made that effect, but not break, all objects
@@ -12,3 +19,4 @@ Changes currently isolated to Affy tiling and ST and expression arrays
 	moved affy tiling cif file to cel file, may change back, in general the cif file appears to contain no relevant information
 	added new pdInfo.PKG.template folde inst, I'm trying something out
 	modified package building proceedures for tiling, st and expression arrays
+	

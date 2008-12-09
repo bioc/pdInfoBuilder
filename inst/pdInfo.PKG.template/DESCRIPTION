@@ -4,7 +4,7 @@ Description: @PKGNAME@ assembled using data from public data
 Version: @PKGVERSION@
 Author: @AUTHOR@
 Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
-Depends: R (>= 2.7.0), methods, RSQLite (>= 0.4-15), oligoClasses (>= @OLIGOCVERSION@)
+Depends: R (>= 2.7.0), methods, oligoClasses (>= @OLIGOCVERSION@)
 Imports: methods, oligoClasses
 License: @LIC@
 organism: @ORGANISM@ @GENOMEBUILD@

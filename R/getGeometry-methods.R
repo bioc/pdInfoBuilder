@@ -1,35 +1,38 @@
-setMethod("chipName", "AffySNPPDInfoPkgSeed",
+######### Affymetrix Arrays ##########
+setMethod("getGeometry", "AffySNPPDInfoPkgSeed",
           function(object) {
-              return(paste(readCdfHeader(object@cdfFile)[c("nrows", "ncols")], collapse=";"))
+              cdfh <- readCdfHeader(object@cdfFile)
+              return(list(nrows=cdfh$nrows,ncols=cdfh$ncols))
           })
 
 setMethod("getGeometry", "AffySNPCNVPDInfoPkgSeed",
           function(object) {
-              return(paste(readCdfHeader(object@cdfFile)[c("nrows", "ncols")], collapse=";"))
-          })
-
-setMethod("getGeometry", "NgsPDInfoPkgSeed",
-          function(object) {
-              ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
-              return(paste(max(ndfdata$Y), max(ndfdata$X), sep=";"))
+              cdfh <- readCdfHeader(object@cdfFile)
+              return(list(nrows=cdfh$nrows,ncols=cdfh$ncols))
           })
 
 setMethod("getGeometry", "AffyExpressionPDInfoPkgSeed",
           function(object) {
-              return(paste(readCdfHeader(object@cdfFile)[c("nrows", "ncols")], collapse=";"))
+              cdfh <- readCdfHeader(object@cdfFile)
+              return(list(nrows=cdfh$nrows,ncols=cdfh$ncols))
           })
 
 setMethod("getGeometry", "AffyTilingPDInfoPkgSeed",
           function(object) {
-              ## get geometry, but why do we need here?
-              celh <- readCelHeader(celFile)
-              nx <- as.integer(celh$cols)
-              ny <- as.integer(celh$rows)
-              return(paste(ny, nx, sep=";"))
+              celh <- readCelHeader(object@celFile)
+              return(list(nrows=as.integer(celh$rows), ncols=as.integer(celh$cols)))
           })
   
 setMethod("getGeometry", "AffySTPDInfoPkgSeed",
           function(object) {
-              ## compute chip name from the PGF file
-              readPgfHeader(object@pgfFile)$header$chip_type[[1]]
+              clfh <- readClfHeader(object@clfFile)
+              return(list(nrows=clfh$header$rows,ncols=clfh$header$cols))
           })
+
+########### Nimblegen Arrays ############
+setMethod("getGeometry", "NgsPDInfoPkgSeed",
+        function(object) {
+            ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
+            return(list(nrows=max(ndfdata$Y),ncols= max(ndfdata$X)))
+        })
+

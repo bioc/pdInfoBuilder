@@ -48,7 +48,7 @@ setupPackage <- function(object,pkgName,destDir,dbFileName,unlink,quiet){
             PDINFONAME   =pkgName,
             ## present in all.R
             ## not sure where these are used
-            GEOMETRY     =geometry, ## remove in future
+            GEOMETRY     =paste(geometry$nrows,geometry$ncols, sep=";"), ## remove in future
             DBFILE       =dbFileName,
             PDINFOCLASS  = sub("PkgSeed","", class(object)))
     
@@ -58,3 +58,13 @@ setupPackage <- function(object,pkgName,destDir,dbFileName,unlink,quiet){
             unlink = unlink,quiet=quiet)
 }              
 
+"connectDb" <- function(dbfile) {
+    if (!file.exists(dbfile))
+        stop("DB file '", dbfile, "' not found")
+    require("RSQLite")
+    dbConnect(SQLite(), dbname=dbfile, cache_size=6400, page_size = 8192, synchronous=0)
+}
+
+"closeDb" <- function(db){
+    dbDisconnect(db)
+}

@@ -1,9 +1,6 @@
 \name{AffyExpressionPDInfoPkgSeed-class}
 \docType{class}
 \alias{AffyExpressionPDInfoPkgSeed-class}
-\alias{chipName,AffyExpressionPDInfoPkgSeed-method}
-\alias{initialize,AffyExpressionPDInfoPkgSeed-method}
-\alias{makePdInfoPackage,AffyExpressionPDInfoPkgSeed-method}
 
 \title{Class "AffyExpressionPDInfoPkgSeed"}
 \description{PD Info Package Seed for Affymetrix Expression Arrays}
@@ -13,21 +10,27 @@ Objects can be created by calls of the form \code{new("AffyExpressionPDInfoPkgSe
 \section{Slots}{
 	 \describe{
     \item{\code{cdfFile}:}{CDF filename}
-    \item{\code{csvAnnoFile}:}{CSV annotation file}
-    \item{\code{tabSeqFile}:}{TAB sequence file}
-    \item{\code{chipName}:}{NA}
-    \item{\code{manufacturer}:}{Affymetrix}
-    \item{\code{genomebuild}:}{Genome Build}
-    \item{\code{pdInfoObjectName}:}{NA}
-    \item{\code{geometry}:}{Array's geometry}
-    \item{\code{name}:}{name}
-    \item{\code{version}:}{version}
-    \item{\code{license}:}{license}
-    \item{\code{author}:}{author}
-    \item{\code{email}:}{email}
-    \item{\code{url}:}{url}
-    \item{\code{biocViews}:}{biocViews}
-  }
+    \item{\code{csvAnnoFile}:}{CSV annotation file, (Optional)}
+    \item{\code{tabSeqFile}:}{TAB sequence file, (Optional)}
+
+%% these are from PDInfoPkgSeed-class
+    \item{\code{chipName}:}{Name of the chip or platform}
+    \item{\code{manufacturer}:}{chip/platform manufacturer}
+    \item{\code{url}:}{chip URL}
+    \item{\code{genomebuild}:}{The genome build this platform is based
+    upon.}
+	\item{\code{organism}:}{ organism for chip. }
+	\item{\code{species}:}{ species for chip. }  
+%% these are from PkgSeed-class
+    \item{\code{name}:}{The name of the package.}
+    \item{\code{version}:}{A character vector giving the version
+    number of the package.}
+    \item{\code{license}:}{The license of the package}
+    \item{\code{author}:}{Author of the package}
+    \item{\code{email}:}{An email address to use in the Maintainer field}
+    \item{\code{biocViews}:}{Character data for the biocViews field of
+    the DESCRIPTION file}
+   }
 }
 \section{Extends}{
 Class \code{"\linkS4class{PDInfoPkgSeed}"}, directly.
@@ -36,7 +39,7 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 \section{Methods}{
   \describe{
     \item{chipName}{chipName}
-    \item{initialize}{initialize}
+    \item{getGeometry}{initialize}
     \item{makePdInfoPackage}{package creator}
 	 }
 }

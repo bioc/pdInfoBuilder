@@ -33,6 +33,13 @@ probesetIdxToTripletIdx <- function(pgf, probesetIdx) {
 }
 
 loadUnits.affyST <- function(db, pgf, clf) {
+
+    ## create tables table
+    sqliteQuickSQL(db, createAffySTFeatureSetSql)
+    sqliteQuickSQL(db, sprintf(createAffySTFeatureSql, "pmfeature_tmp"))
+    sqliteQuickSQL(db, sprintf(createAffySTFeatureSql, "mmfeature_tmp"))
+    sqliteQuickSQL(db, sprintf(createAffySTPm_MmSql, "pm_mm"))
+    
     ## load featureSet table
     fset.table <- data.frame(fsetid = pgf[["probesetId"]],
                              man_fsetid = pgf[["probesetName"]],
@@ -43,6 +50,8 @@ loadUnits.affyST <- function(db, pgf, clf) {
     fset.table[i, "man_fsetid"] <- fset.table[i, "fsetid"]
     rm(i)
     fset.table <- fset.table[order(fset.table[["man_fsetid"]]),]
+    
+    
     dbBeginTransaction(db)
     values <- "(:fsetid, :man_fsetid, :type, :start_atom)"
     sql <- "insert into featureSet (fsetid, man_fsetid, type, start_atom) values"
@@ -139,6 +148,10 @@ readProbeFile <- function(filename){
 
 
 loadAffySeqCsv.affyST <- function(db, probeFile, pgf, batch_size=5000) {
+  
+  ## create tables table
+  sqliteQuickSQL(db, createAffySTSequenceSql)
+    
   probeSeq <- readProbeFile(probeFile)
   i <- which(probeSeq[["probe_id"]] %in% pgf[["probeId"]])
   probeSeq[["interrogation_position"]] <- NA
@@ -153,7 +166,7 @@ loadAffySeqCsv.affyST <- function(db, probeFile, pgf, batch_size=5000) {
   rm(ts,i, probeSeq)
   probeSet <- probeSet[order(probeSet[["probe_id"]]),]
   
-  sql <- paste("INSERT INTO sequence VALUES",
+  sql <- paste("insert into sequence VALUES",
                "(:probe_id, :target_strandedness,",
                ":interrogation_position, :transcript_cluster_id,",
                ":seqname, :start, :stop, :probe_sequence, :category)")

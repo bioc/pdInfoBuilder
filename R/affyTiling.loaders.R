@@ -163,7 +163,7 @@ loadUnitsByBatch.affyTiling <- function(db, bpmapFile, batch_size=1, nx,
 }
 
 
-buildPdInfoDb.affyTiling <- function(bpmapFile,  cefFile, dbFile, matFile,
+buildPdInfoDb.affyTiling <- function(bpmapFile,  celFile, dbFile, matFile,
                           batch_size=10000, verbose=FALSE) {
 
     ST <- system.time

@@ -2,50 +2,42 @@ datacache <- new.env(hash=TRUE, parent=emptyenv())
 
 datacache$DEBUG <- FALSE
 
-## setup the path at package level so that DB can be accessed
-## during package install/lazyload db creation.
-##
-## We reset the DB_PATH in .onLoad since we need to
-## get the right one based on libpath
-#datacache$DB_PATH <- system.file("extdata", "@DBFILE@",
-#                               package="@PKGNAME@")
-#if (nchar(datacache$DB_PATH) == 0)
-#  stop("Unable to locate DB file")
+"initDbConnection" <- function(dbfile) {
+    if (!file.exists(dbfile))
+        stop("DB file '", dbfile, "' not found")
+    require("RSQLite")
+    dbConnect(SQLite(), dbname=dbfile, cache_size=6400, synchronous=0)
+}
 
-"initDbConnection" <- function() {
-    datacache$dbCon <- dbConnect(dbDriver("SQLite"), dbname=datacache$DB_PATH)
-    datacache$dbCon
+"closeDb" <- function(dbconn) {
+    dbDisconnect(dbconn)
 }
 
 "getDb"  <- function() {
-    if (!is.null(datacache$dbCon) && isIdCurrent(datacache$dbCon))
-      return(datacache$dbCon)
-    initDbConnection()
+    if (!is.null(get("dbCon",datacache)) && isIdCurrent(get("dbCon",datacache)))
+        return(get("dbCon",datacache))
+    initDbConnection(get("DB_PATH",datacache))
 }
 
-"closeDb" <- function() {
-    ## FIXME: check for valid connection?
-    sapply(dbListResults(datacache$dbCon), dbClearResult)
-    dbDisconnect(datacache$dbCon)
-    remove(dbCon, envir=datacache)
-}
+
+
+@PDINFONAME@ <- new("@PDINFOCLASS@",
+        genomebuild="@GENOMEBUILD@",
+        getdb=getDb,
+        geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]])) ## modify in future
+
 
 .onLoad <- function(libname, pkgname) {
     require("methods", quietly=TRUE)
-    datacache$DB_PATH <- system.file("extdata", "@DBFILE@",
+    DB_PATH <- system.file("extdata", "@DBFILE@",
                                    package=pkgname,
                                    lib.loc=libname)
-    if (nchar(datacache$DB_PATH) == 0)
-      stop("Unable to locate DB file")
+    assign("DB_PATH", DB_PATH, envir=datacache)
     ## Establish a connection to the SQLite DB
-    initDbConnection()
+    dbCon <- initDbConnection(DB_PATH)
+    assign("dbCon",dbCon,envir=datacache)
 }
 
 .onUnload <- function(libpath) {
-    closeDb()
+    closeDb(get(dbCon,envir=datacache))
 }
-
-@PDINFONAME@ <- new("@PDINFOCLASS@",
-                    genomebuild="@GENOMEBUILD@",
-                    getdb=getDb,
-                    geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]])) ## modify in future

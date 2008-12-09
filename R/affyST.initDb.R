@@ -9,10 +9,12 @@ initDb.affyST <- function(dbname) {
     dbGetQuery(db, createAffySTFeatureSetSql)
     dbGetQuery(db, sprintf(createAffySTFeatureSql, "pmfeature_tmp"))
     dbGetQuery(db, sprintf(createAffySTFeatureSql, "mmfeature_tmp"))
-    dbGetQuery(db, sprintf(createAffySTFeatureSql, "qcpmfeature"))
-    dbGetQuery(db, sprintf(createAffySTFeatureSql, "qcmmfeature"))
     dbGetQuery(db, sprintf(createAffySTPm_MmSql, "pm_mm"))
-    dbGetQuery(db, sprintf(createAffySTPm_MmSql, "qcpm_qcmm"))
+    
+    
+    dbGetQuery(db, sprintf(createAffySTFeatureSql, "qcpmfeature")) ## never used
+    dbGetQuery(db, sprintf(createAffySTFeatureSql, "qcmmfeature")) ## never used
+    dbGetQuery(db, sprintf(createAffySTPm_MmSql, "qcpm_qcmm")) ## never used
     dbGetQuery(db, createAffySTSequenceSql)
 
     ## Create index
@@ -89,6 +91,3 @@ createFeatureTableInfo.affyST <- function(db, tname) {
     ## FIXME: add code to determine offsets of sorted
     ## strand and allele
 }
-
-
-closeDb <- function(db) dbDisconnect(db)

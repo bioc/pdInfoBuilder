@@ -100,5 +100,3 @@ snp6.createFeatureTableInfo <- function(db, tname) {
     ## strand and allele
 }
 
-
-closeDb <- function(db) dbDisconnect(db)

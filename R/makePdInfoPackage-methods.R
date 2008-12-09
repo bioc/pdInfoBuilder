@@ -352,10 +352,11 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
 #                seqMatFile,
 #                batch_size=batch_size,
 #                verbose=!quiet)
+            db <- connectDb(dbFilePath)
+            
             clf <- readClfEnv(object@clfFile)
             pgf <- readPgfEnv(object@pgfFile)
             
-            db <- initDb.affyST(dbFilePath)
             t <- ST(loadUnits.affyST(db, pgf, clf))
             if (!quiet) printTime("loadUnitsByBatch", t[3])
             if(!is.na(slot(object,"transFile"))){

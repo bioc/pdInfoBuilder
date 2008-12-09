@@ -1,6 +1,12 @@
 \name{makePdInfoPackage}
 \alias{makePdInfoPackage}
 \alias{makePdInfoPackage,AffySNPPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,AffySNPCNVPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,AffyExpressionPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,AffyTilingPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,AffySTPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,NgsExpressionPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,NgsTilingPDInfoPkgSeed-method}
 
 \title{Create a Platform Design Info Package}
 \description{
@@ -11,7 +17,7 @@
   pdInfo package.
 }
 \usage{
-makePdInfoPackage(object, destDir, batch_size = 10000, quiet = FALSE)
+makePdInfoPackage(object, destDir, batch_size = 10000, quiet = FALSE, unlink = FALSE)
 }
 
 \arguments{

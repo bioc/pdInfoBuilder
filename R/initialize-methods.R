@@ -1,3 +1,4 @@
+############## Affymetrix Arrays ###############
 setMethod("initialize", "AffySNPPDInfoPkgSeed",
           function(.Object, cdfFile, csvAnnoFile, csvSeqFile,
                    splineParamFile="", crlmmInfoFile="",
@@ -28,36 +29,14 @@ setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
               .Object
           })
 
-setMethod("initialize", "NgsExpressionPDInfoPkgSeed",
-          function(.Object, ndfFile, xysFile, pairFile, ngdFile, ...) {
-            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
-            if (!missing(xysFile))
-              .Object@xysFile <- new("ScalarCharacter", xysFile)
-            if (!missing(pairFile))
-              .Object@pairFile <- new("ScalarCharacter", pairFile)
-            .Object@ngdFile <- new("ScalarCharacter", ngdFile)
-            callNextMethod(.Object, ...)
-            .Object <- callNextMethod(.Object, ...)
-            .Object
-          })
-
-
-setMethod("initialize", "NgsTilingPDInfoPkgSeed",
-          function(.Object, ndfFile, xysFile, pairFile, posFile, ...) {
-            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
-            if (!missing(xysFile))
-              .Object@xysFile <- new("ScalarCharacter", xysFile)
-            if (!missing(pairFile))
-              .Object@pairFile <- new("ScalarCharacter", pairFile)
-            .Object@posFile <- new("ScalarCharacter", posFile)
-            callNextMethod(.Object, ...)
-          })
-
 setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
           function(.Object, cdfFile, csvAnnoFile, tabSeqFile, ...) {
               .Object@cdfFile <- new("ScalarCharacter", cdfFile)
-              .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
-              .Object@tabSeqFile <- new("ScalarCharacter", tabSeqFile)
+              ## tabSeqFile and csvAnnoFile are optional
+              if (!missing(csvAnnoFile))
+                  .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
+              if (!missing(tabSeqFile))
+                  .Object@tabSeqFile <- new("ScalarCharacter", tabSeqFile)
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
@@ -84,6 +63,34 @@ setMethod("initialize", "AffySTPDInfoPkgSeed",
               .Object
           })
   
+
+########### Nimblegen Arrays ###############
+setMethod("initialize", "NgsExpressionPDInfoPkgSeed",
+        function(.Object, ndfFile, xysFile, pairFile, ngdFile, ...) {
+            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+            if (!missing(xysFile))
+                .Object@xysFile <- new("ScalarCharacter", xysFile)
+            if (!missing(pairFile))
+                .Object@pairFile <- new("ScalarCharacter", pairFile)
+            .Object@ngdFile <- new("ScalarCharacter", ngdFile)
+            callNextMethod(.Object, ...)
+            .Object <- callNextMethod(.Object, ...)
+            .Object
+        })
+
+
+setMethod("initialize", "NgsTilingPDInfoPkgSeed",
+        function(.Object, ndfFile, xysFile, pairFile, posFile, ...) {
+            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+            if (!missing(xysFile))
+                .Object@xysFile <- new("ScalarCharacter", xysFile)
+            if (!missing(pairFile))
+                .Object@pairFile <- new("ScalarCharacter", pairFile)
+            .Object@posFile <- new("ScalarCharacter", posFile)
+            callNextMethod(.Object, ...)
+        })
+
+
 ## modified by Matt Settles June 2,2008
 ## must specify one of pairFile or xysFile
 ## setMethod("initialize", "NgsExpressionPDInfoPkgSeed",

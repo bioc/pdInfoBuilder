@@ -7,12 +7,7 @@
 ## sequence table contains info from probe.tab
 ## likely to have only pmfeature table.
 
-BASE_A <- 1
-BASE_C <- 2
-BASE_G <- 3
-BASE_T <- 4
-
-createAffySTFeatureSetSql <- ('
+createAffySTFeatureSetSql <- paste('
 create table featureSet (
     fsetid integer primary key,
     man_fsetid text,
@@ -38,7 +33,7 @@ create table featureSet (
 )
 ')
 
-createAffySTFeatureSql <- ('
+createAffySTFeatureSql <- paste('
 create table %s (
     fid integer,
     fsetid integer not null references "featureSet" ("fsetid"),
@@ -52,7 +47,7 @@ create table %s (
     PRIMARY KEY (atom, fid))
 ')
 
-createAffySTPm_MmSql <- ('
+createAffySTPm_MmSql <- paste('
 create table %s (
     pm_fid integer primary key references "pmfeature" ("fid"),
     mm_fid integer references "mmfeature" ("fid"))
@@ -65,7 +60,7 @@ create table %s (
 ##  here with transcript_cluster and trancript+probeid do not form a key
 ##  =(
 
-createAffySTSequenceSql <- ('
+createAffySTSequenceSql <- paste('
 create table sequence (
     fid integer,
     tstrand integer,

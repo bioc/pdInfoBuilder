@@ -1,9 +1,6 @@
 \name{AffySNPCNVPDInfoPkgSeed-class}
 \docType{class}
 \alias{AffySNPCNVPDInfoPkgSeed-class}
-\alias{chipName,AffySNPCNVPDInfoPkgSeed-method}
-\alias{initialize,AffySNPCNVPDInfoPkgSeed-method}
-\alias{makePdInfoPackage,AffySNPCNVPDInfoPkgSeed-method}
 
 \title{Class "AffySNPCNVPDInfoPkgSeed"}
 \description{
@@ -28,28 +25,23 @@ Objects can be created by calls of the form \code{new("AffySNPCNVPDInfoPkgSeed",
     \item{\code{crlmmInfoFile}:}{Path to is data file containing regions data
       used by the \code{crlmm} function.}
 
-        \item{referenceDistFile}{Path to a reference distribution file used
-      in the normalization step. This is the reference used in
-      \code{snprma}.}
-
-%% these are from PDInfoPkgSeed-class, bummer for the duplication :-(
+    \item{\code{referenceDistFile}:}{Path to a reference distribution file used
+      in the normalization step. This is the reference used in \code{snprma}.}
+%% these are from PDInfoPkgSeed-class
     \item{\code{chipName}:}{Name of the chip or platform}
     \item{\code{manufacturer}:}{chip/platform manufacturer}
+    \item{\code{url}:}{chip URL}
     \item{\code{genomebuild}:}{The genome build this platform is based
     upon.}
-    \item{\code{pdInfoObjectName}:}{Name of the R object that will be
-    made available in a generated pdInfo package.}
-    \item{\code{geometry}:}{Used to describe the geometry of the platform. }
-
-%% these are from PkgSeed-class, bummer for the duplication :-(
-%% these are from PkgSeed-class, bummer for the duplication :-(
+	\item{\code{organism}:}{ organism for chip. }
+	\item{\code{species}:}{ species for chip. }  
+%% these are from PkgSeed-class
     \item{\code{name}:}{The name of the package.}
     \item{\code{version}:}{A character vector giving the version
     number of the package.}
     \item{\code{license}:}{The license of the package}
     \item{\code{author}:}{Author of the package}
     \item{\code{email}:}{An email address to use in the Maintainer field}
-    \item{\code{url}:}{URL}
     \item{\code{biocViews}:}{Character data for the biocViews field of
     the DESCRIPTION file}
   }
@@ -61,7 +53,7 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 \section{Methods}{
   \describe{
     \item{chipName}{\code{signature(object = "AffySNPCNVPDInfoPkgSeed")}: ... }
-    \item{initialize}{\code{signature(.Object = "AffySNPCNVPDInfoPkgSeed")}: ... }
+    \item{getGeometry}{\code{signature(.Object = "AffySNPCNVPDInfoPkgSeed")}: ... }
     \item{makePdInfoPackage}{\code{signature(object = "AffySNPCNVPDInfoPkgSeed")}: ... }
 	 }
 }

@@ -11,27 +11,29 @@ Objects can be created by calls of the form \code{new("PDInfoPkgSeed", ...)}.
 }
 \section{Slots}{
 	 \describe{
+%% these are from PDInfoPkgSeed-class
     \item{\code{chipName}:}{Name of the chip or platform}
     \item{\code{manufacturer}:}{chip/platform manufacturer}
+    \item{\code{url}:}{chip URL}
     \item{\code{genomebuild}:}{The genome build this platform is based
     upon.}
-    \item{\code{url}:}{chip URL}
-  
-%% these were never used : MS  
-%%     \item{\code{pdInfoObjectName}:}{Name of the R object that will be
-%%    made available in a generated pdInfo package.}
-%%   \item{\code{geometry}:}{Used to describe the geometry of the platform. }
-
-%% these are from PkgSeed-class, bummer for the duplication :-(
+	\item{\code{organism}:}{ organism for chip. }
+	\item{\code{species}:}{ species for chip. }  
+%% these are from PkgSeed-class
     \item{\code{name}:}{The name of the package.}
     \item{\code{version}:}{A character vector giving the version
     number of the package.}
     \item{\code{license}:}{The license of the package}
     \item{\code{author}:}{Author of the package}
     \item{\code{email}:}{An email address to use in the Maintainer field}
-    \item{\code{url}:}{URL}
     \item{\code{biocViews}:}{Character data for the biocViews field of
     the DESCRIPTION file}
+
+%% these were never used so removed: MS  
+%%     \item{\code{pdInfoObjectName}:}{Name of the R object that will be
+%%    made available in a generated pdInfo package.}
+%%   \item{\code{geometry}:}{Used to describe the geometry of the platform. }
+
 
   }
 }
