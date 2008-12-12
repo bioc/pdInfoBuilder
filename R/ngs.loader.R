@@ -82,9 +82,6 @@ loadUnits.ngs <- function(db, batch, isQc=FALSE) {
     }
 }
 
-
-## loadUnitsByBatch.ngs <- function(db, ndfFile, batch_size=10000,
-##                              max_units=NULL, verbose=FALSE) {
 loadUnitsByBatch.ngs <- function(db, ndfdata, batch_size=10000,
                              max_units=NULL, verbose=FALSE) {
 ## debug
@@ -106,32 +103,32 @@ loadUnitsByBatch.ngs <- function(db, ndfdata, batch_size=10000,
     dbCommit(db)
 }
 
-"loadNgd.ngs" <- 
-function(db, ngdfile){ ## I had to fix ngdfile, there as a bad character somewhere and the whole table wasn't being loaded, specified comment column as character
-    ngddata <- read.delim(ngdfile, sep="\t", as.is=TRUE, header=TRUE)
-    ngddata <- as.data.frame(ngddata)
-    colnames(ngddata) <- c("man_fsetid","comment")
- 
-    fset <- dbGetQuery(db, "SELECT fsetid, man_fsetid FROM featureSet")
-    ngdIds <- match(fset[["man_fsetid"]],ngddata[["man_fsetid"]])
-    ngddata <- cbind(fset,comment=ngddata[ngdIds,"comment"])
-
-    db_cols <- c("comment")
-    val_holders <- c(":comment")
-    exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
-    sql <- paste("update featureSet set ", exprs,
-                 "where man_fsetid = :man_fsetid")
-
-    dbBeginTransaction(db)
-    dbGetPreparedQuery(db, sql, bind.data=ngddata)
-    dbCommit(db)
+loadNgd.ngs <- function(db, ngdfile){
+  ## I had to fix ngdfile, there as a bad character somewhere and the whole table wasn't being loaded, specified comment column as character
+  ngddata <- read.delim(ngdfile, sep="\t", as.is=TRUE, header=TRUE)
+  ngddata <- as.data.frame(ngddata)
+  colnames(ngddata) <- c("man_fsetid","comment")
+  
+  fset <- dbGetQuery(db, "SELECT fsetid, man_fsetid FROM featureSet")
+  ngdIds <- match(fset[["man_fsetid"]],ngddata[["man_fsetid"]])
+  ngddata <- cbind(fset,comment=ngddata[ngdIds,"comment"])
+  
+  db_cols <- c("comment")
+  val_holders <- c(":comment")
+  exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
+  sql <- paste("update featureSet set ", exprs,
+               "where man_fsetid = :man_fsetid")
+  
+  dbBeginTransaction(db)
+  dbGetPreparedQuery(db, sql, bind.data=ngddata)
+  dbCommit(db)
 }
 
 ## TODO: fix for tiling arrays
 ## DOING
 loadPos.ngs <- function(db, posfile){
-  posdata <- read.delim(posfile, as.is=TRUE, header=TRUE)
-  posdata <- posdata[, c("SEQ_ID", "PROBE_ID", "POSITION")]
+  posdataFull <- read.delim(posfile, as.is=TRUE, header=TRUE)
+  posdata <- posdataFull[, c("SEQ_ID", "PROBE_ID", "POSITION")]
   posdata[["id"]] <- paste(posdata[["SEQ_ID"]], posdata[["PROBE_ID"]], sep=":::")
   posdata <- posdata[order(posdata[["id"]]),]
   df1 <- dbGetQuery(db, "SELECT fid, man_fsetid, probe_id FROM pmfeature_tmp, featureSet WHERE pmfeature_tmp.fsetid = featureSet.fsetid")
@@ -155,6 +152,16 @@ loadPos.ngs <- function(db, posfile){
     dbGetPreparedQuery(db, sql, bind.data=tmp1)
     dbCommit(db)
   }
+  
+  ## update featureSet with chrom
+  print("CHROMOSOME" %in% names(posdataFull))
+  dup <- duplicated(posdataFull[["SEQ_ID"]])
+  posdata <- posdataFull[!dup, c("SEQ_ID", "CHROMOSOME")]
+  names(posdata) <- c("man_fsetid", "chrom")
+  sql <- "UPDATE featureSet SET chrom = :chrom WHERE man_fsetid = :man_fsetid"
+  dbBeginTransaction(db)
+  dbGetPreparedQuery(db, sql, bind.data=posdata)
+  dbCommit(db)
 }
 
 

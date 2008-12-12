@@ -1,4 +1,6 @@
 ### CHANGE log for package pdInfoBuilder ###
+BC: 12/12/08
+Updates featureSet table from POS file (NGS)
 
 Changes made by Matt Settles 12-8-08
 moved closeDb function from many instances in XinitDb.R to one instance in utils.R
