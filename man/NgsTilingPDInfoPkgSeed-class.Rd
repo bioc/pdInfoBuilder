@@ -51,8 +51,6 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 3.
 	is a reduced pairFile that can be obtained from Nimblegen upon request and provides a significant
 	amount of memory savings. Therefore only one of xysFile or pairFile must be specified.
 }
-\section{seealso}
-See
 \examples{
 showClass("NgsTilingPDInfoPkgSeed")
 }
