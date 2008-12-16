@@ -116,7 +116,7 @@ loadUnits.affyST <- function(db, pgf, clf) {
         mm.i <- match(common, mm.fid[["atom"]])
         data.frame(pmi=pm.fid[["fid"]][pm.i], mmi=mm.fid[["fid"]][mm.i])
       }
-      link <- do.call("rbind", lapply(set, f.split))
+      link <- do.call(rbind, lapply(set, f.split))
       
       ## Insert pm <--> mm link
       values <- "(:pmi, :mmi)"

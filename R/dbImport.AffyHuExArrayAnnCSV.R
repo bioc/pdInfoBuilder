@@ -894,10 +894,10 @@ haveTheSameData <- function(mat, dat)
         return(FALSE)
     ## Convert 'dat' to a character matrix (we can't just use as.matrix
     ## because of the infamous "format" feature).
-    mat2 <- do.call("cbind", args=lapply(dat, function(x) if (is.character(x)) x else as.character(x)))
+    mat2 <- do.call(cbind, args=lapply(dat, function(x) if (is.character(x)) x else as.character(x)))
     ## Find the order of the rows in the 2 matrices.
-    ii1 <- do.call("order", args=lapply(colnames(mat), function(col) mat[ , col]))
-    ii2 <- do.call("order", args=lapply(colnames(mat2), function(col) mat2[ , col]))
+    ii1 <- do.call(order, args=lapply(colnames(mat), function(col) mat[ , col]))
+    ii2 <- do.call(order, args=lapply(colnames(mat2), function(col) mat2[ , col]))
     ## Compare row by row.
     for (i in seq_len(nrow(mat)))
         if (!identical(mat[ii1[i], ], mat2[ii2[i], ]))

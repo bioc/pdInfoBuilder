@@ -34,7 +34,7 @@ loadUnits.affyTiling <- function(db, batch, nx, isQc=FALSE) {
       tmp[!duplicated(tmp[["man_fsetid"]]), ]
     }
 
-    super.set <- do.call("rbind", lapply(batch, tmp.df))
+    super.set <- do.call(rbind, lapply(batch, tmp.df))
     values <- "(:id, :man_fsetid, :groupname, :version, :fullname, :name)"
     sql <- "INSERT INTO featureSet VALUES"
     dbBeginTransaction(db)
