@@ -329,7 +329,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
 #destDir="."; batch_size=1; quiet=FALSE; unlink=TRUE
 ## end debug
 
-        valid <- validInput(object,c("pgfFile", "clfFile"),c("probeFile", "transFile"))
+        valid <- pdInfoBuilder:::validInput(object,c("pgfFile", "clfFile"),c("probeFile", "transFile"))
         if (!identical(valid, TRUE))
             stop(paste(valid, collapse="\n  "))
       
@@ -337,7 +337,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
         pkgName <- cleanPlatformName(object@chipName)
       
         dbFileName <- paste(pkgName, "sqlite", sep=".")        
-        setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+        pdInfoBuilder:::setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
             
         extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
         dbFilePath <- file.path(extdataDir, dbFileName)
@@ -352,7 +352,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
 #                seqMatFile,
 #                batch_size=batch_size,
 #                verbose=!quiet)
-            db <- connectDb(dbFilePath)
+            db <- pdInfoBuilder:::connectDb(dbFilePath)
             
             clf <- readClfEnv(object@clfFile)
             pgf <- readPgfEnv(object@pgfFile)

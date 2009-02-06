@@ -56,13 +56,18 @@ setupPackage <- function(object,pkgName,destDir,dbFileName,unlink,quiet){
     createPackage(pkgname=pkgName, destinationDir=destDir,
             originDir=templateDir, symbolValues=syms,
             unlink = unlink,quiet=quiet)
+    file.rename(file.path(destDir,pkgName,"man/template.Rd"),file.path(destDir,pkgName,"man",paste(pkgName,"Rd",sep=".")))
 }              
 
 "connectDb" <- function(dbfile) {
-    if (!file.exists(dbfile))
-        stop("DB file '", dbfile, "' not found")
     require("RSQLite")
-    dbConnect(SQLite(), dbname=dbfile, cache_size=6400, page_size = 8192, synchronous=0)
+    db <- dbConnect(SQLite(), dbname=dbfile, cache_size=6400, synchronous=0)
+    sql <- ('
+            pragma page_size = 8192;                
+            ')
+    sqliteQuickSQL(db,sql)
+    db
+    
 }
 
 "closeDb" <- function(db){

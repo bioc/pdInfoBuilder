@@ -37,9 +37,9 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 \section{Methods}{
   \describe{
     \item{makePdInfoPackage}{\code{signature(object = "AffyTilingPDInfoPkgSeed")}: ... }
-	 }
     \item{chipName}{\code{signature(object = "AffyTilingPDInfoPkgSeed")}: ... }
   }
+}
 
 \examples{
 showClass("AffyTilingPDInfoPkgSeed")

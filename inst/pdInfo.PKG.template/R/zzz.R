@@ -20,13 +20,6 @@ datacache$DEBUG <- FALSE
 }
 
 
-
-@PDINFONAME@ <- new("@PDINFOCLASS@",
-        genomebuild="@GENOMEBUILD@",
-        getdb=getDb,
-        geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]])) ## modify in future
-
-
 .onLoad <- function(libname, pkgname) {
     require("methods", quietly=TRUE)
     DB_PATH <- system.file("extdata", "@DBFILE@",
@@ -39,5 +32,13 @@ datacache$DEBUG <- FALSE
 }
 
 .onUnload <- function(libpath) {
-    closeDb(get(dbCon,envir=datacache))
+    closeDb(get("dbCon",envir=datacache))
 }
+
+
+@PDINFONAME@ <- new("@PDINFOCLASS@",
+        genomebuild="@GENOMEBUILD@",
+        getdb=getDb,
+        geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]])) ## modify in future
+
+
