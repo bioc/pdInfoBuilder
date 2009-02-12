@@ -36,13 +36,10 @@ setMethod("chipName", "AffySTPDInfoPkgSeed",
 
 setMethod("chipName", "NgsPDInfoPkgSeed",
         function(object) {
-            if(nchar(slot(object, "pairFile"))> 0){
-                ## compute chip name from the Pair file
-                header <- readPairHeader(object@pairFile)
-                return(header$DesignName)
-            }else{
-                strsplit(tolower(object@ndfFile), ".ndf")[[1]]
-            }
+          if ("pairFile" %in% slotNames(object))
+            if(nchar(slot(object, "pairFile"))> 0)
+                return(readPairHeader(object@pairFile)[["DesignName"]])
+          return(strsplit(tolower(object@ndfFile), ".ndf")[[1]])
         })
 
 

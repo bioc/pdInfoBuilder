@@ -1,6 +1,6 @@
 
 setClass("PkgSeed",
-        representation=representation(
+         representation=representation(
                 name="character",
                 version="character",
                 license="character",
@@ -8,12 +8,12 @@ setClass("PkgSeed",
                 email="character",
                 biocViews="character"),
         prototype=prototype(
-                name=as.character(NA),
-                version=as.character(NA),
+                name="The Name",
+                version="The Version",
                 license="Artistic License, Version 2.0",
-                author=as.character(NA),
-                email=as.character(NA),
-                biocViews=as.character(NA)),
+                author="My Name",
+                email="my@email.com",
+                biocViews="AnnotationData"),
         validity=function(object) .isValidPkgSeed(object))
 
 setClass("PDInfoPkgSeed",
@@ -21,19 +21,17 @@ setClass("PDInfoPkgSeed",
         representation=representation(
                 chipName="character",
                 manufacturer="character",
-                url="character",        ## manufacturere url
+                url="character",
                 genomebuild="character",
-                organism = "character",## added by M.Settles: 11/14/08
-                species = "character"), ## added by M.Settles: 11/14/08
-        ###pdInfoObjectName="character", Removed, was never used M.Settles:11/11/08
-        ###geometry="integer"), , Removed, was never used M.Settles:11/11/08
+                organism = "character",
+                species = "character"),
         prototype=prototype(
-                chipName=as.character(NA),
-                manufacturer=as.character(NA),
-                url=as.character(NA),
-                genomebuild=as.character(NA),
-                organism=as.character(NA),
-                species=as.character(NA))
+                chipName="The Chip Name",
+                manufacturer="The Manufacturer's Name",
+                url="http://www.manufacturer.com",
+                genomebuild="The Genome Build",
+                organism="Organism",
+                species="Species")
 )
 
 
@@ -151,4 +149,13 @@ setClass("AffySTPDInfoPkgSeed",
  setClass("AffyExonPDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
  setClass("AffyGenePDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
  
- 
+##### PD Info v2 by BC
+##### please don't modify
+setClass("NgsTiledRegionPDInfoPkgSeed",
+         contains="NgsPDInfoPkgSeed",
+         representation=representation(
+           ndfFile="ScalarCharacter",
+           xysFile="ScalarCharacter",
+           posFile="ScalarCharacter"
+           ),
+         validity=function(object) file.exists(object@ndfFile) & file.exists(object@xysFile) & file.exists(object@posFile))

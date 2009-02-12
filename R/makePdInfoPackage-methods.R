@@ -383,3 +383,85 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             closeDb(db)
 })
 
+### COPIED FROM ST - THIS WILL CHANGE
+setMethod("makePdInfoPackage", "AffyExonPDInfoPkgSeed",
+    function(object, destDir=".", batch_size=1, quiet=FALSE, unlink=FALSE) {
+      valid <- pdInfoBuilder:::validInput(object, c("pgfFile", "clfFile"), c("probeFile", "transFile"))
+      if (!identical(valid, TRUE))
+        stop(paste(valid, collapse="\n  "))
+      
+      if(is.na(object@chipName)) object@chipName <- chipName(object)
+      pkgName <- cleanPlatformName(object@chipName)
+      
+      dbFileName <- paste(pkgName, "sqlite", sep=".")        
+      pdInfoBuilder:::setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+      
+      extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+      dbFilePath <- file.path(extdataDir, dbFileName)
+      seqMatFile <- file.path(extdataDir, "seqMat.rda")
+      db <- pdInfoBuilder:::connectDb(dbFilePath)
+      
+      clf <- readClfEnv(object@clfFile)
+      pgf <- readPgfEnv(object@pgfFile)
+      
+      t <- ST(loadUnits.affyST(db, pgf, clf))
+      if (!quiet) printTime("loadUnitsByBatch", t[3])
+      if(!is.na(slot(object,"transFile"))){
+        t <- ST(loadAffyCsv.affyST(db, object@transFile, batch_size=batch_size))
+        if (!quiet) printTime("loadAffyCsv", t[3])
+      }
+      if(!is.na(slot(object,"probeFile"))){
+        t <- ST(loadAffySeqCsv.affyST(db, object@probeFile, pgf, batch_size=batch_size))
+        if (!quiet) printTime("loadAffySeqCsv", t[3])
+      }
+      t <- ST({
+        sortFeatureTables.affyST(db)
+        createIndicesDb.affyST(db)
+        createTableInfoTable.affyST(db)
+        createFeatureTableInfo.affyST(db)
+      })
+      if (!quiet) printTime("DB sort, index creation", t[3])
+      closeDb(db)
+})
+
+### COPIED FROM ST - THIS WILL CHANGE
+setMethod("makePdInfoPackage", "AffyGenePDInfoPkgSeed",
+    function(object, destDir=".", batch_size=1, quiet=FALSE, unlink=FALSE) {
+      valid <- pdInfoBuilder:::validInput(object, c("pgfFile", "clfFile"), c("probeFile", "transFile"))
+      if (!identical(valid, TRUE))
+        stop(paste(valid, collapse="\n  "))
+      
+      if(is.na(object@chipName)) object@chipName <- chipName(object)
+      pkgName <- cleanPlatformName(object@chipName)
+      
+      dbFileName <- paste(pkgName, "sqlite", sep=".")        
+      pdInfoBuilder:::setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+      
+      extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+      dbFilePath <- file.path(extdataDir, dbFileName)
+      seqMatFile <- file.path(extdataDir, "seqMat.rda")
+      db <- pdInfoBuilder:::connectDb(dbFilePath)
+      
+      clf <- readClfEnv(object@clfFile)
+      pgf <- readPgfEnv(object@pgfFile)
+      
+      t <- ST(loadUnits.affyST(db, pgf, clf))
+      if (!quiet) printTime("loadUnitsByBatch", t[3])
+      if(!is.na(slot(object,"transFile"))){
+        t <- ST(loadAffyCsv.affyST(db, object@transFile, batch_size=batch_size))
+        if (!quiet) printTime("loadAffyCsv", t[3])
+      }
+      if(!is.na(slot(object,"probeFile"))){
+        t <- ST(loadAffySeqCsv.affyST(db, object@probeFile, pgf, batch_size=batch_size))
+        if (!quiet) printTime("loadAffySeqCsv", t[3])
+      }
+      t <- ST({
+        sortFeatureTables.affyST(db)
+        createIndicesDb.affyST(db)
+        createTableInfoTable.affyST(db)
+        createFeatureTableInfo.affyST(db)
+      })
+      if (!quiet) printTime("DB sort, index creation", t[3])
+      closeDb(db)
+})
+
