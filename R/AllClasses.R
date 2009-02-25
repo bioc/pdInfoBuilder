@@ -9,7 +9,7 @@ setClass("PkgSeed",
                 biocViews="character"),
         prototype=prototype(
                 name="The Name",
-                version="The Version",
+                version="0.0.1",
                 license="Artistic License, Version 2.0",
                 author="My Name",
                 email="my@email.com",

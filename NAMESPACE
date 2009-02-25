@@ -3,6 +3,9 @@ useDynLib("pdInfoBuilder")
 import("methods")
 import("Biobase")
 
+importFrom("Biostrings", "DNAStringSet")
+importFrom("IRanges", "XDataFrame")
+
 exportClasses(
               "PkgSeed",
               "PDInfoPkgSeed",

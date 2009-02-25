@@ -9,8 +9,8 @@
 ## used with NimbleGen arrays ("Tiled Regions")
 
 ## The following tables will be available:
-## pmfeature: fid, fsetid, chr, location, x, y
-## featureSet: fsetid (region name), chr, start, end
+## pmfeature: fid, fsetid, chrom, location, x, y
+## featureSet: fsetid (region name), chrom, start, end
 ## mmfeature (opt): fid, fid (matching pm), x, y
 ## bgfeature: fid, x, y
 
@@ -21,7 +21,7 @@
 tiledRegionFeatureSetSchema <- list(col2type=c(
                                       fsetid="INTEGER",
                                       man_fsetid="TEXT",
-                                      chr="TEXT",
+                                      chrom="TEXT",
                                       start="INTEGER",
                                       end="INTEGER",
                                       type="TEXT"),
@@ -54,6 +54,21 @@ tiledRegionBgFeatureSchema <- list(col2type=c(
 ## SECTION B - Utils - This should be moved from here
 ##             as everything in this section can be used on other cases
 #######################################################################
+dbCreateTableInfo <- function(db, verbose=FALSE) {
+    tables <- dbListTables(db)
+    counts <- integer(length(tables))
+    sql <- "select count(*) from %s"
+    for (i in seq(along=counts)) {
+        if (verbose)
+          cat("counting rows in ", tables[i], "\n")
+        counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
+    }
+
+    df <- data.frame(tbl=tables, row_count=counts,
+                     stringsAsFactors=FALSE)
+    dbWriteTable(db, "table_info", df, row.names=FALSE)
+}
+
 dbCreateTable <- function(conn, tablename, col2type, col2key){
     col2type[names(col2key)] <- paste(col2type[names(col2key)], col2key, sep=" ")
     sql <- paste(names(col2type), col2type, sep=" ")
@@ -112,8 +127,18 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
   rm(idx, posdata)
 
   #######################################################################
+  ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
+  #######################################################################
+  xysdata <- read.delim(xysFile, comment="#")
+  xysdata[["fid"]] <- 1:nrow(xysdata)
+  ndfdata <- merge(ndfdata, xysdata, by.x=c("X", "Y"), by.y=c("X", "Y"))
+  controls <- which(is.na(ndfdata[["SIGNAL"]]))
+  ndfdata <- ndfdata[-controls,]
+  rm(controls)
+  
+  #######################################################################
   ## Step 4: Prepare contents for featureSet table
-  ## Fields featureSet: man_fsetid, chr, start, end, type
+  ## Fields featureSet: man_fsetid, chrom, start, end, type
   #######################################################################
   theMin <- aggregate(ndfdata[["POSITION"]], by=list(SEQ_ID=ndfdata[["SEQ_ID"]]), min)
   names(theMin) <- c("man_fsetid", "start")
@@ -125,8 +150,8 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
   featureSet <- merge(featureSet,
                       ndfdata[!dups, c("SEQ_ID", "CHROMOSOME", "CONTAINER", "fsetid")],
                       by.x="man_fsetid", by.y="SEQ_ID")
-  names(featureSet) <- c("man_fsetid", "start", "end", "chr", "type", "fsetid")
-  featureSet <- featureSet[, c("fsetid", "man_fsetid", "chr", "start", "end", "type")]
+  names(featureSet) <- c("man_fsetid", "start", "end", "chrom", "type", "fsetid")
+  featureSet <- featureSet[, c("fsetid", "man_fsetid", "chrom", "start", "end", "type")]
   rm(dups)
 
   #######################################################################
@@ -136,29 +161,44 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
   ##        bgfeature: fid, fsetid, x, y
   ## FIX ME: Need to check the selection for BG probes
   ##         Implement mmfeature
-  ## Comments: ideally, the tables would be ordered by chr+position;
+  ## Comments: ideally, the tables would be ordered by chrom+position;
   ##           but 'fid' is the PRIMARY KEY, and the table will be
   ##           ordered by that
   #######################################################################
-  xysdata <- read.delim(xysFile, comment="#")
-  xysdata[["fid"]] <- 1:nrow(xysdata)
-  features <- merge(ndfdata[, c("X", "Y", "fsetid", "POSITION", "MISMATCH",
-                                "MATCH_INDEX", "CONTAINER", "CHROMOSOME")],
-                    xysdata[, c("X", "Y", "fid")],
-                    by.x=c("X", "Y"), by.y=c("X", "Y"))
+  features <- ndfdata[, c("X", "Y", "fsetid", "POSITION", "MISMATCH", "MATCH_INDEX",
+                          "CONTAINER", "CHROMOSOME", "PROBE_SEQUENCE", "fid", "PROBE_CLASS")]
   names(features) <- c("x", "y", "fsetid", "position", "mismatch",
-                       "match_index", "container", "chromosome", "fid")
-  geometry <- paste(max(ndfdata$Y), max(ndfdata$X), sep=";")
+                       "match_index", "container", "chromosome", "sequence", "fid", "class")
+
+  geometry <- paste(max(ndfdata[["Y"]]), max(ndfdata[["X"]]), sep=";")
   rm(xysdata, ndfdata)
+  ## FIX ME: Double check ordering
   features <- features[order(features[["chromosome"]], features[["position"]]),]
-  pmFeatures <- subset(features, mismatch == 0)[, c("fid", "fsetid", "position", "x", "y")]
-  mmFeatures <- subset(features, mismatch > 0 & mismatch < 10000)
+
+  ## FIX ME: This should be passed by function
+  experimentalIDs <- "experimental"
+
+
+  pmFeatures <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y")]
+  pmSequence <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "sequence")]
+  pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
+                           sequence=DNAStringSet(pmSequence[["sequence"]]))
+  mmFeatures <- subset(features, mismatch > 0 & class %in% experimentalIDs)
+  ## add mmSequence
+  if (any(mmFeatures[["mismatch"]] >= 10000))
+    stop("Control probe possibly identified as Experimental")
   if (nrow(mmFeatures) > 0)
     stop("Add methods for MMs")
   rm(mmFeatures)
-  bgFeatures <- subset(features, mismatch >= 10000)[, c("fid", "fsetid", "x", "y")]
-  rm(features)
-  return(list(featureSet=featureSet, pmFeatures=pmFeatures, bgFeatures=bgFeatures, geometry=geometry))
+  bgFeatures <- subset(features, !(class %in% experimentalIDs))[, c("fid", "fsetid", "x", "y")]
+  bgSequence <- subset(features, !(class %in% experimentalIDs))[, c("fid", "sequence")]
+  bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
+                           sequence=DNAStringSet(bgSequence[["sequence"]]))
+  rm(features, experimentalIDs)
+
+  return(list(featureSet=featureSet, pmFeatures=pmFeatures,
+              bgFeatures=bgFeatures, geometry=geometry,
+              pmSequence=pmSequence, bgSequence=bgSequence))
 }
 
 #######################################################################
@@ -179,7 +219,6 @@ setMethod("makePdInfoPackage", "NgsTiledRegionPDInfoPkgSeed",
             extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
             dbFileName <- paste(pkgName, "sqlite", sep=".")
             dbFilePath <- file.path(extdataDir, dbFileName)
-
 
             #######################################################################
             ## Part ii) parse data. This should return a list of data.frames.
@@ -218,12 +257,24 @@ setMethod("makePdInfoPackage", "NgsTiledRegionPDInfoPkgSeed",
             ##         Fix ordering of the tables
             #######################################################################
             conn <- dbConnect(dbDriver("SQLite"), dbname=dbFilePath)
-            dbCreateTable(conn, "featureSet", tiledRegionFeatureSetSchema[["col2type"]], tiledRegionFeatureSetSchema[["col2key"]])
-            dbCreateTable(conn, "pmfeature", tiledRegionPmFeatureSchema[["col2type"]], tiledRegionPmFeatureSchema[["col2key"]])
+            dbCreateTable(conn,
+                          "featureSet",
+                          tiledRegionFeatureSetSchema[["col2type"]],
+                          tiledRegionFeatureSetSchema[["col2key"]])
+            dbCreateTable(conn,
+                          "pmfeature",
+                          tiledRegionPmFeatureSchema[["col2type"]],
+                          tiledRegionPmFeatureSchema[["col2key"]])
             containsMm <- "mmFeatures" %in% names(parsedData)
             if (containsMm)
-              dbCreateTable(conn, "mmfeature", tiledRegionMmFeatureSchema[["col2type"]], tiledRegionMmFeatureSchema[["col2key"]])
-            dbCreateTable(conn, "bgfeature", tiledRegionBgFeatureSchema[["col2type"]], tiledRegionBgFeatureSchema[["col2key"]])
+              dbCreateTable(conn,
+                            "mmfeature",
+                            tiledRegionMmFeatureSchema[["col2type"]],
+                            tiledRegionMmFeatureSchema[["col2key"]])
+            dbCreateTable(conn,
+                          "bgfeature",
+                          tiledRegionBgFeatureSchema[["col2type"]],
+                          tiledRegionBgFeatureSchema[["col2key"]])
 
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
                               tiledRegionFeatureSetSchema[["col2type"]], !quiet)
@@ -235,5 +286,23 @@ setMethod("makePdInfoPackage", "NgsTiledRegionPDInfoPkgSeed",
             dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
                               tiledRegionBgFeatureSchema[["col2type"]], !quiet)
             dbGetQuery(conn, "VACUUM")
+
+            dbCreateTableInfo(conn, !quiet)
             dbDisconnect(conn)
+            
+            #######################################################################
+            ## Part v) Save sequence XDataFrames
+            ## FIX ME: Fix ordering of the tables to match xxFeature tables
+            #######################################################################
+            datadir <- file.path(destDir, pkgName, "data")
+            dir.create(datadir)
+            pmSequence <- parsedData[["pmSequence"]]
+            bgSequence <- parsedData[["bgSequence"]]
+            pmSeqFile <- file.path(datadir, "pmSequence.rda")
+            bgSeqFile <- file.path(datadir, "bgSequence.rda")
+            if (!quiet) message("Saving XDataFrame object for PM.")
+            save(pmSequence, file=pmSeqFile)
+            if (!quiet) message("Saving XDataFrame object for BG.")
+            save(bgSequence, file=bgSeqFile)
+            if (!quiet) message("Done.")
           })
