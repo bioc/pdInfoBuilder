@@ -159,3 +159,7 @@ setClass("NgsTiledRegionPDInfoPkgSeed",
            posFile="ScalarCharacter"
            ),
          validity=function(object) file.exists(object@ndfFile) & file.exists(object@xysFile) & file.exists(object@posFile))
+
+setClass("ExonTranscriptionPDInfoPkgSeed",
+         contains="AffyExonPDInfoPkgSeed",
+         validity=function(object) file.exists(object@pgfFile) & file.exists(object@clfFile))

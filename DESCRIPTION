@@ -3,10 +3,10 @@ Title: Platform Design Information Package Builder
 Description: Builds platform design information packages.
   These consist of a SQLite database containing feature-level
   data such as x, y position on chip and
-  featureSet ID.  The database also incorporates featureSet-level
-  annotation data.  munged vc for Cytoband
-Version: 1.7.6
-Author: Seth Falcon, with contributions by Vince Carey and Matt Settles
+  featureSet ID. The database also incorporates featureSet-level
+  annotation data. The products of this packages are used by the oligo pkg.
+Version: 1.7.7
+Author: Seth Falcon, Benilton Carvalho with contributions by Vince Carey and Matt Settles
 Maintainer: Benilton Carvalho <bcarvalh@jhsph.edu>
 LazyLoad: yes
 Depends: R (>= 2.6.0), methods, Biobase (>= 1.13.58),
@@ -45,5 +45,6 @@ Collate: AllClasses.R
          affyST.schema.R
          zzz.R
          pdBuilderV2TiledRegion.R
+         pdBuilderV2ExonTranscription.R
 biocViews: Annotation, Infrastructure
 Packaged: Wed Jun 18 08:00:15 2008; msettles

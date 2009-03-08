@@ -22,3 +22,5 @@ Changes currently isolated to Affy tiling and ST and expression arrays
 	added new pdInfo.PKG.template folde inst, I'm trying something out
 	modified package building proceedures for tiling, st and expression arrays
 	
+Changes by BC in Feb-Mar 2009
+** Added new builders for NGS Tiling and Affy Exon. These builders use the minimum of "gene-centric" annotation and should be able to link to org pkgs to extract more info.

@@ -16,9 +16,11 @@ exportClasses(
               "AffySTPDInfoPkgSeed",
               "AffyExonPDInfoPkgSeed",
               "AffyGenePDInfoPkgSeed",
-	          "NgsPDInfoPkgSeed",
+              "NgsPDInfoPkgSeed",
               "NgsExpressionPDInfoPkgSeed",
-              "NgsTilingPDInfoPkgSeed"
+              "NgsTilingPDInfoPkgSeed",
+              "ExonTranscriptionPDInfoPkgSeed",
+              "NgsTiledRegionPDInfoPkgSeed"
               )
 
 exportMethods(
