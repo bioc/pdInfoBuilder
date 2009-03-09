@@ -280,6 +280,12 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
   rm(i, ii, triplet, fid, pgf, clf)
   probesetInfo <- parseProbesetCSV(probeFile, verbose=verbose)
 
+  ## probesets not in the CSV file
+  ## remove them
+  toKeep <- which(probes.table[["fsetid"]] %in% probesetInfo[["probesets"]][["fsetid"]])
+  probes.table <- probes.table[toKeep,]
+  rm(toKeep)
+
   ## probesets -> genes table
   ## probeset_ids
   ## gid

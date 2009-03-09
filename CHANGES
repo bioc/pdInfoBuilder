@@ -24,3 +24,6 @@ Changes currently isolated to Affy tiling and ST and expression arrays
 	
 Changes by BC in Feb-Mar 2009
 ** Added new builders for NGS Tiling and Affy Exon. These builders use the minimum of "gene-centric" annotation and should be able to link to org pkgs to extract more info.
+
+03-08-09 - Benilton Carvalho
+** In the new builder (v2) for Exon arrays, added a statement to remove probes that are not in the probeset.csv file.
