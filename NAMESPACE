@@ -19,7 +19,7 @@ exportClasses(
               "NgsPDInfoPkgSeed",
               "NgsExpressionPDInfoPkgSeed",
               "NgsTilingPDInfoPkgSeed",
-              "ExonTranscriptionPDInfoPkgSeed",
+##              "ExonTranscriptionPDInfoPkgSeed",
               "NgsTiledRegionPDInfoPkgSeed"
               )
 

@@ -58,13 +58,6 @@ exonTranscriptionFeatureSetSchema <- list(col2type=c(
                                             type ="REFERENCES type_dict(type_id)"
                                             ))
 
-## exonTranscriptionFeatureSetSchema <- list(col2type=c(
-##                                             fsetid="INTEGER",
-##                                             type="TEXT"),
-##                                           col2key=c(
-##                                             fsetid="PRIMARY KEY"
-##                                             ))
-
 exonTranscriptionPmFeatureSchema <- list(col2type=c(
                                            fid="INTEGER",
                                            fsetid="INTEGER",
@@ -164,7 +157,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 ###################################################
   ## TABLES TO ADD
 ###################################################
-  if (verbose) message("Creating dictionaries.")
+  if (verbose) cat("Creating dictionaries... ")
   ## chromosome dictionary moved to after reading
   ##  the CSV file
   
@@ -183,11 +176,12 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
                                       "normgene->intron",
                                       "rescue->FLmRNA->unmapped"),
                             stringsAsFactors=FALSE)
+  if (verbose) cat("OK\n")
   
 ###################################################
   
   ## the "probesets" df is to be the featureSet table
-  if (verbose) message("Parsing ", probeFile, ".")
+  if (verbose) cat("Parsing ", probeFile, "... ")
   probesets <- read.csv(probeFile, comment.char="#",
                         stringsAsFactors=FALSE, na.strings="---")
   cols <- c("probeset_id", "seqname", "strand", "start", "stop",
@@ -204,6 +198,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   probesets[["level"]] <- match(tolower(probesets[["level"]]), level_schema[["level_id"]])
   probesets[["type"]] <- match(probesets[["probeset_type"]], type_schema[["type_id"]])
   probesets[["probeset_type"]] <- NULL
+  if (verbose) cat("OK\n")
   
   ## probesets won't have Gene information due to multiplicity
   ## must remove "gene_assignment" later
@@ -214,7 +209,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   ##  1  |  2
   ##  2  |  9 ... etc
 
-  if (verbose) message("Creating probeset -> gene table.")
+  if (verbose) cat("Creating probeset -> gene table... ")
   ps2genes <- strsplit(probesets[["gene_assignment"]], " /// ")
   names(ps2genes) <- probesets[["probeset_id"]]
   probesets[["gene_assignment"]] <- NULL
@@ -232,8 +227,9 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   rm(psids, tmp)
   ps2genes[["key"]] <- paste(ps2genes[["accession"]], ps2genes[["symbol"]], sep=":")
   rownames(ps2genes) <- NULL
+  if (verbose) cat("OK\n")
 
-  message("Creating genes table.")
+  if (verbose) cat("Creating genes table... ")
   cols <- c("accession", "symbol", "key")
   onlyGenes <- ps2genes[!duplicated(ps2genes[["key"]]), cols]
   onlyGenes <- onlyGenes[order(onlyGenes[["accession"]], onlyGenes[["symbol"]]),]
@@ -251,23 +247,24 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   tmp[tmp == "probeset_id"] <- "fsetid"
   names(ps2genes) <- tmp
   rm(tmp)
-  message("Done processing ", probeFile, ".")
+  if (verbose) cat("OK\n")
   
   list(probesets=probesets, ps2genes=ps2genes, genes=onlyGenes,
        level=level_schema, chromosome=chromosome_schema, type=type_schema)
 }
 
-parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
-  if (verbose) message("Reading ", pgfFile, ".")
+parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TRUE){
+  if (verbose) cat("Reading", pgfFile, "...")
   pgf <- readPgf(pgfFile)
-  if (verbose) message("Reading ", clfFile, ".")
+  if (verbose) cat("OK\nReading", clfFile, ".")
   clf <- readClf(clfFile)
+  if (verbose) cat("OK\n")
   geometry <- paste(clf[["dims"]], collapse=";")
   triplet <- probesetIdxToTripletIdx(pgf, 1:length(pgf[["probesetId"]]))
   fid <- pgf[["probeId"]][triplet[["probeIdx"]]]
   i <- match(fid, pgf[["probeId"]])
   ii <- match(fid, clf[["id"]])
-  if (verbose) message("Creating initial table for probes.")
+  if (verbose) cat("Creating initial table for probes...")
   probes.table <- data.frame(fid=fid,
                              fsetid=pgf[["probesetId"]][triplet[["probesetIdx"]]],
                              pstype=pgf[["probesetType"]][triplet[["probesetIdx"]]],
@@ -278,6 +275,7 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
                              sequence=pgf[["probeSequence"]][i],
                              stringsAsFactors=FALSE)
   rm(i, ii, triplet, fid, pgf, clf)
+  if (verbose) cat("OK\n")
   probesetInfo <- parseProbesetCSV(probeFile, verbose=verbose)
 
   ## probesets not in the CSV file
@@ -319,14 +317,6 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
   ## IMPORTANT: I'm filtering types to "main" and "bpg" probes...
   featureSet <- probesetInfo[["probesets"]]
 
-  ## dups <- duplicated(probes.table[["fsetid"]])
-  ## featureSet <- probes.table[!dups, c("fsetid", "pstype")]
-  ## names(featureSet) <- c("fsetid", "type")
-  ## idx <- c(which(featureSet[["type"]] == "main"),
-  ##          grep("control->bgp", featureSet[["type"]]))
-  ## featureSet <- featureSet[idx,]
-  ## rm(dups, idx)
-  
   ## pmfeature table - Fields
   ##  fid
   ##  fsetid
@@ -341,10 +331,25 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
   idx <- which(idx)
   cols <- c("fid", "fsetid", "atom", "x", "y")
   pmFeatures <- probes.table[idx, cols]
+  rm(cols)
+
+  ## if it is a Gene ST array, must split the pmFeatures table
+  if (geneArray){
+    cols2 <- c("fid", "fsetid", "atom")
+    f2fset <- pmFeatures[, cols2]
+    keys <- apply(f2fset, 1, paste, collapse=":")
+    dups <- !duplicated(keys)
+    f2fset <- f2fset[dups,]
+    pmFeatures[["fsetid"]] <- NULL
+    pmFeatures[["atom"]] <- NULL
+    dups <- !duplicated(pmFeatures[["fid"]])
+    pmFeatures <- pmFeatures[dups,]
+    rm(cols2, dups)
+  }
+
   pmSequence <- probes.table[idx, c("fid", "sequence")]
   pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
                            sequence=DNAStringSet(pmSequence[["sequence"]]))
-  rm(cols)
 
   ## mmfeature table - Fields
   ##  fid
@@ -385,12 +390,18 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
   ##  bgfeature: fid, fsetid, fs_type, f_type, x, y
   ##  pmSequence: fid, sequence
   ##  bgSequence: fid, sequence
-  return(list(featureSet=featureSet, pmFeatures=pmFeatures,
+
+  out <- list(featureSet=featureSet, pmFeatures=pmFeatures,
               bgFeatures=bgFeatures, geometry=geometry,
               pmSequence=pmSequence, bgSequence=bgSequence,
               chrom_dict=chrom_dict, level_dict=level_dict,
               type_dict=type_dict, fset2gene=ps2genes,
-              gene=genes))
+              gene=genes)
+
+  if (geneArray)
+    out[["f2fset"]] <- f2fset
+  
+  return(out)
 }
 
 #######################################################################
@@ -400,8 +411,12 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, verbose=TRUE){
 ##             ii) parse data; iii) create pkg from template;
 ##             iv) dump the database
 #######################################################################
-setMethod("makePdInfoPackage", "ExonTranscriptionPDInfoPkgSeed",
+
+## setMethod("makePdInfoPackage", "ExonTranscriptionPDInfoPkgSeed",
+setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",          
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+            geneArray <- object@geneArray
+            stopifnot(geneArray %in% c(TRUE, FALSE))
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -419,11 +434,13 @@ setMethod("makePdInfoPackage", "ExonTranscriptionPDInfoPkgSeed",
             parsedData <- parsePgfClf(object@pgfFile,
                                       object@clfFile,
                                       object@probeFile,
-                                      verbose=!quiet)
+                                      verbose=!quiet,
+                                      geneArray=geneArray)
             
             #######################################################################
             ## Part iii) Create package from template
             #######################################################################
+            pdInfoClass <- ifelse(geneArray, "AffyGenePDInfo", "AffyExonPDInfo")
             syms <- list(MANUF=object@manufacturer,
                          VERSION=object@version,
                          GENOMEBUILD=object@genomebuild,
@@ -434,7 +451,7 @@ setMethod("makePdInfoPackage", "ExonTranscriptionPDInfoPkgSeed",
                          CHIPNAME=chip,
                          PKGNAME=pkgName,
                          PDINFONAME=pkgName,
-                         PDINFOCLASS="AffyExonPDInfo",
+                         PDINFOCLASS=pdInfoClass,
                          GEOMETRY=parsedData[["geometry"]])
             templateDir <- system.file("pd.PKG.template",
                                        package="pdInfoBuilder")
@@ -476,10 +493,20 @@ setMethod("makePdInfoPackage", "ExonTranscriptionPDInfoPkgSeed",
                           "featureSet",
                           exonTranscriptionFeatureSetSchema[["col2type"]],
                           exonTranscriptionFeatureSetSchema[["col2key"]])
-            dbCreateTable(conn,
-                          "pmfeature",
-                          exonTranscriptionPmFeatureSchema[["col2type"]],
-                          exonTranscriptionPmFeatureSchema[["col2key"]])
+
+            if (geneArray){
+              dbCreateTable(conn, "pmfeature",
+                            geneStPmFeatureSchema[["col2type"]],
+                            geneStPmFeatureSchema[["col2key"]])
+              dbCreateTable(conn, "f2fset",
+                            f2fsetSchema[["col2type"]],
+                            f2fsetSchema[["col2key"]])
+            }else{
+              dbCreateTable(conn,
+                            "pmfeature",
+                            exonTranscriptionPmFeatureSchema[["col2type"]],
+                            exonTranscriptionPmFeatureSchema[["col2key"]])
+            }
             containsMm <- "mmFeatures" %in% names(parsedData)
             if (containsMm)
               dbCreateTable(conn,
@@ -506,8 +533,15 @@ setMethod("makePdInfoPackage", "ExonTranscriptionPDInfoPkgSeed",
 
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
                               exonTranscriptionFeatureSetSchema[["col2type"]], !quiet)
-            dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
-                              exonTranscriptionPmFeatureSchema[["col2type"]], !quiet)
+            if (geneArray){
+              dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
+                                geneStPmFeatureSchema[["col2type"]], !quiet)
+              dbInsertDataFrame(conn, "f2fset", parsedData[["f2fset"]],
+                                f2fsetSchema[["col2type"]], !quiet)
+            }else{
+              dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
+                                exonTranscriptionPmFeatureSchema[["col2type"]], !quiet)
+            }
             if (containsMm)
               dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
                                 exonTranscriptionMmFeatureSchema[["col2type"]], !quiet)

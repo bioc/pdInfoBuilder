@@ -27,3 +27,6 @@ Changes by BC in Feb-Mar 2009
 
 03-08-09 - Benilton Carvalho
 ** In the new builder (v2) for Exon arrays, added a statement to remove probes that are not in the probeset.csv file.
+
+03-09-09 - BC
+** Added support to Gene ST arrays. Because these share *much* of the Exon arrays structure, I reused most of the code by adding the 'geneArray' argument to the relevant functions (parsers/builder)

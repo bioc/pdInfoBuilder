@@ -135,17 +135,18 @@ setClass("AffyExpressionPDInfoPkgSeed",
 setClass("AffySTPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-                 pgfFile="ScalarCharacter",
-                 clfFile="ScalarCharacter",
-                 probeFile="ScalarCharacter",
-                 transFile="ScalarCharacter"),
+           pgfFile="ScalarCharacter",
+           clfFile="ScalarCharacter",
+           probeFile="ScalarCharacter",
+           transFile="ScalarCharacter",
+           geneArray="logical"),
          prototype=prototype(
-                 manufacturer="Affymetrix",
-                 pgfFile=mkScalar(as.character(NA)),
-                 clfFile=mkScalar(as.character(NA)),
-                 probeFile=mkScalar(as.character(NA)),
-                 transFile=mkScalar(as.character(NA))))
- 
+           manufacturer="Affymetrix",
+           pgfFile=mkScalar(as.character(NA)),
+           clfFile=mkScalar(as.character(NA)),
+           probeFile=mkScalar(as.character(NA)),
+           transFile=mkScalar(as.character(NA))))
+
  setClass("AffyExonPDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
  setClass("AffyGenePDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
  
@@ -160,6 +161,4 @@ setClass("NgsTiledRegionPDInfoPkgSeed",
            ),
          validity=function(object) file.exists(object@ndfFile) & file.exists(object@xysFile) & file.exists(object@posFile))
 
-setClass("ExonTranscriptionPDInfoPkgSeed",
-         contains="AffyExonPDInfoPkgSeed",
-         validity=function(object) file.exists(object@pgfFile) & file.exists(object@clfFile))
+## using AffySTPDInfoPkgSeed and Exon/Gene above.
