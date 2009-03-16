@@ -1,12 +1,10 @@
+
 1) there should be a mechanism for platform-specific templates
 2) man page support for template (man page will apply to all instances
 of a class of chip)
 3) wiring in the crlmm.regions and params components coming from
 Benilton -- this is proceeding through the annotation/* svn
 dropoff -- parms_store, anno_store, data_store
-4) waiting for affyio:::read.celfile to read SNP6-CEL files so i can
-   test the prototype for pdInfo on SNP 6. (done)
-5) still need to handle the QC units on SNP6. (done, afaik)
-6) waiting for parsers for Exon arrays (affxparser??)
-7) add support to SNP 5.0?
-
+4) Fix documentation problems reported by Marc Carlson
+5) Fix chromosome table for TiledRegion arrays
+6) Possibly add a NAMESPACE for templates

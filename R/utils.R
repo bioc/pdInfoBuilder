@@ -52,7 +52,7 @@ setupPackage <- function(object, pkgName, destDir, dbFileName, unlink, quiet){
             DBFILE       =dbFileName,
             PDINFOCLASS  = sub("PkgSeed", "", class(object)))
     
-    templateDir <- system.file("pdInfo.PKG.template", package="pdInfoBuilder")
+    templateDir <- system.file("pd.PKG.template", package="pdInfoBuilder")
     createPackage(pkgname=pkgName, destinationDir=destDir,
             originDir=templateDir, symbolValues=syms,
             unlink = unlink, quiet=quiet)
