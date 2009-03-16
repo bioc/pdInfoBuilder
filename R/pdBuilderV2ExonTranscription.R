@@ -93,13 +93,17 @@ createChrDict <- function(x){
   len <- sapply(dataSplit, length)
   idx <- which(len == 1)
   basic <- unlist(dataSplit[idx])
-  suffixes <- sapply(dataSplit[-idx], function(x) paste(x[-1], collapse="_"))
-  suffixes <- sort(unique(suffixes))
-  out <- list()
-  out[[1]] <- basic
-  for (i in 1:length(suffixes))
-    out[[i+1]] <- paste(basic, suffixes[i], sep="_")
-  out <- unlist(out)
+  if (length(idx) < length(len)){
+    suffixes <- sapply(dataSplit[-idx], function(x) paste(x[-1], collapse="_"))
+    suffixes <- sort(unique(suffixes))
+    out <- list()
+    out[[1]] <- basic
+    for (i in 1:length(suffixes))
+      out[[i+1]] <- paste(basic, suffixes[i], sep="_")
+    out <- unlist(out)
+  }else{
+    out <- sort(basic)
+  }
   out <- gsub("chr0([1-9])", "chr\\1", out)
   data.frame(chrom=as.integer(1:length(out)),
              chrom_id=out,

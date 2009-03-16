@@ -66,13 +66,13 @@ setMethod("initialize", "AffySTPDInfoPkgSeed",
 
 ########### Nimblegen Arrays ###############
 setMethod("initialize", "NgsExpressionPDInfoPkgSeed",
-        function(.Object, ndfFile, xysFile, pairFile, ngdFile, ...) {
+          function(.Object, ndfFile, xysFile, pairFile, ngdFile, ...) {
             .Object@ndfFile <- new("ScalarCharacter", ndfFile)
             if (!missing(xysFile))
-                .Object@xysFile <- new("ScalarCharacter", xysFile)
-            if (!missing(pairFile))
-                .Object@pairFile <- new("ScalarCharacter", pairFile)
-            .Object@ngdFile <- new("ScalarCharacter", ngdFile)
+              .Object@xysFile <- new("ScalarCharacter", xysFile)
+##             if (!missing(pairFile))
+##                 .Object@pairFile <- new("ScalarCharacter", pairFile)
+##             .Object@ngdFile <- new("ScalarCharacter", ngdFile)
             callNextMethod(.Object, ...)
             .Object <- callNextMethod(.Object, ...)
             .Object

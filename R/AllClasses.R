@@ -74,14 +74,14 @@ setClass("NgsPDInfoPkgSeed",
          prototype=list(manufacturer="NimbleGen"))
 
 ## modified by Matt Settles June 2,2008
-setClass("NgsExpressionPDInfoPkgSeed",
-         contains="NgsPDInfoPkgSeed",
-         representation=representation(
-           ndfFile="ScalarCharacter",
-           xysFile="ScalarCharacter", ## BC, 11/18/08
-           pairFile="ScalarCharacter",
-           ngdFile="ScalarCharacter"
-           ))
+## setClass("NgsExpressionPDInfoPkgSeed",
+##          contains="NgsPDInfoPkgSeed",
+##          representation=representation(
+##            ndfFile="ScalarCharacter",
+##            xysFile="ScalarCharacter", ## BC, 11/18/08
+##            pairFile="ScalarCharacter",
+##            ngdFile="ScalarCharacter"
+##            ))
 			
 ## modified by Matt Settles June 2,2008
 setClass("NgsTilingPDInfoPkgSeed",
@@ -162,3 +162,10 @@ setClass("NgsTiledRegionPDInfoPkgSeed",
          validity=function(object) file.exists(object@ndfFile) & file.exists(object@xysFile) & file.exists(object@posFile))
 
 ## using AffySTPDInfoPkgSeed and Exon/Gene above.
+
+setClass("NgsExpressionPDInfoPkgSeed",
+         contains="NgsPDInfoPkgSeed",
+         representation=representation(
+           ndfFile="ScalarCharacter",
+           xysFile="ScalarCharacter"
+           ))
