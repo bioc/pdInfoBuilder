@@ -30,3 +30,8 @@ Changes by BC in Feb-Mar 2009
 
 03-09-09 - BC
 ** Added support to Gene ST arrays. Because these share *much* of the Exon arrays structure, I reused most of the code by adding the 'geneArray' argument to the relevant functions (parsers/builder)
+
+03-17-09 - BC - Committed version  1.7.13
+** Added support to HT Expression arrays. The same structure is expected to serve to regular Affymetrix Expression arrays as well
+
+** Several unused functions and structures were removed.

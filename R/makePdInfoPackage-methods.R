@@ -266,32 +266,31 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
                                     batch_size=batch_size, verbose=!quiet) 
           })
 
-
-setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
-    function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
-        valid <- validInput(object,c("cdfFile"), c("csvAnnoFile", "tabSeqFile"))
-        if (!identical(valid, TRUE))
-            stop(paste(valid, collapse="\n  "))
-
-        if(is.na(object@chipName)) object@chipName <- chipName(object)
-        pkgName <- cleanPlatformName(object@chipName)
-        
-        dbFileName <- paste(pkgName, "sqlite", sep=".")        
-        setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
-        
-        extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
-        dbFilePath <- file.path(extdataDir, dbFileName)
-        seqMatFile <- file.path(extdataDir, "seqMat.rda")
-        
-        buildPdInfoDb.affyExpr(
-                object@cdfFile, 
-                object@csvAnnoFile,
-                object@tabSeqFile, 
-                dbFilePath, 
-                seqMatFile,
-                batch_size=batch_size, 
-                verbose=!quiet)
-})
+## setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
+##     function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+##         valid <- validInput(object,c("cdfFile"), c("csvAnnoFile", "tabSeqFile"))
+##         if (!identical(valid, TRUE))
+##             stop(paste(valid, collapse="\n  "))
+## 
+##         if(is.na(object@chipName)) object@chipName <- chipName(object)
+##         pkgName <- cleanPlatformName(object@chipName)
+##         
+##         dbFileName <- paste(pkgName, "sqlite", sep=".")        
+##         setupPackage(object,pkgName,destDir,dbFileName,unlink,quiet)
+##         
+##         extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
+##         dbFilePath <- file.path(extdataDir, dbFileName)
+##         seqMatFile <- file.path(extdataDir, "seqMat.rda")
+##         
+##         buildPdInfoDb.affyExpr(
+##                 object@cdfFile, 
+##                 object@csvAnnoFile,
+##                 object@tabSeqFile, 
+##                 dbFilePath, 
+##                 seqMatFile,
+##                 batch_size=batch_size, 
+##                 verbose=!quiet)
+## })
 
 ## Commented out to use the new builder. BC 03-11-09          
 ## setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",

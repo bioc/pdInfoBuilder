@@ -109,17 +109,18 @@ setValidity("NgsTilingPDInfoPkgSeed", validNgsTilingPDInfoPkgSeed)
 
 
 
-setClass("AffyExpressionPDInfoPkgSeed",
-         contains="PDInfoPkgSeed",
-         representation=representation(
-                 cdfFile="ScalarCharacter",
-                 csvAnnoFile="ScalarCharacter",
-                 tabSeqFile="ScalarCharacter"),
-         prototype=prototype(
-                 manufacturer="Affymetrix",
-                 cdfFile=mkScalar(as.character(NA)),
-                 csvAnnoFile=mkScalar(as.character(NA)),
-                 tabSeqFile=mkScalar(as.character(NA))))
+## setClass("AffyExpressionPDInfoPkgSeed",
+##          contains="PDInfoPkgSeed",
+##          representation=representation(
+##                  cdfFile="ScalarCharacter",
+##                  csvAnnoFile="ScalarCharacter",
+##                  tabSeqFile="ScalarCharacter"),
+##          prototype=prototype(
+##                  manufacturer="Affymetrix",
+##                  cdfFile=mkScalar(as.character(NA)),
+##                  csvAnnoFile=mkScalar(as.character(NA)),
+##                  tabSeqFile=mkScalar(as.character(NA))))
+##
 
  ## changed cif file to cel file, cif doesn't seem to really provide anything, expanted prototype
  setClass("AffyTilingPDInfoPkgSeed",
@@ -168,4 +169,14 @@ setClass("NgsExpressionPDInfoPkgSeed",
          representation=representation(
            ndfFile="ScalarCharacter",
            xysFile="ScalarCharacter"
+           ))
+
+setClass("AffyExpressionPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           cdfFile="ScalarCharacter",
+           celFile="ScalarCharacter",
+           tabSeqFile="ScalarCharacter"),
+         prototype=prototype(
+           manufacturer="Affymetrix"
            ))

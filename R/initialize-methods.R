@@ -28,19 +28,19 @@ setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
-
-setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
-          function(.Object, cdfFile, csvAnnoFile, tabSeqFile, ...) {
-              .Object@cdfFile <- new("ScalarCharacter", cdfFile)
-              ## tabSeqFile and csvAnnoFile are optional
-              if (!missing(csvAnnoFile))
-                  .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
-              if (!missing(tabSeqFile))
-                  .Object@tabSeqFile <- new("ScalarCharacter", tabSeqFile)
-              .Object <- callNextMethod(.Object, ...)
-              .Object
-          })
-
+## 
+## setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
+##           function(.Object, cdfFile, csvAnnoFile, tabSeqFile, ...) {
+##               .Object@cdfFile <- new("ScalarCharacter", cdfFile)
+##               ## tabSeqFile and csvAnnoFile are optional
+##               if (!missing(csvAnnoFile))
+##                   .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
+##               if (!missing(tabSeqFile))
+##                   .Object@tabSeqFile <- new("ScalarCharacter", tabSeqFile)
+##               .Object <- callNextMethod(.Object, ...)
+##               .Object
+##           })
+## 
   
 setMethod("initialize", "AffyTilingPDInfoPkgSeed",
           function(.Object, bpmapFile, celFile, ...) {
@@ -116,3 +116,13 @@ setMethod("initialize", "NgsTilingPDInfoPkgSeed",
 ##               .Object
 ##           })
 
+
+
+setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
+          function(.Object, cdfFile, celFile, tabSeqFile, ...) {
+              .Object@cdfFile <- new("ScalarCharacter", cdfFile)
+              .Object@celFile <- new("ScalarCharacter", celFile)
+              .Object@tabSeqFile <- new("ScalarCharacter", tabSeqFile)
+              .Object <- callNextMethod(.Object, ...)
+              .Object
+          })
