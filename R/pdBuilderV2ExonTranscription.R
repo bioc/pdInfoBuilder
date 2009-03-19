@@ -421,6 +421,18 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
             geneArray <- object@geneArray
             stopifnot(geneArray %in% c(TRUE, FALSE))
+            if (geneArray){
+              msg <- "Building annotation package for Affymetrix Gene ST Array"
+            }else{
+              msg <- "Building annotation package for Affymetrix Exon ST Array"
+            }
+
+            message("============================================================")
+            message(msg)
+            message("PGF.....: ", basename(object@pgfFile))
+            message("CLF.....: ", basename(object@clfFile))
+            message("Probeset: ", basename(object@probeFile))
+            message("============================================================")
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)

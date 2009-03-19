@@ -39,7 +39,7 @@ setMethod("chipName", "NgsPDInfoPkgSeed",
           if ("pairFile" %in% slotNames(object))
             if(nchar(slot(object, "pairFile"))> 0)
                 return(readPairHeader(object@pairFile)[["DesignName"]])
-          return(strsplit(tolower(object@ndfFile), ".ndf")[[1]])
+          return(strsplit(tolower(basename(object@ndfFile)), ".ndf")[[1]])
         })
 
 

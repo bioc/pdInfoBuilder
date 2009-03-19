@@ -147,6 +147,15 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
 setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",          
 
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+
+
+            message("============================================================")
+            message("Building annotation package for Affymetrix Tiling array")
+            message("BPMAP: ", basename(object@bpmapFile))
+            message("CEL..: ", basename(object@celFile))
+            message("============================================================")
+
+            
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
             #######################################################################

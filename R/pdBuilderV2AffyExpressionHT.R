@@ -180,6 +180,16 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
 
 setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+
+
+            message("============================================================")
+            message("Building annotation package for Affymetrix Expression array")
+            message("CDF...............: ", basename(object@cdfFile))
+            message("CEL...............: ", basename(object@celFile))
+            message("Sequence TAB-Delim: ", basename(object@tabSeqFile))
+            message("============================================================")
+
+            
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
             #######################################################################

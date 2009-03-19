@@ -100,11 +100,14 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
 
   if (verbose) cat("Preparing contents for bgfeature table ...")
   bgidx <- grep("RANDOM", features[["man_fsetid"]])
-  bgFeatures <- features[bgidx, c("fid", "fsetid", "x", "y")]
-  bgSequence <- features[bgidx, c("fid", "sequence")]
-  bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
-                           sequence=DNAStringSet(bgSequence[["sequence"]]))
-  features <- features[-bgidx,]
+  bgFeatures <- bgSequence <- NULL
+  if (length(bgidx) > 0){
+    bgFeatures <- features[bgidx, c("fid", "fsetid", "x", "y")]
+    bgSequence <- features[bgidx, c("fid", "sequence")]
+    bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
+                             sequence=DNAStringSet(bgSequence[["sequence"]]))
+    features <- features[-bgidx,]
+  }
   rm(bgidx)
   if (verbose) cat("OK\n")
 
@@ -142,6 +145,12 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
 #######################################################################
 setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+
+            message("============================================================")
+            message("Building annotation package for Nimblegen Expression Array")
+            message("NDF: ", basename(object@ndfFile))
+            message("XYS: ", basename(object@xysFile))
+            message("============================================================")
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -201,10 +210,12 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
                             "mmfeature",
                             ngsExprMmFeatureSchema[["col2type"]],
                             ngsExprMmFeatureSchema[["col2key"]])
-            dbCreateTable(conn,
-                          "bgfeature",
-                          ngsExprBgFeatureSchema[["col2type"]],
-                          ngsExprBgFeatureSchema[["col2key"]])
+            containsBg <- !is.null(parsedData[["bgFeatures"]])
+            if (containsBg)
+              dbCreateTable(conn,
+                            "bgfeature",
+                            ngsExprBgFeatureSchema[["col2type"]],
+                            ngsExprBgFeatureSchema[["col2key"]])
 
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
                               ngsExprFeatureSetSchema[["col2type"]], !quiet)
@@ -213,8 +224,9 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             if (containsMm)
               dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
                                 ngsExprMmFeatureSchema[["col2type"]], !quiet)
-            dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
-                              ngsExprBgFeatureSchema[["col2type"]], !quiet)
+            if (containsBg)
+              dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
+                                ngsExprBgFeatureSchema[["col2type"]], !quiet)
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
@@ -226,13 +238,17 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             #######################################################################
             datadir <- file.path(destDir, pkgName, "data")
             dir.create(datadir)
-            pmSequence <- parsedData[["pmSequence"]]
-            bgSequence <- parsedData[["bgSequence"]]
-            pmSeqFile <- file.path(datadir, "pmSequence.rda")
-            bgSeqFile <- file.path(datadir, "bgSequence.rda")
+
             if (!quiet) message("Saving XDataFrame object for PM.")
+            pmSequence <- parsedData[["pmSequence"]]
+            pmSeqFile <- file.path(datadir, "pmSequence.rda")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) message("Saving XDataFrame object for BG.")
-            save(bgSequence, file=bgSeqFile)
+
+            if (containsBg){
+              if (!quiet) message("Saving XDataFrame object for BG.")
+              bgSequence <- parsedData[["bgSequence"]]
+              bgSeqFile <- file.path(datadir, "bgSequence.rda")
+              save(bgSequence, file=bgSeqFile)
+            }
             if (!quiet) message("Done.")
           })

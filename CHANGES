@@ -10,6 +10,7 @@ updated man pages
 more work on Affy Tiling and ST arrays
 
 Changes made by Matt Settles 12-4-2008
+
 ** All changes should generally have effect on only Affy Tiling, ST and expression arrays.
 Changes made that effect, but not break, all objects
 	moved url from PkgSeed to PDInfoPkgSeed
@@ -23,15 +24,23 @@ Changes currently isolated to Affy tiling and ST and expression arrays
 	modified package building proceedures for tiling, st and expression arrays
 	
 Changes by BC in Feb-Mar 2009
+
 ** Added new builders for NGS Tiling and Affy Exon. These builders use the minimum of "gene-centric" annotation and should be able to link to org pkgs to extract more info.
 
 03-08-09 - Benilton Carvalho
+
 ** In the new builder (v2) for Exon arrays, added a statement to remove probes that are not in the probeset.csv file.
 
 03-09-09 - BC
+
 ** Added support to Gene ST arrays. Because these share *much* of the Exon arrays structure, I reused most of the code by adding the 'geneArray' argument to the relevant functions (parsers/builder)
 
 03-17-09 - BC - Committed version  1.7.13
+
 ** Added support to HT Expression arrays. The same structure is expected to serve to regular Affymetrix Expression arrays as well
 
 ** Several unused functions and structures were removed.
+
+03-19-09 - BC - Committed version 1.7.14
+
+** Added diagnostic messages.

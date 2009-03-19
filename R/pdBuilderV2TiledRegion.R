@@ -210,6 +210,14 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
 #######################################################################
 setMethod("makePdInfoPackage", "NgsTiledRegionPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
+
+            message("========================================================")
+            message("Building annotation package for Nimblegen Tiling Array")
+            message("NDF: ", basename(object@ndfFile))
+            message("POS: ", basename(object@posFile))
+            message("XYS: ", basename(object@xysFile))
+            message("========================================================")
+
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)

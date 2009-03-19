@@ -8,3 +8,4 @@ dropoff -- parms_store, anno_store, data_store
 4) Fix documentation problems reported by Marc Carlson
 5) Fix chromosome table for TiledRegion arrays
 6) Possibly add a NAMESPACE for templates
+7) Document relationships of the databases and describe fields (ensure unification) - UML????
