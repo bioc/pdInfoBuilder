@@ -1,0 +1,202 @@
+%\VignetteIndexEntry{Building Annotation Packages with \Rpackage{pdInfoBuilder} for Use with the \Rpackage{oligo} Package}
+%\VignetteKeywords{Expression, Tiling, Exon, Gene, NimbleGen, Affymetrix}
+%\VignettePackage{pdInfoBuilder}
+\documentclass{article}
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textsf{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\oligo}{\Rpackage{oligo}}
+
+\begin{document}
+
+\title{Building Annotation Packages with \Rpackage{pdInfoBuilder} for Use with the \Rpackage{oligo} Package}
+\author{Benilton Carvalho}
+\maketitle
+
+
+<<setup, echo=FALSE, results=hide>>=
+options(width=60)
+options(continue=" ")
+options(prompt="R> ")
+options(width=45, digits=2)
+@ 
+
+\section{Introduction}
+\label{sec:intro}
+
+The \Rpackage{oligo} package offers support to multiple types of
+microarrays produced by Affymetrix and NimbleGen. The package will
+successfully read in CEL (Affymetrix) and XYS (NimbleGen) files, as
+long as the associated annotation package is already installed on the
+user's system.
+
+The user must note that the annotation packages built for the
+\Rpackage{affy} package are \textbf{not} compatible with
+\Rpackage{oligo}. To have an annotation package that is compatible
+with \Rpackage{oligo}, one must use the \Rpackage{pdInfoBuilder}
+package.
+
+This document shows examples on how to create such annotation packages
+for different platforms. After the package is created, the user must
+install it and not just copy it to the library tree.
+
+\section{The General Strategy for Building Annotation Packages with \Rpackage{pdInfoBuilder}}
+\label{sec:strategy}
+
+Building annotation packages with \Rpackage{pdInfoBuilder} depends on the followings files:
+\begin{itemize}
+\item Array design file: CDF (Affymetrix Expression), NDF (NimbleGen), BPMAP (Affymetrix Tiling) or PGF+CLF (Affymetrix Exon ST or Gene ST);
+\item Positions file: POS (NimbleGen - Tiling);
+\item Template of intensity file: CEL (Affymetrix) or XYS (NimbleGen);
+\item Probe sequence file: TAB (Affymetrix Expression)
+\item Probeset annotation file: PROBESET.CSV (Affymetrix Exon/Gene)
+\end{itemize}
+
+\section{Affymetrix SNP Array}
+\label{sec:affysnp}
+
+The annotation packages for any Affymetrix SNP chip is available from
+BioConductor.
+
+\begin{table}
+  \centering
+  \begin{tabular}{|c|c|}
+    \hline
+    Type & Package \\ \hline
+    50K Xba  & pd.mapping50k.xba240 \\
+    50K Hind & pd.mapping50k.hind240 \\
+    250K Sty & pd.mapping250k.sty \\
+    250K Nsp & pd.mapping250k.nsp \\
+    SNP 5.0  & pd.genomewidesnp.5 \\
+    SNP 6.0  & pd.genomewidesnp.6 \\
+    \hline
+  \end{tabular}
+  \caption{List of packages for SNP chips}
+\end{table}
+
+\section{Affymetrix HT-HGU133}
+\label{sec:affyhtexpr}
+
+For this particular array, the user must have access to three
+components: CDF, CEL (which will provide information on the array
+geometry) and probe sequence file (TAB-delimited).
+
+<<affyht>>=
+library(pdInfoBuilder)
+baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyHTHGU133P'
+(cdf <- list.files(baseDir, pattern='.CDF', full.names=TRUE))
+(cel <- list.files(baseDir, pattern='.CEL', full.names=TRUE)[1])
+(tab <- list.files(baseDir, pattern='_tab', full.names=TRUE))
+seed <- new("AffyExpressionPDInfoPkgSeed",
+            cdfFile=cdf,
+            celFile=cel,
+            tabSeqFile=tab,
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 36",
+            organism="Human",
+            species="Homo Sapiens",
+            url="http://www.biostat.jhsph.edu/~bcarvalh")
+makePdInfoPackage(seed, destDir=".")
+@ 
+
+\section{Affymetrix Tiling Array}
+\label{sec:affytiling}
+
+<<affytiling>>=
+baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyTiling'
+(bpmap <- list.files(baseDir, pattern='.bpmap', full.names=TRUE))
+(cel <- list.files(baseDir, pattern='.CEL', full.names=TRUE)[1])
+seed <- new("AffyTilingPDInfoPkgSeed",
+            bpmapFile=bpmap,
+            celFile=cel,
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 34",
+            organism="Human",
+            species="Homo Sapiens",
+            url="http://www.biostat.jhsph.edu/~bcarvalh")
+makePdInfoPackage(seed, destDir=".")
+@ 
+
+\section{Affymetrix Exon ST Array}
+\label{sec:affyexon}
+
+<<affyexon>>=
+library(pdInfoBuilder)
+baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyExon'
+(pgf <- list.files(baseDir, pattern='.pgf', full.names=TRUE))
+(clf <- list.files(baseDir, pattern='.clf', full.names=TRUE))
+(prob <- list.files(baseDir, pattern='.probeset.csv', full.names=TRUE))
+seed <- new("AffySTPDInfoPkgSeed",
+            pgfFile=pgf,
+            clfFile=clf,
+            probeFile=prob,
+            geneArray=FALSE,
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 36",
+            organism="Human",
+            species="Homo Sapiens",
+            url="http://www.biostat.jhsph.edu/~bcarvalh")
+makePdInfoPackage(seed, destDir=".")
+@
+
+\section{Affymetrix Gene ST Array}
+\label{sec:affygene}
+
+<<affyexon>>=
+library(pdInfoBuilder)
+baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyGene'
+(pgf <- list.files(baseDir, pattern='.pgf', full.names=TRUE))
+(clf <- list.files(baseDir, pattern='.clf', full.names=TRUE))
+(prob <- list.files(baseDir, pattern='.probeset.csv', full.names=TRUE))
+seed <- new("AffySTPDInfoPkgSeed",
+            pgfFile=pgf,
+            clfFile=clf,
+            probeFile=prob,
+            geneArray=TRUE,
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 36",
+            organism="Human",
+            species="Homo Sapiens",
+            url="http://www.biostat.jhsph.edu/~bcarvalh")
+makePdInfoPackage(seed, destDir=".")
+@
+
+\section{NimbleGen Expression Array}
+\label{sec:ngsexpr}
+
+<<ngsexpr>>=
+library(pdInfoBuilder)
+baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/NgsExpression'
+(ndf <- list.files(baseDir, pattern='.ndf', full.names=TRUE))
+(xys <- list.files(baseDir, pattern='.xys', full.names=TRUE)[1])
+seed <- new("NgsExpressionPDInfoPkgSeed",
+            ndfFile=ndf,
+            xysFile=xys,
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 36",
+            organism="Human",
+            species="Homo Sapiens",
+            url="http://www.biostat.jhsph.edu/~bcarvalh")
+makePdInfoPackage(seed, destDir=".")
+@ 
+
+\section{NimbleGen Tiling Array}
+\label{sec:ngstiling}
+
+
+
+\end{document}

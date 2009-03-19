@@ -22,6 +22,12 @@ options(continue=" ")
 options(prompt="R> ")
 @ 
 
+\section{IMPORTANT!}
+
+Users are asked to download the packages for Affymetrix SNP chips from the BioConductor website!
+
+The contents of this vignette explain the essence of the builder for SNP chips.
+
 \section{What you will need}
 
 Aside from the \Rpackage{pdInfoBuilder} package and its dependencies,
