@@ -1,6 +1,6 @@
 All: BuildingPDInfoPkgs clean
 
-copynumber: BuildingPDInfoPkgs.tex
+BuildingPDInfoPkgs: BuildingPDInfoPkgs.tex
 	cp -p ../scripts/BuildingPDInfoPkgs.pdf .
 
 clean:
