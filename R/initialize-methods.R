@@ -126,3 +126,12 @@ setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
               .Object <- callNextMethod(.Object, ...)
               .Object
           })
+
+setMethod("initialize", "NgsTiledRegionPDInfoPkgSeed",
+          function(.Object, ndfFile, xysFile, posFile, ...){
+            .Object@ndfFile <- new("ScalarCharacter", ndfFile)
+            .Object@xysFile <- new("ScalarCharacter", xysFile)
+            .Object@posFile <- new("ScalarCharacter", posFile)
+            .Object <- callNextMethod(.Object, ...)
+            .Object
+          })
