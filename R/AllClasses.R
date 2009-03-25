@@ -1,160 +1,123 @@
+#################################################################
+## Base class
+#################################################################
 
 setClass("PkgSeed",
          representation=representation(
-                name="character",
-                version="character",
-                license="character",
-                author="character",
-                email="character",
-                biocViews="character"),
-        prototype=prototype(
-                name="The Name",
-                version="0.0.1",
-                license="Artistic License, Version 2.0",
-                author="My Name",
-                email="my@email.com",
-                biocViews="AnnotationData"),
-        validity=function(object) .isValidPkgSeed(object))
+           name="character",
+           version="character",
+           license="character",
+           author="character",
+           email="character",
+           biocViews="character"),
+         prototype=prototype(
+           name="The Name",
+           version="0.0.1",
+           license="Artistic License, Version 2.0",
+           author="My Name",
+           email="my@email.com",
+           biocViews="AnnotationData"),
+         validity=
+         function(object){
+           email <- object@email
+           if (length(email) != 1 || grep("@", email) != 1)
+             return("invalid email address")
+           TRUE
+         })
 
 setClass("PDInfoPkgSeed",
-        contains="PkgSeed",
-        representation=representation(
-                chipName="character",
-                manufacturer="character",
-                url="character",
-                genomebuild="character",
-                organism = "character",
-                species = "character"),
-        prototype=prototype(
-                chipName="The Chip Name",
-                manufacturer="The Manufacturer's Name",
-                url="http://www.manufacturer.com",
-                genomebuild="The Genome Build",
-                organism="Organism",
-                species="Species")
-)
-
-
-setClass("AffySNPPDInfoPkgSeed",
-         contains="PDInfoPkgSeed",
+         contains="PkgSeed",
          representation=representation(
-           cdfFile="ScalarCharacter",
-           csvAnnoFile="ScalarCharacter",
-           csvSeqFile="ScalarCharacter",
-           splineParamFile="ScalarCharacter",
-           crlmmInfoFile="ScalarCharacter",
-           referenceDistFile="ScalarCharacter"
-           ),
-         prototype=list(manufacturer="Affymetrix"))
+           chipName="character",
+           manufacturer="character",
+           url="character",
+           genomebuild="character",
+           organism="character",
+           species="character"),
+         prototype=prototype(
+           chipName="The Chip Name",
+           manufacturer="The Manufacturer's Name",
+           url="http://www.manufacturer.com",
+           genomebuild="The Genome Build",
+           organism="Organism",
+           species="Species")
+         )
 
-setClass("AffySNPCNVPDInfoPkgSeed",
+#################################################################
+## Manufacturer-specific classes: Affymetrix and NimbleGen are
+## supported for the moment
+#################################################################
+
+setClass("AffymetrixPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
-         representation=representation(
-           cdfFile="ScalarCharacter",
-           csvAnnoFile="ScalarCharacter",
-           csvSeqFile="ScalarCharacter",
-           csvAnnoFileCnv="ScalarCharacter",
-           csvSeqFileCnv="ScalarCharacter",
-           splineParamFile="ScalarCharacter",
-           crlmmInfoFile="ScalarCharacter",
-           referenceDistFile="ScalarCharacter"
-           ),
-         prototype=list(manufacturer="Affymetrix"))
-
-
-.isValidPkgSeed <- function(object) {
-    email <- object@email
-    if (length(email) != 1 || grep("@", email) != 1)
-      return("invalid email address")
-    TRUE
-}
-
-setClass("NgsPDInfoPkgSeed",
-         contains="PDInfoPkgSeed",
-         prototype=list(manufacturer="NimbleGen"))
-
-## modified by Matt Settles June 2,2008
-## setClass("NgsExpressionPDInfoPkgSeed",
-##          contains="NgsPDInfoPkgSeed",
-##          representation=representation(
-##            ndfFile="ScalarCharacter",
-##            xysFile="ScalarCharacter", ## BC, 11/18/08
-##            pairFile="ScalarCharacter",
-##            ngdFile="ScalarCharacter"
-##            ))
-			
-## modified by Matt Settles June 2,2008
-setClass("NgsTilingPDInfoPkgSeed",
-         contains="NgsPDInfoPkgSeed",
-         representation=representation(
-           ndfFile="ScalarCharacter",
-           xysFile="ScalarCharacter", ## BC, 11/18/08
-           pairFile="ScalarCharacter",
-           posFile="ScalarCharacter"
+         prototype=list(
+           manufacturer="Affymetrix",
+           url="http://www.affymetrix.com"
            ))
 
-
-validNgsTilingPDInfoPkgSeed <- function(object){
-  ndf <-  nchar(slot(object, "ndfFile")) > 0
-  xys <-  nchar(slot(object, "xysFile")) > 0
-  pair <- nchar(slot(object, "pairFile"))> 0
-  if (pair & xys) stop("Specify only one: XYS or PAIR file.")
-  if (!ndf) stop("NDF must be given.")
-  stopifnot(file.exists(slot(object, "ndfFile")))
-  if (xys) stopifnot(file.exists(slot(object, "xysFile")))
-  if (pair) stopifnot(file.exists(slot(object, "pairFile")))
-  TRUE
-}
-setValidity("NgsTilingPDInfoPkgSeed", validNgsTilingPDInfoPkgSeed)
-
-
-
-## setClass("AffyExpressionPDInfoPkgSeed",
-##          contains="PDInfoPkgSeed",
-##          representation=representation(
-##                  cdfFile="ScalarCharacter",
-##                  csvAnnoFile="ScalarCharacter",
-##                  tabSeqFile="ScalarCharacter"),
-##          prototype=prototype(
-##                  manufacturer="Affymetrix",
-##                  cdfFile=mkScalar(as.character(NA)),
-##                  csvAnnoFile=mkScalar(as.character(NA)),
-##                  tabSeqFile=mkScalar(as.character(NA))))
-##
-
- ## changed cif file to cel file, cif doesn't seem to really provide anything, expanted prototype
- setClass("AffyTilingPDInfoPkgSeed",
+setClass("NimbleGenPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
+         prototype=list(
+           manufacturer="NimbleGen",
+           url="http://www.nimblegen.com"
+           ))
+
+#################################################################
+## Affymetrix seeds
+#################################################################
+
+setClass("AffySNPPDInfoPkgSeed",
+         contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-                 bpmapFile="ScalarCharacter",
-                 celFile="ScalarCharacter"),
-         prototype=prototype(
-                 manufacturer="Affymetrix",
-                 bpmapFile=mkScalar(as.character(NA)),
-                 celFile=mkScalar(as.character(NA))))
+           cdfFile="ScalarCharacter",
+           csvAnnoFile="ScalarCharacter",
+           csvSeqFile="ScalarCharacter",
+           splineParamFile="ScalarCharacter",
+           crlmmInfoFile="ScalarCharacter",
+           referenceDistFile="ScalarCharacter"))
+
+setClass("AffySNPCNVPDInfoPkgSeed",
+         contains="AffySNPPDInfoPkgSeed",
+         representation=representation(
+           csvAnnoFileCnv="ScalarCharacter",
+           csvSeqFileCnv="ScalarCharacter"))
+
+setClass("AffyTilingPDInfoPkgSeed",
+         contains="AffymetrixPDInfoPkgSeed",
+         representation=representation(
+           bpmapFile="ScalarCharacter",
+           celFile="ScalarCharacter"))
 
 setClass("AffySTPDInfoPkgSeed",
-         contains="PDInfoPkgSeed",
+         contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
            pgfFile="ScalarCharacter",
            clfFile="ScalarCharacter",
            probeFile="ScalarCharacter",
            transFile="ScalarCharacter",
-           geneArray="logical"),
-         prototype=prototype(
-           manufacturer="Affymetrix",
-           pgfFile=mkScalar(as.character(NA)),
-           clfFile=mkScalar(as.character(NA)),
-           probeFile=mkScalar(as.character(NA)),
-           transFile=mkScalar(as.character(NA))))
+           geneArray="logical"))
 
- setClass("AffyExonPDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
- setClass("AffyGenePDInfoPkgSeed", contains="AffySTPDInfoPkgSeed")
- 
-##### PD Info v2 by BC
-##### please don't modify
-setClass("NgsTiledRegionPDInfoPkgSeed",
-         contains="NgsPDInfoPkgSeed",
+setClass("AffyExonPDInfoPkgSeed",
+         contains="AffySTPDInfoPkgSeed",
+         prototype=list(geneArray=FALSE))
+
+setClass("AffyGenePDInfoPkgSeed",
+         contains="AffySTPDInfoPkgSeed",
+         prototype=list(geneArray=TRUE))
+
+setClass("AffyExpressionPDInfoPkgSeed",
+         contains="PDInfoPkgSeed",
+         representation=representation(
+           cdfFile="ScalarCharacter",
+           celFile="ScalarCharacter",
+           tabSeqFile="ScalarCharacter"))
+
+#################################################################
+## NimbleGen seeds
+#################################################################
+
+setClass("NgsTilingPDInfoPkgSeed",
+         contains="NimbleGenPDInfoPkgSeed",
          representation=representation(
            ndfFile="ScalarCharacter",
            xysFile="ScalarCharacter",
@@ -162,21 +125,9 @@ setClass("NgsTiledRegionPDInfoPkgSeed",
            ),
          validity=function(object) file.exists(object@ndfFile) & file.exists(object@xysFile) & file.exists(object@posFile))
 
-## using AffySTPDInfoPkgSeed and Exon/Gene above.
-
 setClass("NgsExpressionPDInfoPkgSeed",
-         contains="NgsPDInfoPkgSeed",
+         contains="NimbleGenPDInfoPkgSeed",
          representation=representation(
            ndfFile="ScalarCharacter",
            xysFile="ScalarCharacter"
-           ))
-
-setClass("AffyExpressionPDInfoPkgSeed",
-         contains="PDInfoPkgSeed",
-         representation=representation(
-           cdfFile="ScalarCharacter",
-           celFile="ScalarCharacter",
-           tabSeqFile="ScalarCharacter"),
-         prototype=prototype(
-           manufacturer="Affymetrix"
            ))

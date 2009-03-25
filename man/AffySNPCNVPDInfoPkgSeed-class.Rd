@@ -46,10 +46,6 @@ Objects can be created by calls of the form \code{new("AffySNPCNVPDInfoPkgSeed",
     the DESCRIPTION file}
   }
 }
-\section{Extends}{
-Class \code{"\linkS4class{PDInfoPkgSeed}"}, directly.
-Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
-}
 \section{Methods}{
   \describe{
     \item{chipName}{\code{signature(object = "AffySNPCNVPDInfoPkgSeed")}: ... }

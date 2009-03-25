@@ -5,7 +5,7 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID. The database also incorporates featureSet-level
   annotation data. The products of this packages are used by the oligo pkg.
-Version: 1.7.18
+Version: 1.7.20
 Author: Seth Falcon, Benilton Carvalho with contributions by Vince Carey and Matt Settles
 Maintainer: Benilton Carvalho <bcarvalh@jhsph.edu>
 LazyLoad: yes
@@ -24,25 +24,12 @@ Collate: AllClasses.R
          pmmmBlockToMat.R
          loaders.R
          loaders.snp6.R
-         dbImport.AffyHuExArrayAnnCSV.R
          parseAffySeqFasta.R
          makePdInfoPackage-methods.R
          chipName-methods.R
          getGeometry-methods.R
          geneAssoc.R
          readNimblegen.R
-         ngs.InitDb.R
-         ngs.loader.R
-         ngs.schema.R
-         affyExpr.initDb.R
-         affyExpr.loaders.R
-         affyExpr.schema.R
-         affyTiling.initDb.R
-         affyTiling.loaders.R
-         affyTiling.schema.R
-         affyST.initDb.R
-         affyST.loaders.R
-         affyST.schema.R
          zzz.R
          pdBuilderV2TiledRegion.R
          pdBuilderV2ExonTranscription.R
@@ -50,5 +37,6 @@ Collate: AllClasses.R
          pdBuilderV2AffyTiling.R
          pdBuilderV2NgsExpression.R
          pdBuilderV2AffyExpressionHT.R
+         toBeRemoved.R
 biocViews: Annotation, Infrastructure
 

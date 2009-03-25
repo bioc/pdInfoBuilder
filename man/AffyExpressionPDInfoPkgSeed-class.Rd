@@ -9,9 +9,9 @@ Objects can be created by calls of the form \code{new("AffyExpressionPDInfoPkgSe
 }
 \section{Slots}{
 	 \describe{
-    \item{\code{cdfFile}:}{CDF filename}
-    \item{\code{csvAnnoFile}:}{CSV annotation file, (Optional)}
-    \item{\code{tabSeqFile}:}{TAB sequence file, (Optional)}
+	   \item{\code{cdfFile}:}{CDF filename}
+	   \item{\code{celFile}:}{CEL filename}
+	   \item{\code{tabSeqFile}:}{TAB sequence file}
 
 %% these are from PDInfoPkgSeed-class
     \item{\code{chipName}:}{Name of the chip or platform}
@@ -31,10 +31,6 @@ Objects can be created by calls of the form \code{new("AffyExpressionPDInfoPkgSe
     \item{\code{biocViews}:}{Character data for the biocViews field of
     the DESCRIPTION file}
    }
-}
-\section{Extends}{
-Class \code{"\linkS4class{PDInfoPkgSeed}"}, directly.
-Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
 }
 \section{Methods}{
   \describe{

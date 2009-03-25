@@ -208,7 +208,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
 ##             ii) parse data; iii) create pkg from template;
 ##             iv) dump the database
 #######################################################################
-setMethod("makePdInfoPackage", "NgsTiledRegionPDInfoPkgSeed",
+setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
             message("========================================================")

@@ -5,7 +5,7 @@
 \alias{getGeometry,AffyExpressionPDInfoPkgSeed-method}
 \alias{getGeometry,AffyTilingPDInfoPkgSeed-method}
 \alias{getGeometry,AffySTPDInfoPkgSeed-method}
-\alias{getGeometry,NgsPDInfoPkgSeed-method}
+\alias{getGeometry,NimbleGenPDInfoPkgSeed-method}
 
 \title{Return the Chip/Platform geometry}
 \description{

@@ -10,9 +10,7 @@ Objects can be created by calls of the form \code{new("NgsExpressionPDInfoPkgSee
 \section{Slots}{
 	 \describe{
     \item{\code{ndfFile}:}{NDF (NimbleGen Design) file}
-    \item{\code{pairFile}:}{PAIR (pair) file - used as template}
     \item{\code{xysFile}:}{XYS File - used as template}
-    \item{\code{ngdFile}:}{NGD File - annotation data}
     %% these are from PDInfoPkgSeed-class
     \item{\code{chipName}:}{Name of the chip or platform}
     \item{\code{manufacturer}:}{chip/platform manufacturer}
@@ -33,23 +31,13 @@ Objects can be created by calls of the form \code{new("NgsExpressionPDInfoPkgSee
     
      }
 }
-\section{Extends}{
-Class \code{"\linkS4class{PDInfoPkgSeed}"}, directly.
-Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
-}
 \section{Methods}{
   \describe{
     \item{makePdInfoPackage}{\code{signature(.Object = "NgsExpressionPDInfoPkgSeed")}: ... }
-    \item{chipName}{\code{signature(object = "NgsPDInfoPkgSeed")}: ... }
-    \item{getGeometry}{\code{signature(.Object = "NgsPDInfoPkgSeed")}: ... }
-	 }
+    \item{chipName}{\code{signature(object = "NimbleGenPDInfoPkgSeed")}: ... }
+    \item{getGeometry}{\code{signature(.Object = "NimbleGenPDInfoPkgSeed")}: ... }
+  }
 }
-\section{Note}{
-	Nimblegen provides pairFiles for each array and color as the standard, however this file type
-	contains a lot of redundant information that can be found in the ndf file. The xysFile
-	is a reduced pairFile that can be obtained from Nimblegen upon request and provides a significant
-	amount of memory savings. Therefore only one of xysFile or pairFile must be specified.
-} 
 \examples{
 showClass("NgsExpressionPDInfoPkgSeed")
 }

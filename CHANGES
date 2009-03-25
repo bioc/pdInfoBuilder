@@ -46,3 +46,11 @@ Changes by BC in Feb-Mar 2009
 ** Added diagnostic messages.
 
 ** Added vignette explaining how to build packages for several array types. (v 1.7.15)
+
+03-24-09 - BC - Committed version 1.7.19
+
+** Removed dbImport.AffyHuExArrayAnnCSV.R
+
+** Moved contents of affy*R and ngs*R to toBeRemoved.R. The revamped versions of the builders are more robust and minimize the use of gene-centric annotation.
+
+** Exported only classes that are used to build packages

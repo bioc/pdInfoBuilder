@@ -1,6 +1,5 @@
 \name{AffySTPDInfoPkgSeed-class}
 \docType{class}
-\alias{AffySTPDInfoPkgSeed-class}
 \alias{AffyExonPDInfoPkgSeed-class}
 \alias{AffyGenePDInfoPkgSeed-class}
 
@@ -34,10 +33,6 @@ Objects can be created by calls of the form \code{new("AffySTPDInfoPkgSeed", pgf
     the DESCRIPTION file}
   }
 }
-\section{Extends}{
-Class \code{"\linkS4class{PDInfoPkgSeed}"}, directly.
-Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
-}
 \section{Methods}{
   \describe{
     \item{chipName}{\code{signature(object = "AffySTPDInfoPkgSeed")}: ... }
@@ -45,16 +40,8 @@ Class \code{"\linkS4class{PkgSeed}"}, by class "PDInfoPkgSeed", distance 2.
     \item{makePdInfoPackage}{\code{signature(object = "AffySTPDInfoPkgSeed")}: ... }
 	 }
 }
-%\references{ ~put references to the literature/web site here ~ }
-\author{ B. Carvalho }
-%\note{ ~~further notes~~ }
 
-% ~Make other sections like Warning with \section{Warning }{....} ~
-%
-%\seealso{
-%	~~objects to See Also as \code{\link{~~fun~~}}, ~~~
-%	or \code{\linkS4class{CLASSNAME}} for links to other classes
-%}
+\author{ B. Carvalho }
 \examples{
 showClass("AffySTPDInfoPkgSeed")
 }

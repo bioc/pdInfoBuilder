@@ -34,27 +34,10 @@ setMethod("chipName", "AffySTPDInfoPkgSeed",
 
 ############ Nimblegen Arrays #############
 
-setMethod("chipName", "NgsPDInfoPkgSeed",
+setMethod("chipName", "NimbleGenPDInfoPkgSeed",
         function(object) {
           if ("pairFile" %in% slotNames(object))
             if(nchar(slot(object, "pairFile"))> 0)
                 return(readPairHeader(object@pairFile)[["DesignName"]])
           return(strsplit(tolower(basename(object@ndfFile)), ".ndf")[[1]])
         })
-
-
-## ## modified by Matt Settles June 2,2008
-## #setMethod("chipName", "NgsPDInfoPkgSeed",
-## #          function(object) {
-## #            strsplit(tolower(object@ndfFile), ".ndf")[[1]]
-## #          })
-## 
-## ## modified by Matt Settles June 2,2008
-## setMethod("chipName", "NgsExpressionPDInfoPkgSeed",
-##           function(object) {
-##               ## compute chip name from the Pair file
-##               header <- readPairHeader(object@pairFile)
-##               header$DesignName
-##           })
-## 
-## ## modified by Matt Settles June 2,2008

@@ -30,7 +30,7 @@ setMethod("getGeometry", "AffySTPDInfoPkgSeed",
           })
 
 ########### Nimblegen Arrays ############
-setMethod("getGeometry", "NgsPDInfoPkgSeed",
+setMethod("getGeometry", "NimbleGenPDInfoPkgSeed",
         function(object) {
             ndfdata <- read.delim(object@ndfFile, as.is=TRUE, header=TRUE)
             return(list(nrows=max(ndfdata$Y),ncols= max(ndfdata$X)))

@@ -114,7 +114,10 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   missPS <- sort(unique(allProbes[missSeq, "fsetid"]))
   for (i in missPS){
     idx <- which(allProbes[["fsetid"]] == i & allProbes[["isPm"]])
-    seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm)[, "sequence"]
+    seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm, sequence, drop=TRUE)
+##     seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm)[, "sequence"]
+##     toGet <- (allProbes[["fsetid"]] == i) & (!is.na(allProbes[["sequence"]])) & (allProbes[["isPm"]])
+##     seq <- allProbes[toGet, "sequence"]
     seq <- unique(seq)
     stopifnot(length(seq) == 1)
     allProbes[idx, "sequence"] <- seq
