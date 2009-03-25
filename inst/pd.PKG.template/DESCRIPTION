@@ -6,7 +6,7 @@ Author: @AUTHOR@
 Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
 LazyLoad: yes
 Depends: R (>= 2.5.0), methods,
-         RSQLite (>= 0.4-15), oligoClasses (>= 1.1.9)
+         RSQLite (>= 0.4-15), oligoClasses (>= 1.1.9), DBI
 License: @LIC@
 biocViews: AnnotationData
 

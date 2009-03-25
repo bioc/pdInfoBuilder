@@ -27,11 +27,12 @@ closeDb <- function() {
     ## FIXME: check for valid connection?
     sapply(dbListResults(globals$dbCon), dbClearResult)
     dbDisconnect(globals$dbCon)
-    remove(dbCon, envir=globals)
+    remove(list="dbCon", envir=globals)
 }
 
 .onLoad <- function(libname, pkgname) {
     require("methods", quietly=TRUE)
+    require("RSQLite", quietly=TRUE)
     globals$DB_PATH <- system.file("extdata", "@DBFILE@",
                                    package="@PKGNAME@",
                                    lib.loc=libname)
