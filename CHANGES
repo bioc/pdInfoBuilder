@@ -54,3 +54,9 @@ Changes by BC in Feb-Mar 2009
 ** Moved contents of affy*R and ngs*R to toBeRemoved.R. The revamped versions of the builders are more robust and minimize the use of gene-centric annotation.
 
 ** Exported only classes that are used to build packages
+
+03-25-2009 - B Carvalho
+
+** Implemented changes mainly to templates, so pacakges pass R CMD check.
+
+** Added slot annotation to PDInfo, so we can easily find any information about the object.

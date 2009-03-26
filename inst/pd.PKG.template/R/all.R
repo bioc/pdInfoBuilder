@@ -49,5 +49,6 @@ closeDb <- function() {
 @PDINFONAME@ <- new("@PDINFOCLASS@",
                     genomebuild="@GENOMEBUILD@",
                     getdb=getDb,
-                    geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]]))
+                    geometry=as.integer(strsplit("@GEOMETRY@", ";")[[1]]),
+                    annotation="@PKGNAME@")
 
