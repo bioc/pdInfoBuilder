@@ -1,4 +1,4 @@
-%\VignetteIndexEntry{Building Annotation Packages with \Rpackage{pdInfoBuilder} for Use with the \Rpackage{oligo} Package}
+%\VignetteIndexEntry{Building Annotation Packages with pdInfoBuilder for Use with the oligo Package}
 %\VignetteKeywords{Expression, Tiling, Exon, Gene, NimbleGen, Affymetrix}
 %\VignettePackage{pdInfoBuilder}
 

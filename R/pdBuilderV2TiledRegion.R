@@ -60,7 +60,7 @@ dbCreateTableInfo <- function(db, verbose=FALSE) {
     sql <- "select count(*) from %s"
     for (i in seq(along=counts)) {
         if (verbose)
-          cat("counting rows in ", tables[i], "\n")
+          cat("Counting rows in", tables[i], "\n")
         counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
     }
 
@@ -92,6 +92,50 @@ dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
     cat("OK\n")
 }
 
+dbCreateIndex <- function(conn, idxname, tblname, fieldname, unique=TRUE, verbose=TRUE){
+  if (verbose) cat("Creating index", idxname, "on", tblname, "... ")
+  sql <- paste("CREATE", ifelse(unique, "UNIQUE", ""),
+               "INDEX", idxname, "ON", tblname,
+               paste("(", fieldname, ")", sep=""))
+  dbGetQuery(conn, sql)
+  if (verbose) cat("OK\n")
+  NULL
+}
+
+dbCreateIndicesBg <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_bgfsetid", "bgfeature", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_bgfid", "bgfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesBgTiling <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_bgfid", "bgfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesPm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesPmTiling <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesFs <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_fsfsetid", "featureSet", "fsetid", TRUE, verbose=verbose)
+}
+
+## Messages
+
+msgParsingFile <- function(fname)
+  cat("Parsing file:", basename(fname), "... ")
+
+msgOK <- function() cat("OK\n")
+
+msgBar <- function(){
+  n <- options()[["width"]]
+  cat(paste(c(rep("=", n), "\n"), collapse=""))
+}
+
 #######################################################################
 ## SECTION C - Parser specific for NGS Tiled Regions
 ##             This will take NDF/POS/XYS trio and process (in memory)
@@ -99,19 +143,23 @@ dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
 ##             (featureSet, pmfeature, mmfeature*, bgfeature**)
 ##             to be created in the db.
 #######################################################################
-parseNgsTrio <- function(ndfFile, posFile, xysFile){
+parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   stopifnot(!missing(ndfFile), !missing(posFile), !missing(xysFile))
 
   #######################################################################
   ## Step 1: Parse NDF
   #######################################################################
+  if (verbose) msgParsingFile(ndfFile)
   ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE)
+  if (verbose) msgOK()
   ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
 
   #######################################################################
   ## Step 2: Parse POS
   #######################################################################
+  if (verbose) msgParsingFile(posFile)
   posdata <- read.delim(posFile, stringsAsFactors=FALSE)
+  if (verbose) msgOK()
   
   #######################################################################
   ## Step 3: Match POS and NDF
@@ -129,7 +177,9 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
   #######################################################################
   ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
   #######################################################################
+  if (verbose) msgParsingFile(xysFile)
   xysdata <- read.delim(xysFile, comment="#")
+  if (verbose) msgOK()
   xysdata[["fid"]] <- 1:nrow(xysdata)
   ndfdata <- merge(ndfdata, xysdata, by.x=c("X", "Y"), by.y=c("X", "Y"))
   controls <- which(is.na(ndfdata[["SIGNAL"]]))
@@ -211,13 +261,12 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile){
 setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
-            message("========================================================")
-            message("Building annotation package for Nimblegen Tiling Array")
-            message("NDF: ", basename(object@ndfFile))
-            message("POS: ", basename(object@posFile))
-            message("XYS: ", basename(object@xysFile))
-            message("========================================================")
-
+            msgBar()
+            cat("Building annotation package for Nimblegen Tiling Array\n")
+            cat("NDF: ", basename(object@ndfFile), "\n")
+            cat("POS: ", basename(object@posFile), "\n")
+            cat("XYS: ", basename(object@xysFile), "\n")
+            msgBar()
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -234,7 +283,8 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             #######################################################################
             parsedData <- parseNgsTrio(object@ndfFile,
                                        object@posFile,
-                                       object@xysFile)
+                                       object@xysFile,
+                                       verbose=!quiet)
 
             #######################################################################
             ## Part iii) Create package from template
@@ -296,6 +346,12 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
+
+            ## Create indices
+            dbCreateIndicesBg(conn, !quiet)
+            dbCreateIndicesPm(conn, !quiet)
+            dbCreateIndicesFs(conn, !quiet)
+            
             dbDisconnect(conn)
             
             #######################################################################
@@ -308,9 +364,9 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) message("Saving XDataFrame object for PM.")
+            if (!quiet) cat("Saving XDataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) message("Saving XDataFrame object for BG.")
+            if (!quiet) cat("Saving XDataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) message("Done.")
+            if (!quiet) cat("Done.")
           })

@@ -4,3 +4,4 @@ Benilton -- this is proceeding through the annotation/* svn
 dropoff -- parms_store, anno_store, data_store
 5) Fix chromosome table for TiledRegion arrays
 7) Document relationships of the databases and describe fields (ensure unification) - UML????
+8) Add indexes to dbs

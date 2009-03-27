@@ -1039,7 +1039,7 @@
 #####     }
 ##### 
 #####     for (wanted in offset:length(grps)){
-#####       message("Processing unit ", wanted, " out of ", length(grps), ".")
+#####       cat("Processing unit ", wanted, " out of ", length(grps), ".")
 #####       vvunits <- readBpmap(bpmapFile, wanted)
 #####       loadUnits.affyTiling(db, vvunits, nx=nx)
 #####     }

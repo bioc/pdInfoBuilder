@@ -42,22 +42,22 @@ affyHTExpressionBgFeatureSchema <- list(col2type=c(
 
 
 parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
-  if (verbose) cat("Reading", cdfFile, "... ")
+  if (verbose) msgParsingFile(cdfFile)
   cdf <- readCdf(cdfFile)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
-  if (verbose) cat("Reading", celFile, "... ")
+  if (verbose) msgParsingFile(celFile)
   cel <- readCelHeader(celFile)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   geometry <- c(cel[["rows"]], cel[["cols"]])
   rm(cel)
 
-  if (verbose) cat("Reading", probeFile, "... ")
+  if (verbose) msgParsingFile(probeFile)
   cols <- c("probe.x", "probe.y", "probe.sequence")
   probeSeq <- read.delim(probeFile, stringsAsFactors=FALSE)[, cols]
   rm(cols)
   names(probeSeq) <- c("x", "y", "sequence")
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   strands <- sapply(cdf, "[[", "unitdirection")
   strands <- ifelse(tolower(strands) == "sense",
@@ -69,7 +69,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
                            strand=strands,
                            stringsAsFactors=FALSE)
   rm(strands)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   extractFromGroups <- function(x){
     ## x is a list and has "groups" as component
@@ -106,7 +106,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
                      by.y=c("x", "y"),
                      all.x=TRUE)
   rm(probeSeq)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   ## AFFX probes have sequence for only 1 probe of the probeset...
   if (verbose) cat("Getting sequence information for AFFX probes ...")
@@ -124,7 +124,6 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
     rm(idx, seq)
   }
   rm(missSeq, missPS, i)
-  if (verbose) cat("OK\n")
   
   idx <- grep("nonspecific", tolower(allProbes[["man_fsetid"]]))
   bgFeatures <- allProbes[idx,]
@@ -136,7 +135,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   bgSequence <- XDataFrame(fid=bgFeatures[["fid"]],
                            sequence=bgFeatures[["sequence"]])
   bgFeatures <- bgFeatures[, c("fid", "fsetid", "x", "y")]
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   geometry <- paste(geometry, collapse=";")
   cols <- c("fid", "fsetid", "x", "y", "atom")
@@ -147,7 +146,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
 
   missSeq <- which(is.na(pmSequence[["sequence"]]))
   if (any(is.na(pmSequence[["sequence"]])))
-    message("Problem with sequences. Check pmSequence for missing values.")
+    cat("Problem with sequences. Check pmSequence for missing values.")
 
   pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
                            sequence=DNAStringSet(pmSequence[["sequence"]]))
@@ -184,14 +183,12 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
 setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
-
-            message("============================================================")
-            message("Building annotation package for Affymetrix Expression array")
-            message("CDF...............: ", basename(object@cdfFile))
-            message("CEL...............: ", basename(object@celFile))
-            message("Sequence TAB-Delim: ", basename(object@tabSeqFile))
-            message("============================================================")
-
+            msgBar()
+            cat("Building annotation package for Affymetrix Expression array\n")
+            cat("CDF...............: ", basename(object@cdfFile), "\n")
+            cat("CEL...............: ", basename(object@celFile), "\n")
+            cat("Sequence TAB-Delim: ", basename(object@tabSeqFile), "\n")
+            msgBar()
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -269,6 +266,12 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
+
+            ## Create indices
+            dbCreateIndicesBg(conn, !quiet)
+            dbCreateIndicesPm(conn, !quiet)
+            dbCreateIndicesFs(conn, !quiet)
+            
             dbDisconnect(conn)
             
             #######################################################################
@@ -281,9 +284,9 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) message("Saving XDataFrame object for PM.")
+            if (!quiet) cat("Saving XDataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) message("Saving XDataFrame object for BG.")
+            if (!quiet) cat("Saving XDataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) message("Done.")
+            if (!quiet) cat("Done.")
           })

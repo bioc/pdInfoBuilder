@@ -43,18 +43,18 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   #######################################################################
   ## Step 1: Parse NDF
   #######################################################################
-  if (verbose) cat("Reading ", ndfFile, " ...")
+  if (verbose) msgParsingFile(ndfFile)
   ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE)
+  if (verbose) msgOK()
   ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
-  if (verbose) cat("OK\n")
 
   #######################################################################
   ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
   #######################################################################
-  if (verbose) cat("Reading ", xysFile, " ...")
+  if (verbose) msgParsingFile(xysFile)
   xysdata <- read.delim(xysFile, comment="#")
+  if (verbose) msgOK()
   xysdata[["fid"]] <- 1:nrow(xysdata)
-  if (verbose) cat("OK\n")
   if (verbose) cat("Merging NDF and XYS files ...")
   ndfdata <- merge(ndfdata, xysdata, by.x=c("X", "Y"), by.y=c("X", "Y"))
   if (verbose) cat("OK\n")
@@ -146,11 +146,11 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
 setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
-            message("============================================================")
-            message("Building annotation package for Nimblegen Expression Array")
-            message("NDF: ", basename(object@ndfFile))
-            message("XYS: ", basename(object@xysFile))
-            message("============================================================")
+            msgBar()
+            cat("Building annotation package for Nimblegen Expression Array\n")
+            cat("NDF: ", basename(object@ndfFile), "\n")
+            cat("XYS: ", basename(object@xysFile), "\n")
+            msgBar()
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -230,6 +230,14 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
+
+            ## Create indices
+            if (containsBg)
+              dbCreateIndicesBg(conn, !quiet)
+            dbCreateIndicesPm(conn, !quiet)
+            dbCreateIndicesFs(conn, !quiet)
+            
+            
             dbDisconnect(conn)
             
             #######################################################################
@@ -239,16 +247,16 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             datadir <- file.path(destDir, pkgName, "data")
             dir.create(datadir)
 
-            if (!quiet) message("Saving XDataFrame object for PM.")
+            if (!quiet) cat("Saving XDataFrame object for PM.\n")
             pmSequence <- parsedData[["pmSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             save(pmSequence, file=pmSeqFile)
 
             if (containsBg){
-              if (!quiet) message("Saving XDataFrame object for BG.")
+              if (!quiet) cat("Saving XDataFrame object for BG.\n")
               bgSequence <- parsedData[["bgSequence"]]
               bgSeqFile <- file.path(datadir, "bgSequence.rda")
               save(bgSequence, file=bgSeqFile)
             }
-            if (!quiet) message("Done.")
+            if (!quiet) cat("Done.")
           })

@@ -185,9 +185,10 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 ###################################################
   
   ## the "probesets" df is to be the featureSet table
-  if (verbose) cat("Parsing ", probeFile, "... ")
+  if (verbose) msgParsingFile(probeFile)
   probesets <- read.csv(probeFile, comment.char="#",
                         stringsAsFactors=FALSE, na.strings="---")
+  if (verbose) msgOK()
   cols <- c("probeset_id", "seqname", "strand", "start", "stop",
             "transcript_cluster_id", "exon_id", "gene_assignment",
             "crosshyb_type", "level", "probeset_type")
@@ -202,7 +203,6 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   probesets[["level"]] <- match(tolower(probesets[["level"]]), level_schema[["level_id"]])
   probesets[["type"]] <- match(probesets[["probeset_type"]], type_schema[["type_id"]])
   probesets[["probeset_type"]] <- NULL
-  if (verbose) cat("OK\n")
   
   ## probesets won't have Gene information due to multiplicity
   ## must remove "gene_assignment" later
@@ -258,11 +258,12 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 }
 
 parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TRUE){
-  if (verbose) cat("Reading", pgfFile, "...")
+  if (verbose) msgParsingFile(pgfFile)
   pgf <- readPgf(pgfFile)
-  if (verbose) cat("OK\nReading", clfFile, ".")
+  if (verbose) msgOK()
+  if (verbose) msgParsingFile(clfFile)
   clf <- readClf(clfFile)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   geometry <- paste(clf[["dims"]], collapse=";")
   triplet <- probesetIdxToTripletIdx(pgf, 1:length(pgf[["probesetId"]]))
   fid <- pgf[["probeId"]][triplet[["probeIdx"]]]
@@ -279,7 +280,7 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
                              sequence=pgf[["probeSequence"]][i],
                              stringsAsFactors=FALSE)
   rm(i, ii, triplet, fid, pgf, clf)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   probesetInfo <- parseProbesetCSV(probeFile, verbose=verbose)
 
   ## probesets not in the CSV file
@@ -427,12 +428,12 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               msg <- "Building annotation package for Affymetrix Exon ST Array"
             }
 
-            message("============================================================")
-            message(msg)
-            message("PGF.....: ", basename(object@pgfFile))
-            message("CLF.....: ", basename(object@clfFile))
-            message("Probeset: ", basename(object@probeFile))
-            message("============================================================")
+            msgBar()
+            cat(msg, "\n")
+            cat("PGF.....: ", basename(object@pgfFile), "\n")
+            cat("CLF.....: ", basename(object@clfFile), "\n")
+            cat("Probeset: ", basename(object@probeFile), "\n")
+            msgBar()
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -566,6 +567,21 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
+
+            ## Create indices
+            dbCreateIndicesBg(conn, !quiet)
+            if (geneArray){
+              dbCreateIndicesPmTiling(conn, !quiet)
+              dbCreateIndex(conn, "idx_f2fsfid", "f2fset", "fid", FALSE, verbose=!quiet)
+              dbCreateIndex(conn, "idx_f2fsfsetid", "f2fset", "fsetid", FALSE, verbose=!quiet)
+            }else{
+              dbCreateIndicesPm(conn, !quiet)
+            }
+            dbCreateIndicesFs(conn, !quiet)
+            dbCreateIndex(conn, "idx_fs2gfsetid", "fset2gene", "fsetid", FALSE, verbose=!quiet)
+            dbCreateIndex(conn, "idx_fs2ggid", "fset2gene", "gid", FALSE, verbose=!quiet)
+            dbCreateIndex(conn, "idx_genegid", "gene", "gid", FALSE, verbose=!quiet)
+            
             dbDisconnect(conn)
             
             #######################################################################
@@ -578,9 +594,9 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) message("Saving XDataFrame object for PM.")
+            if (!quiet) cat("Saving XDataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) message("Saving XDataFrame object for BG.")
+            if (!quiet) cat("Saving XDataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) message("Done.")
+            if (!quiet) cat("Done.")
           })

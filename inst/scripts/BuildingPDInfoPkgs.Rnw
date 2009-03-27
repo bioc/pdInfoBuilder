@@ -56,6 +56,11 @@ Building annotation packages with \Rpackage{pdInfoBuilder} depends on the follow
 \item Probeset annotation file: PROBESET.CSV (Affymetrix Exon/Gene)
 \end{itemize}
 
+\section{Loading the package}
+<<loadPkg>>=
+library(pdInfoBuilder)
+@ 
+
 \section{Affymetrix SNP Array}
 \label{sec:affysnp}
 
@@ -86,8 +91,7 @@ components: CDF, CEL (which will provide information on the array
 geometry) and probe sequence file (TAB-delimited).
 
 <<affyht>>=
-library(pdInfoBuilder)
-baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyHTHGU133P'
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/AffyHTHGU133P'
 (cdf <- list.files(baseDir, pattern='.CDF', full.names=TRUE))
 (cel <- list.files(baseDir, pattern='.CEL', full.names=TRUE)[1])
 (tab <- list.files(baseDir, pattern='_tab', full.names=TRUE))
@@ -109,7 +113,7 @@ makePdInfoPackage(seed, destDir=".")
 \label{sec:affytiling}
 
 <<affytiling>>=
-baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyTiling'
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/AffyTiling'
 (bpmap <- list.files(baseDir, pattern='.bpmap', full.names=TRUE))
 (cel <- list.files(baseDir, pattern='.CEL', full.names=TRUE)[1])
 seed <- new("AffyTilingPDInfoPkgSeed",
@@ -130,15 +134,14 @@ makePdInfoPackage(seed, destDir=".")
 
 <<affyexon>>=
 library(pdInfoBuilder)
-baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyExon'
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/AffyExon'
 (pgf <- list.files(baseDir, pattern='.pgf', full.names=TRUE))
 (clf <- list.files(baseDir, pattern='.clf', full.names=TRUE))
 (prob <- list.files(baseDir, pattern='.probeset.csv', full.names=TRUE))
-seed <- new("AffySTPDInfoPkgSeed",
+seed <- new("AffyExonPDInfoPkgSeed",
             pgfFile=pgf,
             clfFile=clf,
             probeFile=prob,
-            geneArray=FALSE,
             author="Benilton Carvalho",
             email="bcarvalh@jhsph.edu",
             biocViews="AnnotationData",
@@ -152,17 +155,16 @@ makePdInfoPackage(seed, destDir=".")
 \section{Affymetrix Gene ST Array}
 \label{sec:affygene}
 
-<<affyexon>>=
+<<affygene>>=
 library(pdInfoBuilder)
-baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/AffyGene'
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/AffyGene'
 (pgf <- list.files(baseDir, pattern='.pgf', full.names=TRUE))
 (clf <- list.files(baseDir, pattern='.clf', full.names=TRUE))
 (prob <- list.files(baseDir, pattern='.probeset.csv', full.names=TRUE))
-seed <- new("AffySTPDInfoPkgSeed",
+seed <- new("AffyGenePDInfoPkgSeed",
             pgfFile=pgf,
             clfFile=clf,
             probeFile=prob,
-            geneArray=TRUE,
             author="Benilton Carvalho",
             email="bcarvalh@jhsph.edu",
             biocViews="AnnotationData",
@@ -178,7 +180,7 @@ makePdInfoPackage(seed, destDir=".")
 
 <<ngsexpr>>=
 library(pdInfoBuilder)
-baseDir <- '/home/bst/student/bcarvalh/pdInfoVignette/NgsExpression'
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/NgsExpression'
 (ndf <- list.files(baseDir, pattern='.ndf', full.names=TRUE))
 (xys <- list.files(baseDir, pattern='.xys', full.names=TRUE)[1])
 seed <- new("NgsExpressionPDInfoPkgSeed",
@@ -197,6 +199,24 @@ makePdInfoPackage(seed, destDir=".")
 \section{NimbleGen Tiling Array}
 \label{sec:ngstiling}
 
-
+<<ngstiling>>=
+library(pdInfoBuilder)
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/NgsTiling'
+(ndf <- list.files(baseDir, pattern='.ndf', full.names=TRUE))
+(pos <- list.files(baseDir, pattern='.pos', full.names=TRUE))
+(xys <- list.files(baseDir, pattern='.xys', full.names=TRUE)[1])
+seed <- new("NgsTilingPDInfoPkgSeed",
+            ndfFile=ndf,
+            xysFile=xys,
+            posFile=pos,
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="HG 18",
+            organism="Human",
+            species="Homo Sapiens",
+            url="http://www.biostat.jhsph.edu/~bcarvalh")
+makePdInfoPackage(seed, destDir=".")
+@ 
 
 \end{document}

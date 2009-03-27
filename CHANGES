@@ -60,3 +60,7 @@ Changes by BC in Feb-Mar 2009
 ** Implemented changes mainly to templates, so pacakges pass R CMD check.
 
 ** Added slot annotation to PDInfo, so we can easily find any information about the object.
+
+03-26-2009 - B Carvalho
+
+** Added indices

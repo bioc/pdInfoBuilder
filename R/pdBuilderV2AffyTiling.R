@@ -42,11 +42,12 @@ affyTilingBgFeatureSchema <- list(col2type=c(
 #######################################################################
 
 parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
-  if (verbose) cat("Reading in ", bpmapFile, "... ")
+  if (verbose) msgParsingFile(bpmapFile)
   bpmap <- readBpmap(bpmapFile)
-  if (verbose) cat("OK\nGetting geometry from CEL file... ")
+  if (verbose) msgOK()
+  if (verbose) cat("Getting geometry from CEL file... ")
   celHeader <- readCelHeader(celFile)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   ## Assuming that the "experimental" probes will be flagged as "tiling"
   ## and that background will be "arbitrary"
@@ -105,7 +106,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   names(bgFeatures) <- c("fid", "x", "y", "sequence")
   rownames(bgFeatures) <- NULL
   rm(background, cols)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   
   chrom_dict <- createChrDict(pmFeatures[["chrom"]])
   
@@ -126,7 +127,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
 
   pmFeatures[["sequence"]] <- NULL
   bgFeatures[["sequence"]] <- NULL
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   
   geometry <- paste(geometry, collapse=";")
 
@@ -148,13 +149,11 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
 
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
-
-            message("============================================================")
-            message("Building annotation package for Affymetrix Tiling array")
-            message("BPMAP: ", basename(object@bpmapFile))
-            message("CEL..: ", basename(object@celFile))
-            message("============================================================")
-
+            msgBar()
+            cat("Building annotation package for Affymetrix Tiling array\n")
+            cat("BPMAP: ", basename(object@bpmapFile), "\n")
+            cat("CEL..: ", basename(object@celFile), "\n")
+            msgBar()
             
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
@@ -236,6 +235,11 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
+
+            ## Create indices
+            dbCreateIndicesBgTiling(conn, !quiet)
+            dbCreateIndicesPmTiling(conn, !quiet)
+            
             dbDisconnect(conn)
             
             #######################################################################
@@ -248,9 +252,9 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) message("Saving XDataFrame object for PM.")
+            if (!quiet) cat("Saving XDataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) message("Saving XDataFrame object for BG.")
+            if (!quiet) cat("Saving XDataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) message("Done.")
+            if (!quiet) cat("Done.")
           })
