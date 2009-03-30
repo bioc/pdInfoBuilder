@@ -1,22 +1,42 @@
 #################################################################
 ## Base class
 #################################################################
+setClass("fileName", contains="ScalarCharacter",
+         validity=function(object){
+           res <- file.exists(object)
+           if (!res)
+             message("File '", object, "' does not exist.")
+           res
+         })
 
-setClass("PkgSeed",
+setClass("PDInfoPkgSeed",
+##         contains="PkgSeed",
          representation=representation(
-           name="character",
+##           name="character",
            version="character",
            license="character",
            author="character",
            email="character",
-           biocViews="character"),
+           biocViews="character",
+           chipName="character",
+           manufacturer="character",
+           url="character",
+           genomebuild="character",
+           organism="character",
+           species="character"),
          prototype=prototype(
-           name="The Name",
+##           name="The Name",
            version="0.0.1",
            license="Artistic License, Version 2.0",
            author="My Name",
            email="my@email.com",
-           biocViews="AnnotationData"),
+           biocViews="AnnotationData",
+           chipName="The Chip Name",
+           manufacturer="The Manufacturer's Name",
+           url="http://www.manufacturer.com",
+           genomebuild="The Genome Build",
+           organism="Organism",
+           species="Species"),
          validity=
          function(object){
            email <- object@email
@@ -25,29 +45,10 @@ setClass("PkgSeed",
            TRUE
          })
 
-setClass("PDInfoPkgSeed",
-         contains="PkgSeed",
-         representation=representation(
-           chipName="character",
-           manufacturer="character",
-           url="character",
-           genomebuild="character",
-           organism="character",
-           species="character"),
-         prototype=prototype(
-           chipName="The Chip Name",
-           manufacturer="The Manufacturer's Name",
-           url="http://www.manufacturer.com",
-           genomebuild="The Genome Build",
-           organism="Organism",
-           species="Species")
-         )
-
 #################################################################
 ## Manufacturer-specific classes: Affymetrix and NimbleGen are
 ## supported for the moment
 #################################################################
-
 setClass("AffymetrixPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          prototype=list(
@@ -65,36 +66,35 @@ setClass("NimbleGenPDInfoPkgSeed",
 #################################################################
 ## Affymetrix seeds
 #################################################################
-
 setClass("AffySNPPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-           cdfFile="ScalarCharacter",
-           csvAnnoFile="ScalarCharacter",
-           csvSeqFile="ScalarCharacter",
-           splineParamFile="ScalarCharacter",
-           crlmmInfoFile="ScalarCharacter",
-           referenceDistFile="ScalarCharacter"))
+           cdfFile="fileName",
+           csvAnnoFile="fileName",
+           csvSeqFile="fileName",
+           splineParamFile="fileName",
+           crlmmInfoFile="fileName",
+           referenceDistFile="fileName"))
 
 setClass("AffySNPCNVPDInfoPkgSeed",
          contains="AffySNPPDInfoPkgSeed",
          representation=representation(
-           csvAnnoFileCnv="ScalarCharacter",
-           csvSeqFileCnv="ScalarCharacter"))
+           csvAnnoFileCnv="fileName",
+           csvSeqFileCnv="fileName"))
 
 setClass("AffyTilingPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-           bpmapFile="ScalarCharacter",
-           celFile="ScalarCharacter"))
+           bpmapFile="fileName",
+           celFile="fileName"))
 
 setClass("AffySTPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-           pgfFile="ScalarCharacter",
-           clfFile="ScalarCharacter",
-           probeFile="ScalarCharacter",
-           transFile="ScalarCharacter",
+           pgfFile="fileName",
+           clfFile="fileName",
+           probeFile="fileName",
+           transFile="fileName",
            geneArray="logical"))
 
 setClass("AffyExonPDInfoPkgSeed",
@@ -108,26 +108,24 @@ setClass("AffyGenePDInfoPkgSeed",
 setClass("AffyExpressionPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           cdfFile="ScalarCharacter",
-           celFile="ScalarCharacter",
-           tabSeqFile="ScalarCharacter"))
+           cdfFile="fileName",
+           celFile="fileName",
+           tabSeqFile="fileName"))
 
 #################################################################
 ## NimbleGen seeds
 #################################################################
-
 setClass("NgsTilingPDInfoPkgSeed",
          contains="NimbleGenPDInfoPkgSeed",
          representation=representation(
-           ndfFile="ScalarCharacter",
-           xysFile="ScalarCharacter",
-           posFile="ScalarCharacter"
-           ),
-         validity=function(object) file.exists(object@ndfFile) & file.exists(object@xysFile) & file.exists(object@posFile))
+           ndfFile="fileName",
+           xysFile="fileName",
+           posFile="fileName"
+           ))
 
 setClass("NgsExpressionPDInfoPkgSeed",
          contains="NimbleGenPDInfoPkgSeed",
          representation=representation(
-           ndfFile="ScalarCharacter",
-           xysFile="ScalarCharacter"
+           ndfFile="fileName",
+           xysFile="fileName"
            ))
