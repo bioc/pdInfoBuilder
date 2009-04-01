@@ -7,21 +7,16 @@ importFrom("Biostrings", "DNAStringSet")
 importFrom("IRanges", "XDataFrame")
 
 exportClasses(
-##              "PkgSeed",
-##              "PDInfoPkgSeed",
               "AffyExpressionPDInfoPkgSeed",
               "AffyTilingPDInfoPkgSeed",
               "AffySNPPDInfoPkgSeed",
+              "AffySNPPDInfoPkgSeed2",
               "AffySNPCNVPDInfoPkgSeed",
-##              "AffySTPDInfoPkgSeed",
+              "AffySNPCNVPDInfoPkgSeed2",
               "AffyExonPDInfoPkgSeed",
               "AffyGenePDInfoPkgSeed",
-##              "NgsPDInfoPkgSeed",
               "NgsExpressionPDInfoPkgSeed",
               "NgsTilingPDInfoPkgSeed"
-##               ,
-##              "ExonTranscriptionPDInfoPkgSeed",
-##              "NgsTiledRegionPDInfoPkgSeed"
               )
 
 exportMethods(

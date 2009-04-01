@@ -116,6 +116,17 @@ dbCreateIndicesPm <- function(conn, verbose=TRUE){
   dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
 }
 
+dbCreateIndicesSnpPm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmrsid", "pmfeature", "rsid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesCnvPm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfsetidcnv", "pmfeatureCNV", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmfidcnv", "pmfeatureCNV", "fid", TRUE, verbose=verbose)
+}
+
 dbCreateIndicesPmTiling <- function(conn, verbose=TRUE){
   dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
 }

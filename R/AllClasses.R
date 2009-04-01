@@ -10,9 +10,7 @@ setClass("fileName", contains="ScalarCharacter",
          })
 
 setClass("PDInfoPkgSeed",
-##         contains="PkgSeed",
          representation=representation(
-##           name="character",
            version="character",
            license="character",
            author="character",
@@ -25,7 +23,6 @@ setClass("PDInfoPkgSeed",
            organism="character",
            species="character"),
          prototype=prototype(
-##           name="The Name",
            version="0.0.1",
            license="Artistic License, Version 2.0",
            author="My Name",
@@ -66,21 +63,48 @@ setClass("NimbleGenPDInfoPkgSeed",
 #################################################################
 ## Affymetrix seeds
 #################################################################
-setClass("AffySNPPDInfoPkgSeed",
+setClass("AffySNPPDInfoPkgSeed2",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
            cdfFile="fileName",
            csvAnnoFile="fileName",
-           csvSeqFile="fileName",
+           csvSeqFile="fileName"))
+
+setClass("AffySNPPDInfoPkgSeed",
+         contains="AffySNPPDInfoPkgSeed2",
+         representation=representation(
            splineParamFile="fileName",
            crlmmInfoFile="fileName",
            referenceDistFile="fileName"))
 
-setClass("AffySNPCNVPDInfoPkgSeed",
-         contains="AffySNPPDInfoPkgSeed",
+setClass("AffySNPCNVPDInfoPkgSeed2",
+         contains="AffySNPPDInfoPkgSeed2",
          representation=representation(
            csvAnnoFileCnv="fileName",
            csvSeqFileCnv="fileName"))
+
+setClass("AffySNPCNVPDInfoPkgSeed",
+         contains="AffySNPPDInfoPkgSeed2",
+         representation=representation(
+           splineParamFile="fileName",
+           crlmmInfoFile="fileName",
+           referenceDistFile="fileName"))
+
+## setClass("AffySNPPDInfoPkgSeed",
+##          contains="AffymetrixPDInfoPkgSeed",
+##          representation=representation(
+##            cdfFile="fileName",
+##            csvAnnoFile="fileName",
+##            csvSeqFile="fileName",
+##            splineParamFile="fileName",
+##            crlmmInfoFile="fileName",
+##            referenceDistFile="fileName"))
+## 
+## setClass("AffySNPCNVPDInfoPkgSeed",
+##          contains="AffySNPPDInfoPkgSeed",
+##          representation=representation(
+##            csvAnnoFileCnv="fileName",
+##            csvSeqFileCnv="fileName"))
 
 setClass("AffyTilingPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",

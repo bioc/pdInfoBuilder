@@ -8,35 +8,67 @@ setMethod("initialize", "AffyExpressionPDInfoPkgSeed",
               .Object
           })
 
+setMethod("initialize", "AffySNPPDInfoPkgSeed2",
+          function(.Object, cdfFile, csvAnnoFile, csvSeqFile, ...){
+            message("I'm in 'initialize' for AffySNPPDInfoPkgSeed2... ")
+            .Object@cdfFile <- new("fileName", cdfFile)
+            .Object@csvAnnoFile <- new("fileName", csvAnnoFile)
+            .Object@csvSeqFile <- new("fileName", csvSeqFile)
+            callNextMethod()
+          })
+
 setMethod("initialize", "AffySNPPDInfoPkgSeed",
-          function(.Object, cdfFile, csvAnnoFile, csvSeqFile,
-                   splineParamFile="", crlmmInfoFile="",
-                   referenceDistFile="", ...) {
-              .Object@cdfFile <- new("fileName", cdfFile)
-              .Object@csvAnnoFile <- new("fileName", csvAnnoFile)
-              .Object@csvSeqFile <- new("fileName", csvSeqFile)
-              .Object@splineParamFile <- new("fileName", splineParamFile)
-              .Object@crlmmInfoFile <- new("fileName", crlmmInfoFile)
-              .Object@referenceDistFile <- new("fileName", referenceDistFile)
-              .Object <- callNextMethod(.Object, ...)
-              .Object
+          function(.Object, splineParamFile, crlmmInfoFile, referenceDistFile, ...){
+            .Object@splineParamFile <- new("fileName", splineParamFile)
+            .Object@crlmmInfoFile <- new("fileName", crlmmInfoFile)
+            .Object@referenceDistFile <- new("fileName", referenceDistFile)
+            callNextMethod()
+          })
+
+setMethod("initialize", "AffySNPCNVPDInfoPkgSeed2",
+          function(.Object, csvAnnoFileCnv, csvSeqFileCnv, ...){
+            .Object@csvAnnoFileCnv <- new("fileName", csvAnnoFileCnv)
+            .Object@csvSeqFileCnv <- new("fileName", csvSeqFileCnv)
+            callNextMethod()
           })
 
 setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
-          function(.Object, cdfFile, csvAnnoFile, csvSeqFile, csvAnnoFileCnv, csvSeqFileCnv,
-                   splineParamFile="", crlmmInfoFile="",
-                   referenceDistFile="", ...) {
-              .Object@cdfFile <- new("fileName", cdfFile)
-              .Object@csvAnnoFile <- new("fileName", csvAnnoFile)
-              .Object@csvSeqFile <- new("fileName", csvSeqFile)
-              .Object@csvAnnoFileCnv <- new("fileName", csvAnnoFileCnv)
-              .Object@csvSeqFileCnv <- new("fileName", csvSeqFileCnv)
-              .Object@splineParamFile <- new("fileName", splineParamFile)
-              .Object@crlmmInfoFile <- new("fileName", crlmmInfoFile)
-              .Object@referenceDistFile <- new("fileName", referenceDistFile)
-              .Object <- callNextMethod(.Object, ...)
-              .Object
+          function(.Object, splineParamFile, crlmmInfoFile, referenceDistFile, ...){
+            .Object@splineParamFile <- new("fileName", splineParamFile)
+            .Object@crlmmInfoFile <- new("fileName", crlmmInfoFile)
+            .Object@referenceDistFile <- new("fileName", referenceDistFile)
+            callNextMethod()
           })
+
+#### setMethod("initialize", "AffySNPPDInfoPkgSeed",
+####           function(.Object, cdfFile, csvAnnoFile, csvSeqFile,
+####                    splineParamFile="", crlmmInfoFile="",
+####                    referenceDistFile="", ...) {
+####               .Object@cdfFile <- new("fileName", cdfFile)
+####               .Object@csvAnnoFile <- new("fileName", csvAnnoFile)
+####               .Object@csvSeqFile <- new("fileName", csvSeqFile)
+####               .Object@splineParamFile <- new("fileName", splineParamFile)
+####               .Object@crlmmInfoFile <- new("fileName", crlmmInfoFile)
+####               .Object@referenceDistFile <- new("fileName", referenceDistFile)
+####               .Object <- callNextMethod(.Object, ...)
+####               .Object
+####           })
+#### 
+#### setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
+####           function(.Object, cdfFile, csvAnnoFile, csvSeqFile, csvAnnoFileCnv, csvSeqFileCnv,
+####                    splineParamFile="", crlmmInfoFile="",
+####                    referenceDistFile="", ...) {
+####               .Object@cdfFile <- new("fileName", cdfFile)
+####               .Object@csvAnnoFile <- new("fileName", csvAnnoFile)
+####               .Object@csvSeqFile <- new("fileName", csvSeqFile)
+####               .Object@csvAnnoFileCnv <- new("fileName", csvAnnoFileCnv)
+####               .Object@csvSeqFileCnv <- new("fileName", csvSeqFileCnv)
+####               .Object@splineParamFile <- new("fileName", splineParamFile)
+####               .Object@crlmmInfoFile <- new("fileName", crlmmInfoFile)
+####               .Object@referenceDistFile <- new("fileName", referenceDistFile)
+####               .Object <- callNextMethod(.Object, ...)
+####               .Object
+####           })
   
 setMethod("initialize", "AffyTilingPDInfoPkgSeed",
           function(.Object, bpmapFile, celFile, ...) {
