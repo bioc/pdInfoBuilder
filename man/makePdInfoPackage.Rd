@@ -57,6 +57,7 @@ cdfFile <- "Mapping250K_Nsp.cdf"
 csvAnno <- "Mapping250K_Nsp_annot.csv"
 csvSeq <- "Mapping250K_Nsp_probe_tab"
 
+\dontrun{
 pkg <- new("AffySNPPDInfoPkgSeed", 
            version="0.1.5",
            author="A.U. Thor", email="au@thor.net",
@@ -64,7 +65,6 @@ pkg <- new("AffySNPPDInfoPkgSeed",
            genomebuild="NCBI Build 35, May 2004",
            cdfFile=cdfFile, csvAnnoFile=csvAnno, csvSeqFile=csvSeq)
 
-\dontrun{
 makePdInfoPackage(pkg, destDir=".")
 }
 }

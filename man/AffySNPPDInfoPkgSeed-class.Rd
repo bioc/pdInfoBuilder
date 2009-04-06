@@ -80,7 +80,7 @@ csvSeq <- "Mapping250K_Nsp_probe_tab"
 spline <- "pd.mapping250k.nsp.spline.params.rda"
 refd <- "pd.mapping250k.nspRef.rda"
 crlmmInf <- "pd.mapping250k.nspCrlmmInfo.rda"
-
+\dontrun{
 pkg <- new("AffySNPPDInfoPkgSeed", 
            version="0.1.5",
            author="A. U. Thor", email="au@thor.net",
@@ -91,6 +91,6 @@ pkg <- new("AffySNPPDInfoPkgSeed",
            referenceDistFile=refd)
 
 showMethods(classes=class(pkg))
-
+}
 }
 \keyword{classes}
