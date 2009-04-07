@@ -196,6 +196,7 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             ##         Fix ordering of the tables
             #######################################################################
             conn <- dbConnect(dbDriver("SQLite"), dbname=dbFilePath)
+            increaseDbPerformance(conn)
             dbCreateTable(conn,
                           "featureSet",
                           ngsExprFeatureSetSchema[["col2type"]],

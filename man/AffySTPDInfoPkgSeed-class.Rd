@@ -9,23 +9,20 @@
 Objects can be created by calls of the form \code{new("AffySTPDInfoPkgSeed", pgfFile, clfFile, probeFile, transFile, ...)}.
 }
 \section{Slots}{
-	 \describe{
+  \describe{
     \item{\code{pgfFile}:}{Object of class \code{"ScalarCharacter"} path to pgf }
     \item{\code{clfFile}:}{Object of class \code{"ScalarCharacter"} path to clf }
     \item{\code{probeFile}:}{Object of class \code{"ScalarCharacter"}, path to probe sequence file (Optional) }
     \item{\code{transFile}:}{Object of class \code{"ScalarCharacter"}, path to trans file (Optional) }
-%% these are from PDInfoPkgSeed-class
     \item{\code{chipName}:}{Name of the chip or platform}
     \item{\code{manufacturer}:}{chip/platform manufacturer}
     \item{\code{url}:}{chip URL}
     \item{\code{genomebuild}:}{The genome build this platform is based
-    upon.}
-	\item{\code{organism}:}{ organism for chip. }
-	\item{\code{species}:}{ species for chip. }  
-%% these are from PkgSeed-class
-    \item{\code{name}:}{The name of the package.}
+      upon.}
+    \item{\code{organism}:}{ organism for chip. }
+    \item{\code{species}:}{ species for chip. }  
     \item{\code{version}:}{A character vector giving the version
-    number of the package.}
+      number of the package.}
     \item{\code{license}:}{The license of the package}
     \item{\code{author}:}{Author of the package}
     \item{\code{email}:}{An email address to use in the Maintainer field}

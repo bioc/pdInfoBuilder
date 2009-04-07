@@ -9,7 +9,8 @@
 \alias{makePdInfoPackage,NgsTilingPDInfoPkgSeed-method}
 \alias{makePdInfoPackage,AffyExonPDInfoPkgSeed-method}
 \alias{makePdInfoPackage,AffyGenePDInfoPkgSeed-method}
-
+\alias{makePdInfoPackage,AffySNPCNVPDInfoPkgSeed2-method}
+\alias{makePdInfoPackage,AffySNPPDInfoPkgSeed2-method}
 
 \title{Create a Platform Design Info Package}
 \description{

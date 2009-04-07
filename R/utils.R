@@ -1,6 +1,20 @@
 ## Utility functions for producing PDInfo packages
 ST <- system.time
 
+setPageSizeSql <- ('
+pragma page_size = 32768;
+')
+
+setSyncOff <- ('
+pragma synchronous = OFF;
+')
+
+increaseDbPerformance <- function(conn){
+  dbGetQuery(conn, setPageSizeSql)
+  dbGetQuery(conn, setSyncOff)
+}
+
+
 printTime <- function(msg, t) {
         m <- paste(msg, "took %.2f sec\n")
         cat(sprintf(m, t))

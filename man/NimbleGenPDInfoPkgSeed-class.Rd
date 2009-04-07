@@ -9,16 +9,14 @@
 Objects can be created by calls of the form \code{new("NimbleGenPDInfoPkgSeed", ...)}.
 }
 \section{Slots}{
-	 \describe{
+  \describe{
     \item{\code{manufacturer}:}{Manufacturer = NimbleGen}
     \item{\code{chipName}:}{Name of the chip or platform}
     \item{\code{url}:}{chip URL}
     \item{\code{genomebuild}:}{The genome build this platform is based
-    upon.}
-	\item{\code{organism}:}{ organism for chip. }
-	\item{\code{species}:}{ species for chip. }  
-%% these are from PkgSeed-class
-    \item{\code{name}:}{The name of the package.}
+      upon.}
+    \item{\code{organism}:}{ organism for chip. }
+    \item{\code{species}:}{ species for chip. }  
     \item{\code{version}:}{A character vector giving the version
     number of the package.}
     \item{\code{license}:}{The license of the package}

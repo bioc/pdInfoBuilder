@@ -235,7 +235,7 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             ## FIX ME: Fix ordering of the tables
             #######################################################################
             conn <- dbConnect(dbDriver("SQLite"), dbname=dbFilePath)
-
+            increaseDbPerformance(conn)
             dbCreateTable(conn,
                           "featureSet",
                           affyHTExpressionFeatureSetSchema[["col2type"]],

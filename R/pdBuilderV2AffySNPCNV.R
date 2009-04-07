@@ -6,8 +6,7 @@ affySnpFeatureSetSchema <- list(col2type=c(
                                   fsetid="INTEGER",
                                   rsid="TEXT",
                                   chrom="TEXT",
-                                  start="INTEGER"
-                                  ),
+                                  position="INTEGER"),
                                 col2key=c(
                                   fsetid="PRIMARY KEY"
                                   ))
@@ -19,17 +18,20 @@ affySnpPmFeatureSchema <- list(col2type=c(
                                  y="INTEGER",
                                  strand="INTEGER",
                                  allele="INTEGER",
-                                 atom="INTEGER"
-                                 ),
+                                 atom="INTEGER"),
                                col2key=c(
                                  fid="PRIMARY KEY"
                                  ))
 
 affyCnvPmFeatureSchema <- list(col2type=c(
-                                 fid="INTEGER",
                                  man_fsetid="TEXT",
+                                 fid="INTEGER",
+                                 strand="INTEGER",
+                                 x="INTEGER",
+                                 y="INTEGER",
+                                 fsetid="INTEGER",
                                  chrom="TEXT",
-                                 start="INTEGER"),
+                                 position="INTEGER"),
                                col2key=c(
                                  fid="PRIMARY KEY"
                                  ))
@@ -38,7 +40,6 @@ affyCnvPmFeatureSchema <- list(col2type=c(
 ## SECTION B - Utils - This should be moved from here
 ##             as everything in this section can be used on other cases
 #######################################################################
-
 
 parseAnnotFile <- function(annotFile, snp=TRUE){
   annot <- read.csv(annotFile, comment.char="#", stringsAsFactors=FALSE, na.strings="---")
@@ -106,7 +107,7 @@ parseCdfSeqAnnot <- function(cdfFile, probeseqFileSNP, probeseqFileCNV, annotFil
   lens <- sapply(cdf[idx], function(x)
                  sum(sapply(x[["groups"]], function(y)
                             length(y[["indices"]]))))
-  pmfeatureSNP <- do.call("rbind", lapply(cdf[idx], pdInfoBuilder:::readCdfUnitToMat, verify.pmmm=FALSE))
+  pmfeatureSNP <- do.call("rbind", lapply(cdf[idx], readCdfUnitToMat, verify.pmmm=FALSE))
   rm(idx)
   pmfeatureSNP <- as.data.frame(pmfeatureSNP)
   pmfeatureSNP[["man_fsetid"]] <- rep(names(lens), lens)
@@ -144,7 +145,7 @@ parseCdfSeqAnnot <- function(cdfFile, probeseqFileSNP, probeseqFileCNV, annotFil
   lens <- sapply(cdf[idx], function(x)
                  sum(sapply(x[["groups"]], function(y)
                             length(y[["indices"]]))))
-  pmfeatureCNV <- do.call("rbind", lapply(cdf[idx], pdInfoBuilder:::readCdfUnitToMat.cnv))
+  pmfeatureCNV <- do.call("rbind", lapply(cdf[idx], readCdfUnitToMat.cnv))
   rm(idx)
   pmfeatureCNV <- as.data.frame(pmfeatureCNV)
   pmfeatureCNV[["man_fsetid"]] <- rep(names(lens), lens)
@@ -203,7 +204,8 @@ parseCdfSeqAnnot <- function(cdfFile, probeseqFileSNP, probeseqFileCNV, annotFil
               pmFeatures=pmfeatureSNP,
               pmFeaturesCNV=pmfeatureCNV,
               pmSequenceSNP=pmSequenceSNP,
-              pmSequenceCNV=pmSequenceCNV)
+              pmSequenceCNV=pmSequenceCNV,
+              geometry=geometry)
   return(out)
 }
 
@@ -219,7 +221,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
 
             msgBar()
             cat("Building annotation package for Affymetrix SNP/CNV Array\n")
-            cat("CDF: ", basename(object@cdfFile), "\n")
+            cat("CDF...........: ", basename(object@cdfFile), "\n")
             cat("SNP Annotation: ", basename(object@csvAnnoFile), "\n")
             cat("CNV Annotation: ", basename(object@csvAnnoFileCnv), "\n")
             cat("SNP Sequence..: ", basename(object@csvSeqFile), "\n")
@@ -235,7 +237,6 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             dbFileName <- paste(pkgName, "sqlite", sep=".")
             dbFilePath <- file.path(extdataDir, dbFileName)
 
-            browser()
             #######################################################################
             ## Part ii) parse data. This should return a list of data.frames.
             ##          The names of the elements in the list are table names.
@@ -276,6 +277,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             ##         Fix ordering of the tables
             #######################################################################
             conn <- dbConnect(dbDriver("SQLite"), dbname=dbFilePath)
+            increaseDbPerformance(conn)
             dbCreateTable(conn,
                           "featureSet",
                           affySnpFeatureSetSchema[["col2type"]],

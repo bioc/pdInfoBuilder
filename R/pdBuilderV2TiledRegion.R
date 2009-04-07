@@ -119,7 +119,6 @@ dbCreateIndicesPm <- function(conn, verbose=TRUE){
 dbCreateIndicesSnpPm <- function(conn, verbose=TRUE){
   dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=verbose)
   dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
-  dbCreateIndex(conn, "idx_pmrsid", "pmfeature", "rsid", TRUE, verbose=verbose)
 }
 
 dbCreateIndicesCnvPm <- function(conn, verbose=TRUE){
@@ -326,6 +325,7 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             ##         Fix ordering of the tables
             #######################################################################
             conn <- dbConnect(dbDriver("SQLite"), dbname=dbFilePath)
+            increaseDbPerformance(conn)
             dbCreateTable(conn,
                           "featureSet",
                           tiledRegionFeatureSetSchema[["col2type"]],

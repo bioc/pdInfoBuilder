@@ -1,13 +1,13 @@
 #################################################################
 ## Base class
 #################################################################
-setClass("fileName", contains="ScalarCharacter",
-         validity=function(object){
-           res <- file.exists(object)
-           if (!res)
-             message("File '", object, "' does not exist.")
-           res
-         })
+## setClass("fileName", contains="ScalarCharacter",
+##          validity=function(object){
+##            res <- file.exists(object)
+##            if (!res)
+##              message("File '", object, "' does not exist.")
+##            res
+##          })
 
 setClass("PDInfoPkgSeed",
          representation=representation(
@@ -66,59 +66,59 @@ setClass("NimbleGenPDInfoPkgSeed",
 setClass("AffySNPPDInfoPkgSeed2",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-           cdfFile="fileName",
-           csvAnnoFile="fileName",
-           csvSeqFile="fileName"))
+           cdfFile="ScalarCharacter",
+           csvAnnoFile="ScalarCharacter",
+           csvSeqFile="ScalarCharacter"))
 
 setClass("AffySNPPDInfoPkgSeed",
          contains="AffySNPPDInfoPkgSeed2",
          representation=representation(
-           splineParamFile="fileName",
-           crlmmInfoFile="fileName",
-           referenceDistFile="fileName"))
+           splineParamFile="ScalarCharacter",
+           crlmmInfoFile="ScalarCharacter",
+           referenceDistFile="ScalarCharacter"))
 
 setClass("AffySNPCNVPDInfoPkgSeed2",
          contains="AffySNPPDInfoPkgSeed2",
          representation=representation(
-           csvAnnoFileCnv="fileName",
-           csvSeqFileCnv="fileName"))
+           csvAnnoFileCnv="ScalarCharacter",
+           csvSeqFileCnv="ScalarCharacter"))
 
 setClass("AffySNPCNVPDInfoPkgSeed",
-         contains="AffySNPPDInfoPkgSeed2",
+         contains="AffySNPCNVPDInfoPkgSeed2",
          representation=representation(
-           splineParamFile="fileName",
-           crlmmInfoFile="fileName",
-           referenceDistFile="fileName"))
+           splineParamFile="ScalarCharacter",
+           crlmmInfoFile="ScalarCharacter",
+           referenceDistFile="ScalarCharacter"))
 
 ## setClass("AffySNPPDInfoPkgSeed",
 ##          contains="AffymetrixPDInfoPkgSeed",
 ##          representation=representation(
-##            cdfFile="fileName",
-##            csvAnnoFile="fileName",
-##            csvSeqFile="fileName",
-##            splineParamFile="fileName",
-##            crlmmInfoFile="fileName",
-##            referenceDistFile="fileName"))
+##            cdfFile="ScalarCharacter",
+##            csvAnnoFile="ScalarCharacter",
+##            csvSeqFile="ScalarCharacter",
+##            splineParamFile="ScalarCharacter",
+##            crlmmInfoFile="ScalarCharacter",
+##            referenceDistFile="ScalarCharacter"))
 ## 
 ## setClass("AffySNPCNVPDInfoPkgSeed",
 ##          contains="AffySNPPDInfoPkgSeed",
 ##          representation=representation(
-##            csvAnnoFileCnv="fileName",
-##            csvSeqFileCnv="fileName"))
+##            csvAnnoFileCnv="ScalarCharacter",
+##            csvSeqFileCnv="ScalarCharacter"))
 
 setClass("AffyTilingPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-           bpmapFile="fileName",
-           celFile="fileName"))
+           bpmapFile="ScalarCharacter",
+           celFile="ScalarCharacter"))
 
 setClass("AffySTPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
-           pgfFile="fileName",
-           clfFile="fileName",
-           probeFile="fileName",
-           transFile="fileName",
+           pgfFile="ScalarCharacter",
+           clfFile="ScalarCharacter",
+           probeFile="ScalarCharacter",
+           transFile="ScalarCharacter",
            geneArray="logical"))
 
 setClass("AffyExonPDInfoPkgSeed",
@@ -132,9 +132,9 @@ setClass("AffyGenePDInfoPkgSeed",
 setClass("AffyExpressionPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
-           cdfFile="fileName",
-           celFile="fileName",
-           tabSeqFile="fileName"))
+           cdfFile="ScalarCharacter",
+           celFile="ScalarCharacter",
+           tabSeqFile="ScalarCharacter"))
 
 #################################################################
 ## NimbleGen seeds
@@ -142,14 +142,14 @@ setClass("AffyExpressionPDInfoPkgSeed",
 setClass("NgsTilingPDInfoPkgSeed",
          contains="NimbleGenPDInfoPkgSeed",
          representation=representation(
-           ndfFile="fileName",
-           xysFile="fileName",
-           posFile="fileName"
+           ndfFile="ScalarCharacter",
+           xysFile="ScalarCharacter",
+           posFile="ScalarCharacter"
            ))
 
 setClass("NgsExpressionPDInfoPkgSeed",
          contains="NimbleGenPDInfoPkgSeed",
          representation=representation(
-           ndfFile="fileName",
-           xysFile="fileName"
+           ndfFile="ScalarCharacter",
+           xysFile="ScalarCharacter"
            ))

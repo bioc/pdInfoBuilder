@@ -64,3 +64,9 @@ Changes by BC in Feb-Mar 2009
 03-26-2009 - B Carvalho
 
 ** Added indices
+
+04-02-2009 - B Carvalho
+
+** Added SNP/CNV array
+
+** Added increaseDbPerformance(conn)

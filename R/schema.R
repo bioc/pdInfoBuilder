@@ -3,9 +3,9 @@ ANTISENSE <- 1
 ALLELE_A <- 0
 ALLELE_B <- 1
 
-setPageSizeSql <- ('
-pragma page_size = 8192;
-')
+## setPageSizeSql <- ('
+## pragma page_size = 8192;
+## ')
 
 ## dbsnp_rs_id could be integer if we strip the leading 'rs' Also, chrom could
 ## be integer and we could have a separate mapping tabel to the cromosome label

@@ -482,6 +482,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             ## FIX ME: Fix ordering of the tables
             #######################################################################
             conn <- dbConnect(dbDriver("SQLite"), dbname=dbFilePath)
+            increaseDbPerformance(conn)
 
             ## Adding new tables
             dbCreateTable(conn,
