@@ -45,7 +45,16 @@ Objects can be created by calls of the form \code{new("AffySNPCNVPDInfoPkgSeed2"
 	 }
 }
 \author{Benilton Carvalho}
-\note{Annotation packages created from this package do *NOT* support \code{crlmm}.}
+
+\note{
+  This is a simplified annotation package. CRLMM won't work for these
+  objects.
+
+  The user may need to rename the columns or even add column names to
+  the annotation and sequence files. In case problems are found, column
+  names are suggested.
+  }
+
 \examples{
 showClass("AffySNPCNVPDInfoPkgSeed2")
 }

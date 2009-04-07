@@ -42,6 +42,10 @@ Objects can be created by calls of the form \code{new("AffySNPPDInfoPkgSeed2", c
 \note{
   This is a simplified annotation package. CRLMM won't work for these
   objects.
+
+  The user may need to rename the columns or even add column names to
+  the annotation and sequence files. In case problems are found, column
+  names are suggested.
   }
 
 \examples{
