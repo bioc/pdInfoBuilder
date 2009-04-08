@@ -117,6 +117,16 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
             #######################################################################
             chip <- chipName(object)
             pkgName <- cleanPlatformName(chip)
+            humanchips <- c("pd.mapping50k.xba240", "pd.mapping50k.hind240", "pd.mapping250k.nsp", "pd.mapping250k.sty")
+            if (pkgName %in% humanchips)
+              warning("The package ", pkgName,
+                      " *IS* available on BioConductor.",
+                      " This one does *NOT* provide the data required by CRLMM.",
+                      " If you have ", pkgName,
+                      " downloaded/installed directly from BioConductor,",
+                      " this one might overwrite the BioConductor one",
+                      " and CRLMM will fail to work.")
+            
             extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
             dbFileName <- paste(pkgName, "sqlite", sep=".")
             dbFilePath <- file.path(extdataDir, dbFileName)
