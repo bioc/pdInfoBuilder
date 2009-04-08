@@ -74,3 +74,5 @@ Changes by BC in Feb-Mar 2009
 04-07-2009 - B Carvalho
 
 ** Added warnings in case the user builds a package for a Human SNP Chip. These are available from BioConductor and do support CRLMM, the ones built here do *NOT* support CRLMM.
+
+** Updated vignette

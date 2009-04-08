@@ -61,11 +61,14 @@ Building annotation packages with \Rpackage{pdInfoBuilder} depends on the follow
 library(pdInfoBuilder)
 @ 
 
-\section{Affymetrix SNP Array}
+\section{Affymetrix SNP Arrays}
 \label{sec:affysnp}
 
-The annotation packages for any Affymetrix SNP chip is available from
-BioConductor.
+\subsection{Human Affymetrix SNP Arrays}
+
+The annotation packages for any Human Affymetrix SNP chip is available
+from BioConductor. We recommend the use of these packages as they
+contain additional data required to successfully run CRLMM.
 
 \begin{table}
   \centering
@@ -82,6 +85,66 @@ BioConductor.
   \end{tabular}
   \caption{List of packages for SNP chips}
 \end{table}
+
+\subsection{Generic Affymetrix SNP Arrays}
+
+We also provide generic builder for Affymetrix SNP arrays. The user can user these tools to build basic annotation packages for SNP chips, but these will not contain data required by CRLMM, therefore CRLMM will not be available for arrays whose annotation packages were built using the method below.
+
+It may be the case that the scripts do not find the required columns in the annotation and/or sequence files. If this happens, column names will be suggested and the user is expected to appropriately rename (or add) column names to the files.
+
+\subsubsection{Genome-Wide Arrays}
+
+For genome-wide arrays that contain both SNP and CNV probes, the strategy below should be followed. In this particular example, we use the SNP 6.0 array as an example (the user must note that for this particular array we recommend to download the pre-made packages from the BioConductor website).
+
+<<affysnpcnvgeneric>>=
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/AffySnp6'
+(cdf <- list.files(baseDir, pattern='.cdf', full.names=TRUE))
+(probeseqFileSNP <- list.files(baseDir, pattern='6.probe_tab', full.names=TRUE))
+(probeseqFileCNV <- list.files(baseDir, pattern='6.CN_probe_tab', full.names=TRUE))
+(annotFileSNP <- list.files(baseDir, pattern='6.na24.annot.csv', full.names=TRUE))
+(annotFileCNV <- list.files(baseDir, pattern='6.cn.na24.annot.csv', full.names=TRUE))
+
+seed <- new("AffySNPCNVPDInfoPkgSeed2",
+            cdfFile=cdf,
+            csvAnnoFile=annotFileSNP,
+            csvAnnoFileCnv=annotFileCNV,
+            csvSeqFile=probeseqFileSNP,
+            csvSeqFileCnv=probeseqFileCNV,
+            version="0.0.2",
+            license="Artistic",
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 36",
+            organism="Human",
+            species="Homo Sapiens")
+makePdInfoPackage(seed, destDir=".")
+@ 
+
+\subsubsection{SNP Arrays}
+
+For SNP arrays (like the Human 50K and 250K chips), the strategy below should be followed. In this particular example, we use the NSP array as an example (the user must note that for this particular array we recommend to download the pre-made packages from the BioConductor website).
+
+<<affysnpgeneric>>=
+baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/AffySnpNsp'
+(cdf <- list.files(baseDir, pattern='.cdf', full.names=TRUE))
+(probeseqFileSNP <- list.files(baseDir, pattern='probe_tab', full.names=TRUE))
+(annotFileSNP <- list.files(baseDir, pattern='annot.csv', full.names=TRUE))
+
+seed <- new("AffySNPPDInfoPkgSeed2",
+            cdfFile=cdf,
+            csvAnnoFile=annotFileSNP,
+            csvSeqFile=probeseqFileSNP,
+            version="0.0.2",
+            license="Artistic",
+            author="Benilton Carvalho",
+            email="bcarvalh@jhsph.edu",
+            biocViews="AnnotationData",
+            genomebuild="NCBI Build 36",
+            organism="Human",
+            species="Homo Sapiens")
+makePdInfoPackage(seed, destDir=".")
+@ 
 
 \section{Affymetrix HT-HGU133}
 \label{sec:affyhtexpr}
@@ -203,8 +266,9 @@ makePdInfoPackage(seed, destDir=".")
 library(pdInfoBuilder)
 baseDir <- '/thumper/ctsa/snpmicroarray/organizing/pdInfoVignette/NgsTiling'
 (ndf <- list.files(baseDir, pattern='.ndf', full.names=TRUE))
-(pos <- list.files(baseDir, pattern='.pos', full.names=TRUE))
 (xys <- list.files(baseDir, pattern='.xys', full.names=TRUE)[1])
+(pos <- list.files(baseDir, pattern='.pos', full.names=TRUE))
+
 seed <- new("NgsTilingPDInfoPkgSeed",
             ndfFile=ndf,
             xysFile=xys,
@@ -217,6 +281,12 @@ seed <- new("NgsTilingPDInfoPkgSeed",
             species="Homo Sapiens",
             url="http://www.biostat.jhsph.edu/~bcarvalh")
 makePdInfoPackage(seed, destDir=".")
+@ 
+
+\section{Session Information}
+
+<<info>>=
+  sessionInfo()
 @ 
 
 \end{document}
