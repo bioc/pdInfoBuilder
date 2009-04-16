@@ -18,7 +18,7 @@ affyTilingMmFeatureSchema <- list(col2type=c(
                                     x="INTEGER",
                                     y="INTEGER"),
                                   col2key=c(
-                                    fid="PRIMARY KEY"
+##                                    fid="PRIMARY KEY"
                                     ))
 
 affyTilingBgFeatureSchema <- list(col2type=c(
@@ -72,6 +72,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   if (verbose) cat("Getting PMs...")
   ## there are pmmm and pmonly
   idx <- which(sapply(experimental, getField, "mapping") == "onlypm")
+  idx2 <- which(sapply(experimental, getField, "mapping") == "pmmm")
   cols <- c("fid", "chrom", "startpos", "pmx", "pmy", "probeseq")
   pmFeatures <- lapply(experimental,
                    function(x){
@@ -83,16 +84,18 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   names(pmFeatures) <- c("fid", "chrom", "position", "x", "y", "sequence")
   rownames(pmFeatures) <- NULL
 
-  if (verbose) cat("OK\nGetting MMs...")
-  cols <- c("fid", "fidpm", "mmx", "mmy")
-  mmFeatures <- lapply(experimental[-idx],
-                   function(x){
-                     x[["fid"]] <- xy2i(x[["mmx"]], x[["mmy"]], geometry)
-                     x[["fidpm"]] <- xy2i(x[["pmx"]], x[["pmy"]], geometry)
-                     as.data.frame(x[cols], stringsAsFactors=FALSE)
-                   })
-  mmFeatures <- do.call("rbind", mmFeatures)
-  names(mmFeatures) <- c("fid", "fidpm", "x", "y")
+  if (length(idx2) > 0){
+    if (verbose) cat("OK\nGetting MMs...")
+    cols <- c("fid", "fidpm", "mmx", "mmy")
+    mmFeatures <- lapply(experimental[idx2],
+                         function(x){
+                           x[["fid"]] <- xy2i(x[["mmx"]], x[["mmy"]], geometry)
+                           x[["fidpm"]] <- xy2i(x[["pmx"]], x[["pmy"]], geometry)
+                           as.data.frame(x[cols], stringsAsFactors=FALSE)
+                         })
+    mmFeatures <- do.call("rbind", mmFeatures)
+    names(mmFeatures) <- c("fid", "fidpm", "x", "y")
+  }
   rm(experimental, idx)
 
   if (verbose) cat("OK\nGetting background probes...")
@@ -116,8 +119,10 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   if (verbose) cat("Getting sequences...")
   pmFeatures <- pmFeatures[order(pmFeatures[["fid"]]),]
   rownames(pmFeatures) <- NULL
-  mmFeatures <- mmFeatures[order(mmFeatures[["fid"]]),]
-  rownames(mmFeatures) <- NULL
+  if (length(idx2) > 0){
+    mmFeatures <- mmFeatures[order(mmFeatures[["fid"]]),]
+    rownames(mmFeatures) <- NULL
+  }
   bgFeatures <- bgFeatures[order(bgFeatures[["fid"]]),]
   rownames(bgFeatures) <- NULL
   pmSequence <- XDataFrame(fid=pmFeatures[["fid"]],
@@ -240,6 +245,7 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             ## Create indices
             dbCreateIndicesBgTiling(conn, !quiet)
             dbCreateIndicesPmTiling(conn, !quiet)
+            dbCreateIndicesMm(conn, !quiet)
             
             dbDisconnect(conn)
             

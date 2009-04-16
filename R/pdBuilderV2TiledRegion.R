@@ -116,6 +116,11 @@ dbCreateIndicesPm <- function(conn, verbose=TRUE){
   dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
 }
 
+dbCreateIndicesMm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_mmfid", "mmfeature", "fid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_mmpmfid", "mmfeature", "fidpm", FALSE, verbose=verbose)
+}
+
 dbCreateIndicesSnpPm <- function(conn, verbose=TRUE){
   dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=verbose)
   dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
