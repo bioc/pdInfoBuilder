@@ -125,10 +125,14 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   }
   bgFeatures <- bgFeatures[order(bgFeatures[["fid"]]),]
   rownames(bgFeatures) <- NULL
-  pmSequence <- XDataFrame(fid=pmFeatures[["fid"]],
-                           sequence=DNAStringSet(pmFeatures[["sequence"]]))
-  bgSequence <- XDataFrame(fid=bgFeatures[["fid"]],
-                           sequence=DNAStringSet(bgFeatures[["sequence"]]))
+  pmSequence <- pmFeatures[, c("fid", "sequence")]
+  pmSequence <-pmSequence[order(pmSequence[["fid"]]),]
+  pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
+                           sequence=DNAStringSet(pmSequence[["sequence"]]))
+  bgSequence <- bgFeatures[, c("fid", "sequence")]
+  bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
+  bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
+                           sequence=DNAStringSet(bgSequence[["sequence"]]))
 
   pmFeatures[["sequence"]] <- NULL
   bgFeatures[["sequence"]] <- NULL

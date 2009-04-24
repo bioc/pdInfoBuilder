@@ -168,11 +168,13 @@ parseCdfSeqAnnot <- function(cdfFile, probeseqFileSNP, probeseqFileCNV, annotFil
   pmSequenceSNP <- merge(pmfeatureSNP[, c(cols, "fid")],
                          probeseqSNP[, c(cols, "sequence")],
                          by.x=cols, by.y=cols)[, c("fid", "sequence")]
+  pmSequenceSNP <- pmSequenceSNP[order(pmSequenceSNP[["fid"]]),]
   if (verbose) msgOK()
   if (verbose) cat("Merging sequence information for CNVs... ")
   pmSequenceCNV <- merge(pmfeatureCNV[, c(cols, "fid")],
                          probeseqCNV[, c(cols, "sequence")],
                          by.x=cols, by.y=cols)[, c("fid", "sequence")]
+  pmSequenceCNV <- pmSequenceCNV[order(pmSequenceCNV[["fid"]]),]
   if (verbose) msgOK()
   
   rm(cols, probeseqSNP, probeseqCNV)

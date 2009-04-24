@@ -132,8 +132,10 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
     warning("MM Background probes were ignored.")
   bgFeatures <- bgFeatures[bgFeatures[["isPm"]],]
   rm(idx)
-  bgSequence <- XDataFrame(fid=bgFeatures[["fid"]],
-                           sequence=bgFeatures[["sequence"]])
+  bgSequence <- data.frame(fid=bgFeatures[["fid"]], sequence=bgFeatures[["sequence"]])
+  bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
+  bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
+                           sequence=bgSequence[["sequence"]])
   bgFeatures <- bgFeatures[, c("fid", "fsetid", "x", "y")]
   if (verbose) msgOK()
 
@@ -143,6 +145,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   pmidx <- which(allProbes[["isPm"]])
   pmFeatures <- allProbes[pmidx, cols]
   pmSequence <- allProbes[pmidx, cols2]
+  pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
 
   missSeq <- which(is.na(pmSequence[["sequence"]]))
   if (any(is.na(pmSequence[["sequence"]])))

@@ -246,6 +246,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
 
   pmFeatures <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y")]
   pmSequence <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "sequence")]
+  pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
   pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
                            sequence=DNAStringSet(pmSequence[["sequence"]]))
   mmFeatures <- subset(features, mismatch > 0 & class %in% experimentalIDs)
@@ -257,6 +258,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   rm(mmFeatures)
   bgFeatures <- subset(features, !(class %in% experimentalIDs))[, c("fid", "fsetid", "x", "y")]
   bgSequence <- subset(features, !(class %in% experimentalIDs))[, c("fid", "sequence")]
+  bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
   bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
                            sequence=DNAStringSet(bgSequence[["sequence"]]))
   rm(features, experimentalIDs)
