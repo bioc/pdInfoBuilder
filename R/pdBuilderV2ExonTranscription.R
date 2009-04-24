@@ -353,6 +353,7 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
   }
 
   pmSequence <- probes.table[idx, c("fid", "sequence")]
+  pmSequence <-pmSequence[order(pmSequence[["fid"]]),]
   pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
                            sequence=DNAStringSet(pmSequence[["sequence"]]))
 
@@ -385,6 +386,7 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
   names(bgFeatures) <- c("fid", "fsetid", "x", "y", "fs_type", "f_type")
   bgFeatures <- bgFeatures[, c("fid", "fsetid", "fs_type", "f_type", "x", "y")]
   bgSequence <- probes.table[idx, c("fid", "sequence")]
+  bgSequence <-bgSequence[order(bgSequence[["fid"]]),]
   bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
                            sequence=DNAStringSet(bgSequence[["sequence"]]))
   rm(idx, cols, probes.table)

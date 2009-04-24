@@ -104,6 +104,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   if (length(bgidx) > 0){
     bgFeatures <- features[bgidx, c("fid", "fsetid", "x", "y")]
     bgSequence <- features[bgidx, c("fid", "sequence")]
+    bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
     bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
                              sequence=DNAStringSet(bgSequence[["sequence"]]))
     features <- features[-bgidx,]
@@ -115,6 +116,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   pmidx <- which(features[["mismatch"]] == 0)
   pmFeatures <- features[pmidx, c("fid", "fsetid", "position", "x", "y")]
   pmSequence <- features[pmidx, c("fid", "sequence")]
+  pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
   pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
                            sequence=DNAStringSet(pmSequence[["sequence"]]))
   mmFeatures <- features[-pmidx,]

@@ -71,6 +71,7 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   pmSequenceSNP <- merge(pmfeatureSNP[, c(cols, "fid")],
                          probeseqSNP[, c(cols, "sequence")],
                          by.x=cols, by.y=cols)[, c("fid", "sequence")]
+  pmSequenceSNP <- pmSequenceSNP[order(pmSequenceSNP[["fid"]]),]
   if (verbose) msgOK()
   
   rm(cols, probeseqSNP)

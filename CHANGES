@@ -80,3 +80,7 @@ Changes by BC in Feb-Mar 2009
 04-16-2009 - B Carvalho
 
 ** Fixed the builder for non human tiling arrays
+
+04-24-2009 - B Carvalho
+
+** Sorted *Sequence.rda files by 'fid'
