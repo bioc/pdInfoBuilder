@@ -84,3 +84,7 @@ Changes by BC in Feb-Mar 2009
 04-24-2009 - B Carvalho
 
 ** Sorted *Sequence.rda files by 'fid'
+
+04-29-2009 - B Carvalho
+
+** Fixed merging of NDF and POS files (NimbleGen Tiling Arrays)

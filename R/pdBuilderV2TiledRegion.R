@@ -174,20 +174,33 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   #######################################################################
   if (verbose) msgParsingFile(posFile)
   posdata <- read.delim(posFile, stringsAsFactors=FALSE)
+  posdata <- posdata[!duplicated(posdata),]
+  rownames(posdata) <- NULL
   if (verbose) msgOK()
   
   #######################################################################
   ## Step 3: Match POS and NDF
   ##         and update positional info
   #######################################################################
-  keyNdf <- paste(ndfdata[["SEQ_ID"]], ndfdata[["PROBE_ID"]], sep=":::")
-  keyPos <- paste(posdata[["SEQ_ID"]], posdata[["PROBE_ID"]], sep=":::")
-  idx <- match(keyPos, keyNdf)
-  rm(keyNdf, keyPos)
-  ndfdata[idx, "POSITION"] <- posdata[["POSITION"]]
-  ndfdata[["CHROMOSOME"]] <- NA
-  ndfdata[idx, "CHROMOSOME"] <- posdata[["CHROMOSOME"]]
-  rm(idx, posdata)
+  if (verbose) cat("Merging NDF and POS files... ")
+  ndfdata <- merge(ndfdata, posdata, by.x=c("SEQ_ID", "PROBE_ID"), by.y=c("SEQ_ID", "PROBE_ID"), all.x=TRUE)
+  if (all(c("POSITION.x", "POSITION.y") %in% names(ndfdata))){
+    ndfdata[["POSITION.x"]] <- ndfdata[["POSITION.y"]]
+    ndfdata[["POSITION.y"]] <- NULL
+    ndfdata[["POSITION"]] <- ndfdata[["POSITION.x"]]
+    ndfdata[["POSITION.x"]] <- NULL
+  }
+  rm(posdata)
+  if (verbose) msgOK()
+  
+##   keyNdf <- paste(ndfdata[["SEQ_ID"]], ndfdata[["PROBE_ID"]], sep=":::")
+##   keyPos <- paste(posdata[["SEQ_ID"]], posdata[["PROBE_ID"]], sep=":::")
+##   idx <- match(keyPos, keyNdf)
+##   rm(keyNdf, keyPos)
+##   ndfdata[idx, "POSITION"] <- posdata[["POSITION"]]
+##   ndfdata[["CHROMOSOME"]] <- NA
+##   ndfdata[idx, "CHROMOSOME"] <- posdata[["CHROMOSOME"]]
+##   rm(idx, posdata)
 
   #######################################################################
   ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
