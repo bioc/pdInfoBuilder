@@ -260,8 +260,8 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   pmFeatures <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y")]
   pmSequence <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "sequence")]
   pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
-  pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
-                           sequence=DNAStringSet(pmSequence[["sequence"]]))
+  pmSequence <- DataFrame(fid=pmSequence[["fid"]],
+                          sequence=DNAStringSet(pmSequence[["sequence"]]))
   mmFeatures <- subset(features, mismatch > 0 & class %in% experimentalIDs)
   ## add mmSequence
   if (any(mmFeatures[["mismatch"]] >= 10000))
@@ -272,8 +272,8 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   bgFeatures <- subset(features, !(class %in% experimentalIDs))[, c("fid", "fsetid", "x", "y")]
   bgSequence <- subset(features, !(class %in% experimentalIDs))[, c("fid", "sequence")]
   bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
-  bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
-                           sequence=DNAStringSet(bgSequence[["sequence"]]))
+  bgSequence <- DataFrame(fid=bgSequence[["fid"]],
+                          sequence=DNAStringSet(bgSequence[["sequence"]]))
   rm(features, experimentalIDs)
 
   return(list(featureSet=featureSet, pmFeatures=pmFeatures,
@@ -386,7 +386,7 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             dbDisconnect(conn)
             
             #######################################################################
-            ## Part v) Save sequence XDataFrames
+            ## Part v) Save sequence DataFrames
             ## FIX ME: Fix ordering of the tables to match xxFeature tables
             #######################################################################
             datadir <- file.path(destDir, pkgName, "data")
@@ -395,9 +395,9 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) cat("Saving XDataFrame object for PM.\n")
+            if (!quiet) cat("Saving DataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving XDataFrame object for BG.\n")
+            if (!quiet) cat("Saving DataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
             if (!quiet) cat("Done.")
           })

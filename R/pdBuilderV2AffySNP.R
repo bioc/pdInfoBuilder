@@ -76,8 +76,8 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   
   rm(cols, probeseqSNP)
   if (verbose) cat("Creating Biostrings objects... ")
-  pmSequenceSNP <- XDataFrame(fid=pmSequenceSNP[["fid"]],
-                              sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
+  pmSequenceSNP <- DataFrame(fid=pmSequenceSNP[["fid"]],
+                             sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
   if (verbose) msgOK()
   
   ## Annotation files
@@ -194,14 +194,14 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
             dbDisconnect(conn)
             
             #######################################################################
-            ## Part v) Save sequence XDataFrames
+            ## Part v) Save sequence DataFrames
             ## FIX ME: Fix ordering of the tables to match xxFeature tables
             #######################################################################
             datadir <- file.path(destDir, pkgName, "data")
             dir.create(datadir)
             pmSequence <- parsedData[["pmSequenceSNP"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
-            if (!quiet) cat("Saving XDataFrame object for SNPs / PM.\n")
+            if (!quiet) cat("Saving DataFrame object for SNPs / PM.\n")
             save(pmSequence, file=pmSeqFile)
             if (!quiet) cat("Done.")
           })

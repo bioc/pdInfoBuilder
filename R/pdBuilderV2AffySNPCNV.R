@@ -179,10 +179,10 @@ parseCdfSeqAnnot <- function(cdfFile, probeseqFileSNP, probeseqFileCNV, annotFil
   
   rm(cols, probeseqSNP, probeseqCNV)
   if (verbose) cat("Creating Biostrings objects... ")
-  pmSequenceSNP <- XDataFrame(fid=pmSequenceSNP[["fid"]],
-                              sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
-  pmSequenceCNV <- XDataFrame(fid=pmSequenceCNV[["fid"]],
-                              sequence=DNAStringSet(pmSequenceCNV[["sequence"]]))
+  pmSequenceSNP <- DataFrame(fid=pmSequenceSNP[["fid"]],
+                             sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
+  pmSequenceCNV <- DataFrame(fid=pmSequenceCNV[["fid"]],
+                             sequence=DNAStringSet(pmSequenceCNV[["sequence"]]))
   if (verbose) msgOK()
   
   ## Annotation files
@@ -321,7 +321,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             dbDisconnect(conn)
             
             #######################################################################
-            ## Part v) Save sequence XDataFrames
+            ## Part v) Save sequence DataFrames
             ## FIX ME: Fix ordering of the tables to match xxFeature tables
             #######################################################################
             datadir <- file.path(destDir, pkgName, "data")
@@ -330,9 +330,9 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             pmSequenceCNV <- parsedData[["pmSequenceCNV"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             pmSeqFileCNV <- file.path(datadir, "pmSequenceCNV.rda")
-            if (!quiet) cat("Saving XDataFrame object for SNPs / PM.\n")
+            if (!quiet) cat("Saving DataFrame object for SNPs / PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving XDataFrame object for CNV / PM.\n")
+            if (!quiet) cat("Saving DataFrame object for CNV / PM.\n")
             save(pmSequenceCNV, file=pmSeqFileCNV)
             if (!quiet) cat("Done.")
           })

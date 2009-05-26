@@ -354,8 +354,8 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
 
   pmSequence <- probes.table[idx, c("fid", "sequence")]
   pmSequence <-pmSequence[order(pmSequence[["fid"]]),]
-  pmSequence <- XDataFrame(fid=pmSequence[["fid"]],
-                           sequence=DNAStringSet(pmSequence[["sequence"]]))
+  pmSequence <- DataFrame(fid=pmSequence[["fid"]],
+                          sequence=DNAStringSet(pmSequence[["sequence"]]))
 
   ## mmfeature table - Fields
   ##  fid
@@ -387,8 +387,8 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
   bgFeatures <- bgFeatures[, c("fid", "fsetid", "fs_type", "f_type", "x", "y")]
   bgSequence <- probes.table[idx, c("fid", "sequence")]
   bgSequence <-bgSequence[order(bgSequence[["fid"]]),]
-  bgSequence <- XDataFrame(fid=bgSequence[["fid"]],
-                           sequence=DNAStringSet(bgSequence[["sequence"]]))
+  bgSequence <- DataFrame(fid=bgSequence[["fid"]],
+                          sequence=DNAStringSet(bgSequence[["sequence"]]))
   rm(idx, cols, probes.table)
   
   ## Here we should have the following tables available:
@@ -588,7 +588,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             dbDisconnect(conn)
             
             #######################################################################
-            ## Part v) Save sequence XDataFrames
+            ## Part v) Save sequence DataFrames
             ## FIX ME: Fix ordering of the tables to match xxFeature tables
             #######################################################################
             datadir <- file.path(destDir, pkgName, "data")
@@ -597,9 +597,9 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) cat("Saving XDataFrame object for PM.\n")
+            if (!quiet) cat("Saving DataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving XDataFrame object for BG.\n")
+            if (!quiet) cat("Saving DataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
             if (!quiet) cat("Done.")
           })

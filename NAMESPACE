@@ -4,7 +4,7 @@ import("methods")
 import("Biobase")
 
 importFrom("Biostrings", "DNAStringSet")
-importFrom("IRanges", "XDataFrame")
+importFrom("IRanges", "DataFrame")
 
 exportClasses(
               "AffyExpressionPDInfoPkgSeed",

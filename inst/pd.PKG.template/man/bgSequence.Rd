@@ -13,7 +13,7 @@
 data(bgSequence)
 }
 \format{
-Sequences are stored within an XDataFrame object with two columns: 'fid'
+Sequences are stored within an DataFrame object with two columns: 'fid'
 and 'sequence'.
 }
 \examples{
