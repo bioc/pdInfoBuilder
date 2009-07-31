@@ -53,8 +53,12 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   ## and that background will be "arbitrary"
 
   getField <- function(x, field) x[["seqInfo"]][[field]]
-  experimental <- grep("^chr", sapply(bpmap, getField, "name"))
-  background <- grep("^AffxCtrlBkGr", sapply(bpmap, getField, "groupname"))
+##  experimental <- grep("^chr", sapply(bpmap, getField, "name"))
+##  background <- grep("^AffxCtrlBkGr", sapply(bpmap, getField, "groupname"))
+  grpNames <- sapply(bpmap, getField, "groupname")
+  controls <- background <- grep("^AffxC", grpNames)
+  experimental <- (1:length(grpNames))[-controls]
+  
   problem <- intersect(experimental, background)
   if (length(problem) > 0)
     stop("Probes were identified as both Experimental and Background controls")
@@ -69,7 +73,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   xy2i <- function(x, y, geom)
     as.integer(geom[1]*y+x+1)
 
-  if (verbose) cat("Getting PMs...")
+  if (verbose) cat("Getting PMs... ")
   ## there are pmmm and pmonly
   idx <- which(sapply(experimental, getField, "mapping") == "onlypm")
   idx2 <- which(sapply(experimental, getField, "mapping") == "pmmm")
@@ -83,9 +87,10 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   pmFeatures <- do.call("rbind", pmFeatures)
   names(pmFeatures) <- c("fid", "chrom", "position", "x", "y", "sequence")
   rownames(pmFeatures) <- NULL
+  if (verbose) msgOK()
 
   if (length(idx2) > 0){
-    if (verbose) cat("OK\nGetting MMs...")
+    if (verbose) cat("Getting MMs... ")
     cols <- c("fid", "fidpm", "mmx", "mmy")
     mmFeatures <- lapply(experimental[idx2],
                          function(x){
@@ -95,10 +100,11 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
                          })
     mmFeatures <- do.call("rbind", mmFeatures)
     names(mmFeatures) <- c("fid", "fidpm", "x", "y")
+    if (verbose) msgOK()
   }
   rm(experimental, idx)
 
-  if (verbose) cat("OK\nGetting background probes...")
+  if (verbose) cat("Getting background probes... ")
   cols <- c("fid", "pmx", "pmy", "probeseq")
   bgFeatures <- lapply(background,
                        function(x){
@@ -122,6 +128,8 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   if (length(idx2) > 0){
     mmFeatures <- mmFeatures[order(mmFeatures[["fid"]]),]
     rownames(mmFeatures) <- NULL
+  }else{
+    mmFeatures <- NULL
   }
   bgFeatures <- bgFeatures[order(bgFeatures[["fid"]]),]
   rownames(bgFeatures) <- NULL
@@ -222,10 +230,12 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
                           affyTilingPmFeatureSchema[["col2type"]],
                           affyTilingPmFeatureSchema[["col2key"]])
 
-            dbCreateTable(conn,
-                          "mmfeature",
-                          affyTilingMmFeatureSchema[["col2type"]],
-                          affyTilingMmFeatureSchema[["col2key"]])
+            if (!is.null(parsedData[["mmFeatures"]]))
+              dbCreateTable(conn,
+                            "mmfeature",
+                            affyTilingMmFeatureSchema[["col2type"]],
+                            affyTilingMmFeatureSchema[["col2key"]])
+
             dbCreateTable(conn,
                           "bgfeature",
                           affyTilingBgFeatureSchema[["col2type"]],
@@ -238,8 +248,9 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
 
             dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                               affyTilingPmFeatureSchema[["col2type"]], !quiet)
-            dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
-                              affyTilingMmFeatureSchema[["col2type"]], !quiet)
+            if (!is.null(parsedData[["mmFeatures"]]))
+              dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
+                                affyTilingMmFeatureSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
                               affyTilingBgFeatureSchema[["col2type"]], !quiet)
             dbGetQuery(conn, "VACUUM")
@@ -249,7 +260,8 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             ## Create indices
             dbCreateIndicesBgTiling(conn, !quiet)
             dbCreateIndicesPmTiling(conn, !quiet)
-            dbCreateIndicesMm(conn, !quiet)
+            if (!is.null(parsedData[["mmFeatures"]]))
+              dbCreateIndicesMm(conn, !quiet)
             
             dbDisconnect(conn)
             

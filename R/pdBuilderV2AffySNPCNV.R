@@ -65,16 +65,16 @@ parseAnnotFile <- function(annotFile, snp=TRUE){
 parseProbeSequenceFile <- function(probeseqFile, snp=TRUE){
   probeseqTab <- read.delim(probeseqFile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   cols <- c("PROBESET_ID", "PROBE_X_POS", "PROBE_Y_POS", "PROBE_SEQUENCE")
-  if (snp)
-    cols <- c(cols, "ALLELE")
+##   if (snp)
+##     cols <- c(cols, "ALLELE")
   ok <- all(cols %in% names(probeseqTab))
   if (!ok)
     stop("Probe sequence file must have '", paste(cols, collapse="', '"), "' columns")
   probeseqTab <- probeseqTab[, cols]
   rm(cols, ok)
   colsOut <- c("man_fsetid", "x", "y", "sequence")
-  if (snp)
-    colsOut <- c(colsOut, "allele")
+##   if (snp)
+##     colsOut <- c(colsOut, "allele")
   names(probeseqTab) <- colsOut
   return(probeseqTab)
 }

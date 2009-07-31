@@ -180,7 +180,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
                                       "normgene->intron",
                                       "rescue->FLmRNA->unmapped"),
                             stringsAsFactors=FALSE)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   
 ###################################################
   
@@ -285,9 +285,10 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
 
   ## probesets not in the CSV file
   ## remove them
-  toKeep <- which(probes.table[["fsetid"]] %in% probesetInfo[["probesets"]][["fsetid"]])
-  probes.table <- probes.table[toKeep,]
-  rm(toKeep)
+  ## FIXME: Really need this?? Must ensure all feature-sets are *in* the featureSet table (ie. merge probe.table and featureSet)
+##   toKeep <- which(probes.table[["fsetid"]] %in% probesetInfo[["probesets"]][["fsetid"]])
+##   probes.table <- probes.table[toKeep,]
+##   rm(toKeep)
 
   ## probesets -> genes table
   ## probeset_ids
@@ -321,6 +322,21 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
   ##  type
   ## IMPORTANT: I'm filtering types to "main" and "bpg" probes...
   featureSet <- probesetInfo[["probesets"]]
+  ## ensure all probes in probe.tables are in featureSet
+  ## otherwise add them.
+  missFeatureSet <- setdiff(unique(probes.table[["fsetid"]]),
+                            featureSet[["fsetid"]])
+  if (length(missFeatureSet) > 0){
+    missFS = data.frame(fsetid=missFeatureSet)
+    cols <- names(featureSet)
+    cols <- cols[cols != "fsetid"]
+    for (i in cols)
+      missFS[[i]] <- NA
+    missFS <- missFS[, names(featureSet)]
+    featureSet <- rbind(featureSet, missFS)
+    rm(missFS, cols, i)
+  }
+  rm(missFeatureSet)
 
   ## pmfeature table - Fields
   ##  fid
@@ -342,9 +358,10 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
   if (geneArray){
     cols2 <- c("fid", "fsetid", "atom")
     f2fset <- pmFeatures[, cols2]
-    keys <- apply(f2fset, 1, paste, collapse=":")
-    dups <- !duplicated(keys)
-    f2fset <- f2fset[dups,]
+    f2fset <- f2fset[!duplicated(f2fset),]
+##     keys <- apply(f2fset, 1, paste, collapse=":")
+##     dups <- !duplicated(keys)
+##     f2fset <- f2fset[dups,]
     pmFeatures[["fsetid"]] <- NULL
     pmFeatures[["atom"]] <- NULL
     dups <- !duplicated(pmFeatures[["fid"]])
@@ -380,12 +397,15 @@ parsePgfClf <- function(pgfFile, clfFile, probeFile, geneArray=FALSE, verbose=TR
   ##  y
   ##  fs_type: featureSet type: genomic/antigenomic
   ##  f_type: pm/mm at/st
+  ### idx <- grep("main", probes.table[["pstype"]])
   idx <- grep("control->bgp", probes.table[["pstype"]])
   cols <- c("fid", "fsetid", "x", "y", "pstype", "ptype")
   bgFeatures <- probes.table[idx, cols]
+  ### bgFeatures <- probes.table[-idx, cols]
   names(bgFeatures) <- c("fid", "fsetid", "x", "y", "fs_type", "f_type")
   bgFeatures <- bgFeatures[, c("fid", "fsetid", "fs_type", "f_type", "x", "y")]
   bgSequence <- probes.table[idx, c("fid", "sequence")]
+  ### bgSequence <- probes.table[-idx, c("fid", "sequence")]
   bgSequence <-bgSequence[order(bgSequence[["fid"]]),]
   bgSequence <- DataFrame(fid=bgSequence[["fid"]],
                           sequence=DNAStringSet(bgSequence[["sequence"]]))
