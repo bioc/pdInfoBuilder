@@ -60,7 +60,7 @@ dbCreateTableInfo <- function(db, verbose=FALSE) {
     sql <- "select count(*) from %s"
     for (i in seq(along=counts)) {
         if (verbose)
-          cat("Counting rows in", tables[i], "\n")
+          cat("Counting rows in", tables[i], "\b.\n")
         counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
     }
 

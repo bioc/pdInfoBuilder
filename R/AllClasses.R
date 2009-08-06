@@ -119,6 +119,9 @@ setClass("AffySTPDInfoPkgSeed",
            clfFile="ScalarCharacter",
            probeFile="ScalarCharacter",
            transFile="ScalarCharacter",
+           coreMps="ScalarCharacter",
+           fullMps="ScalarCharacter",
+           extendedMps="ScalarCharacter",
            geneArray="logical"))
 
 setClass("AffyExonPDInfoPkgSeed",
