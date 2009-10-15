@@ -17,7 +17,6 @@ createSnpFeatureSetSql <- ('
 create table featureSet (
     fsetid integer primary key,
     man_fsetid text,
-    affy_snp_id integer,
     dbsnp_rs_id text,
     chrom text,
     physical_pos integer,
@@ -88,6 +87,7 @@ create table featureSetCNV (
     cytoband text,
     gene_assoc text,
     fragment_length integer,
+    fragment_length2 integer,
     xpar integer,
     cnv text)
 ')
@@ -102,7 +102,8 @@ create table featureSetCNV (
     strand integer,
     cytoband text,
     gene_assoc text,
-    fragment_length text,
+    fragment_length integer,
+    fragment_length2 integer,
     xpar integer,
     cnv text)
 ')

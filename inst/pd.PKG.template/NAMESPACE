@@ -3,3 +3,5 @@ import(RSQLite)
 export(
        '@PDINFONAME@'
        )
+importFrom("Biostrings", "DNAStringSet")
+importFrom("IRanges", "DataFrame")

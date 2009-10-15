@@ -24,7 +24,7 @@ test_crlmm <- function(){
                     pd.mapping50k.xba240 = "hapmap100kxba",
                     pd.mapping50k.hind240 = "hapmap100khind",
                     pd.mapping250k.nsp = "hapmap500knsp",
-                    pd.mapping250.sty = "hapmap500ksty",
+                    pd.mapping250k.sty = "hapmap500ksty",
                     pd.genomewidesnp.5 = "hapmapsnp5",
                     pd.genomewidesnp.6 = "hapmapsnp6")
   library(oligo)

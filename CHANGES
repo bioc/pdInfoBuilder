@@ -94,3 +94,11 @@ Changes by BC in Feb-Mar 2009
 ** Fixed problem with chipName for NimbleGen arrays. Improved the regular expression to find specifically "\\.ndf$"
 
 ** Removed requirement of ALLELE in probe sequence file for Affy SNP chips
+
+10-13-2009 - B Carvalho
+
+** Updated loaders, because the annotation files' format changed, once more (all SNP platforms)
+
+** Updated dependencies on both pdInfoBuilder and template
+
+** Updated NAMESPACE - template

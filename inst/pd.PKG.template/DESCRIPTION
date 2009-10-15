@@ -5,8 +5,9 @@ Version: @VERSION@
 Author: @AUTHOR@
 Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
 LazyLoad: yes
-Depends: R (>= 2.5.0), methods,
-         RSQLite (>= 0.4-15), oligoClasses (>= 1.1.9), DBI
+Depends: R (>= 2.10.0), methods,
+         RSQLite (>= 0.7-1), oligoClasses (>= 1.7.12), DBI
+Imports: Biostrings (>= 2.13.50), IRanges (>= 1.3.89)
 License: @LIC@
 biocViews: AnnotationData
 

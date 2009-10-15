@@ -253,18 +253,90 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     con <- file(csvFile, open="r")
     on.exit(close(con))
 
-    ## Affy changed the format... now gotta use [[2]]
+    ## Affy changed the format^2... now gotta use [[3]]
     getFragLength <- function(v){
-      ## affy changed once more...
       v[is.na(v)] <- "--- // --- // --- // ---"
-      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[2]])
+      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[3]])
       tmp[tmp == "---"] <- NA
       as.integer(tmp)
     }
     
 ##    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17, 22, 23) # added 10/14
-    ## Affy changed the format once more.
-    wantedCols <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 15, 20, 21)
+
+    ## This is the header of annotation files NA24
+    ## The needed fields have (*)
+    ## 01 - (*) - Probe Set ID
+    ## 02 - (*) - Affy SNP ID
+    ## 03 - (*) - dbSNP RS ID
+    ## 04 - (*) - Chromosome
+    ## 05 - (*) - Physical Position
+    ## 06 - (*) - Strand
+    ## 07 - ( ) - ChrX pseudo-autosomal region 1
+    ## 08 - (*) - Cytoband
+    ## 09 - ( ) - Flank
+    ## 10 - (*) - Allele A
+    ## 11 - (*) - Allele B
+    ## 12 - (*) - Associated Gene
+    ## 13 - ( ) - Genetic Map
+    ## 14 - ( ) - Microsatellite
+    ## 15 - (*) - Fragment Enzyme Length Start Stop
+    ## 16 - ( ) - Allele Frequencies
+    ## 17 - ( ) - Heterozygous Allele Frequencies
+    ## 18 - ( ) - Number of individuals/Number of chromosomes
+    ## 19 - ( ) - In Hapmap
+    ## 20 - (*) - Strand Versus dbSNP
+    ## 21 - (*) - Copy Number Variation
+    ## 22 - ( ) - Probe Count
+    ## 23 - ( ) - ChrX pseudo-autosomal region 2
+    ## 24 - ( ) - In Final List
+    ## 25 - ( ) - Minor Allele
+    ## 26 - ( ) - Minor Allele Frequency
+    ## wantedCols <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 15, 20, 21)
+
+    ## This is the header of annotation files NA29
+    ##############################################################
+    ## CHANGES:
+    ##     A) Affymetrix got rid of 'Affy SNP ID'
+    ##     B) Affymetrix changed the format of
+    ##        "Fragment Enzyme Length Start Stop" to
+    ##        "Fragment Enzyme Type Length Start Stop"
+    ##     C) Affymetrix added GC and OMIM
+    ##############################################################
+    ## ACTIONS: 13 / OCT / 2009
+    ##     A) Remove 'Affy SNP ID' from SQL schema
+    ##     B) Change function to get the right fields
+    ##     C) None needed
+    ##############################################################
+    
+    ## The needed fields have (*)
+    ## 01 - (*) - Probe Set ID
+    ## 02 - (*) - dbSNP RS ID
+    ## 03 - (*) - Chromosome
+    ## 04 - (*) - Physical Position
+    ## 05 - (*) - Strand
+    ## 06 - ( ) - ChrX pseudo-autosomal region 1
+    ## 07 - (*) - Cytoband
+    ## 08 - ( ) - Flank
+    ## 09 - (*) - Allele A
+    ## 10 - (*) - Allele B
+    ## 11 - (*) - Associated Gene
+    ## 12 - ( ) - Genetic Map
+    ## 13 - ( ) - Microsatellite
+    ## 14 - (*) - Fragment Enzyme Type Length Start Stop
+    ## 15 - ( ) - Allele Frequencies
+    ## 16 - ( ) - Heterozygous Allele Frequencies
+    ## 17 - ( ) - Number of individuals/Number of chromosomes
+    ## 18 - ( ) - In Hapmap
+    ## 19 - (*) - Strand Versus dbSNP
+    ## 20 - (*) - Copy Number Variation
+    ## 21 - ( ) - Probe Count
+    ## 22 - ( ) - ChrX pseudo-autosomal region 2
+    ## 23 - ( ) - In Final List
+    ## 24 - ( ) - Minor Allele
+    ## 25 - ( ) - Minor Allele Frequency
+    ## 26 - ( ) - % GC
+    ## 27 - ( ) - OMIM
+    wantedCols <- c(1:5, 7, 9:11, 14, 19:20)
 
     ## BC: added 22/23 - above - dbSNP relation (50K/250K)
     
@@ -272,23 +344,22 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
                      na.strings="---", header=TRUE)[, wantedCols]
     header <- gsub(".", "_", names(df), fixed=TRUE)
     names(df) <- header
-    df[["Affy_SNP_ID"]] <- as.integer(df[["Affy_SNP_ID"]])
     df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
     df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
     df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
 
     ## Affy changed the same of the field
-    FRAG_COL <- "Fragment_Enzyme_Length_Start_Stop"
+    FRAG_COL <- "Fragment_Enzyme_Type_Length_Start_Stop"
     df[[FRAG_COL]] <- getFragLength(df[[FRAG_COL]])
 
-    db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
-                 "physical_pos", "strand", "cytoband", "allele_a",
-                 "allele_b", "gene_assoc", "fragment_length",
-                 "dbsnp", "cnv")
+    db_cols <- c("dbsnp_rs_id", "chrom", "physical_pos", "strand",
+                 "cytoband", "allele_a", "allele_b", "gene_assoc",
+                 "fragment_length", "dbsnp", "cnv")
 
-    val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
-                     ":Physical_Position", ":Strand", ":Cytoband", ":Allele_A",
-                     ":Allele_B", ":Associated_Gene", ":Fragment_Enzyme_Length_Start_Stop",
+    val_holders <- c(":dbSNP_RS_ID", ":Chromosome",
+                     ":Physical_Position", ":Strand", ":Cytoband",
+                     ":Allele_A", ":Allele_B", ":Associated_Gene",
+                     ":Fragment_Enzyme_Type_Length_Start_Stop",
                      ":Strand_Versus_dbSNP", ":Copy_Number_Variation")
 
     exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
@@ -311,7 +382,6 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
               break
         }
         names(df) <- header
-        df[["Affy_SNP_ID"]] <- as.integer(df[["Affy_SNP_ID"]])
         df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
         df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
         df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])

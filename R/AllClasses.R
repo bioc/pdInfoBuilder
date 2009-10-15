@@ -1,14 +1,6 @@
 #################################################################
 ## Base class
 #################################################################
-## setClass("fileName", contains="ScalarCharacter",
-##          validity=function(object){
-##            res <- file.exists(object)
-##            if (!res)
-##              message("File '", object, "' does not exist.")
-##            res
-##          })
-
 setClass("PDInfoPkgSeed",
          representation=representation(
            version="character",
@@ -89,22 +81,6 @@ setClass("AffySNPCNVPDInfoPkgSeed",
            splineParamFile="ScalarCharacter",
            crlmmInfoFile="ScalarCharacter",
            referenceDistFile="ScalarCharacter"))
-
-## setClass("AffySNPPDInfoPkgSeed",
-##          contains="AffymetrixPDInfoPkgSeed",
-##          representation=representation(
-##            cdfFile="ScalarCharacter",
-##            csvAnnoFile="ScalarCharacter",
-##            csvSeqFile="ScalarCharacter",
-##            splineParamFile="ScalarCharacter",
-##            crlmmInfoFile="ScalarCharacter",
-##            referenceDistFile="ScalarCharacter"))
-## 
-## setClass("AffySNPCNVPDInfoPkgSeed",
-##          contains="AffySNPPDInfoPkgSeed",
-##          representation=representation(
-##            csvAnnoFileCnv="ScalarCharacter",
-##            csvSeqFileCnv="ScalarCharacter"))
 
 setClass("AffyTilingPDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
