@@ -92,7 +92,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   xy2i <- function(x, y, geom)
     as.integer(geom[1]*y+x+1)
 
-  if (verbose) cat("Getting information for pm/mm feature tables ... ")
+  if (verbose) cat("Getting information for pm/mm feature tables... ")
   allProbes <- lapply(cdf, extractFromGroups)
   allProbes <- do.call("rbind", allProbes)
   allProbes[["fid"]] <- xy2i(allProbes[["x"]], allProbes[["y"]], geometry)
@@ -100,7 +100,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
                                             featureSet[["man_fsetid"]]),
                                       "fsetid"]
   if (verbose) cat("OK\n")
-  if (verbose) cat("Combining probe information with sequence information ... ")
+  if (verbose) cat("Combining probe information with sequence information... ")
   allProbes <- merge(allProbes, probeSeq,
                      by.x=c("x", "y"),
                      by.y=c("x", "y"),
@@ -109,36 +109,43 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   if (verbose) msgOK()
 
   ## AFFX probes have sequence for only 1 probe of the probeset...
-  if (verbose) cat("Getting sequence information for AFFX probes ...")
   missSeq <- which(is.na(allProbes[["sequence"]]) & allProbes[["isPm"]])
-  missPS <- sort(unique(allProbes[missSeq, "fsetid"]))
-  for (i in missPS){
-    idx <- which(allProbes[["fsetid"]] == i & allProbes[["isPm"]])
-    seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm, sequence, drop=TRUE)
-##     seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm)[, "sequence"]
-##     toGet <- (allProbes[["fsetid"]] == i) & (!is.na(allProbes[["sequence"]])) & (allProbes[["isPm"]])
-##     seq <- allProbes[toGet, "sequence"]
-    seq <- unique(seq)
-    stopifnot(length(seq) == 1)
-    allProbes[idx, "sequence"] <- seq
-    rm(idx, seq)
+  if (length(missSeq) > 0){
+    if (verbose) cat("Getting sequence information for AFFX probes...")
+    missPS <- sort(unique(allProbes[missSeq, "fsetid"]))
+    for (i in missPS){
+      idx <- which(allProbes[["fsetid"]] == i & allProbes[["isPm"]])
+      seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm, sequence, drop=TRUE)
+      ##     seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm)[, "sequence"]
+      ##     toGet <- (allProbes[["fsetid"]] == i) & (!is.na(allProbes[["sequence"]])) & (allProbes[["isPm"]])
+      ##     seq <- allProbes[toGet, "sequence"]
+      seq <- unique(seq)
+      stopifnot(length(seq) == 1)
+      allProbes[idx, "sequence"] <- seq
+      rm(idx, seq)
+    }
+    rm(missPS, i)
   }
-  rm(missSeq, missPS, i)
+  rm(missSeq)
   
   idx <- grep("nonspecific", tolower(allProbes[["man_fsetid"]]))
-  bgFeatures <- allProbes[idx,]
-  allProbes <- allProbes[-idx,]
-  if (any(!bgFeatures[["isPm"]]))
-    warning("MM Background probes were ignored.")
-  bgFeatures <- bgFeatures[bgFeatures[["isPm"]],]
-  rm(idx)
-  bgSequence <- data.frame(fid=bgFeatures[["fid"]], sequence=bgFeatures[["sequence"]])
-  bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
-  bgSequence <- DataFrame(fid=bgSequence[["fid"]],
-                          sequence=bgSequence[["sequence"]])
-  bgFeatures <- bgFeatures[, c("fid", "fsetid", "x", "y")]
-  if (verbose) msgOK()
+  bgFeatures <- bgSequences <- NULL
+  if (length(idx) > 0){
+    bgFeatures <- allProbes[idx,]
+    allProbes <- allProbes[-idx,]
+    if (any(!bgFeatures[["isPm"]]))
+      warning("MM Background probes were ignored.")
+    bgFeatures <- bgFeatures[bgFeatures[["isPm"]],]
+    rm(idx)
+    bgSequence <- data.frame(fid=bgFeatures[["fid"]], sequence=bgFeatures[["sequence"]])
+    bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
+    bgSequence <- DataFrame(fid=bgSequence[["fid"]],
+                            sequence=bgSequence[["sequence"]])
+    bgFeatures <- bgFeatures[, c("fid", "fsetid", "x", "y")]
+    if (verbose) msgOK()
+  }
 
+  if (verbose) cat("Getting PM probes and sequences... ")
   geometry <- paste(geometry, collapse=";")
   cols <- c("fid", "fsetid", "x", "y", "atom")
   cols2 <- c("fid", "sequence")
@@ -146,6 +153,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   pmFeatures <- allProbes[pmidx, cols]
   pmSequence <- allProbes[pmidx, cols2]
   pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
+  if (verbose) msgOK()
 
   missSeq <- which(is.na(pmSequence[["sequence"]]))
   if (any(is.na(pmSequence[["sequence"]])))
@@ -166,6 +174,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   mmFeatures <- merge(mmFeatures, matchpm, by.x="fid", by.y="fid")
   mmFeatures[["atom"]] <- NULL
   pmFeatures[["atom"]] <- NULL
+  if (verbose) message("Done parsing.")
   return(list(featureSet=featureSet,
               pmSequence=pmSequence,
               pmFeatures=pmFeatures,
@@ -210,6 +219,7 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
                                            object@celFile,
                                            object@tabSeqFile,
                                            verbose=!quiet)
+            hasBG <- !is.null(parsedData[["bgFeatures"]])
             
             #######################################################################
             ## Part iii) Create package from template
@@ -253,25 +263,29 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
                           "mmfeature",
                           affyHTExpressionMmFeatureSchema[["col2type"]],
                           affyHTExpressionMmFeatureSchema[["col2key"]])
-            dbCreateTable(conn,
-                          "bgfeature",
-                          affyHTExpressionBgFeatureSchema[["col2type"]],
-                          affyHTExpressionBgFeatureSchema[["col2key"]])
-
+            if (hasBG)
+              dbCreateTable(conn,
+                            "bgfeature",
+                            affyHTExpressionBgFeatureSchema[["col2type"]],
+                            affyHTExpressionBgFeatureSchema[["col2key"]])
+            
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
                               affyHTExpressionFeatureSetSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                               affyHTExpressionPmFeatureSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
                               affyHTExpressionMmFeatureSchema[["col2type"]], !quiet)
-            dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
-                              affyHTExpressionBgFeatureSchema[["col2type"]], !quiet)
+
+            if (hasBG)
+              dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
+                                affyHTExpressionBgFeatureSchema[["col2type"]], !quiet)
             dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
             ## Create indices
-            dbCreateIndicesBg(conn, !quiet)
+            if (hasBG)
+              dbCreateIndicesBg(conn, !quiet)
             dbCreateIndicesPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
             
@@ -289,7 +303,9 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
             if (!quiet) cat("Saving DataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving DataFrame object for BG.\n")
-            save(bgSequence, file=bgSeqFile)
+            if (hasBG){
+              if (!quiet) cat("Saving DataFrame object for BG.\n")
+              save(bgSequence, file=bgSeqFile)
+            }
             if (!quiet) cat("Done.")
           })
