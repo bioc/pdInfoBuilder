@@ -51,6 +51,17 @@ snp6.loadUnits.snp <- function(db, batch, isQc=FALSE) {
 }
 
 readCdfUnitToMat.cnv <- function(u){
+  mat <- do.call("rbind",
+                 lapply(u$groups,
+                        function(vv){
+                          theDir <- groupDirectionToInt(vv$groupdirection)
+                          cbind(indices=vv$indices, strand=theDir, x=vv$x, y=vv$y, ispm=vv$ispm)
+                        }))
+  return(mat)
+}
+
+
+readCdfUnitToMat.cnv.old <- function(u){
   mat <- t(sapply(u$groups,
                   function(vv){
                     theDir <- groupDirectionToInt(vv$groupdirection)
