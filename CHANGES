@@ -102,3 +102,7 @@ Changes by BC in Feb-Mar 2009
 ** Updated dependencies on both pdInfoBuilder and template
 
 ** Updated NAMESPACE - template
+
+02-08-2010 - B Carvalho
+
+(1.10.1) Fixed problem in NGS Expression builder (it'd fail if no controls were identified)
