@@ -59,7 +59,8 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ndfdata <- merge(ndfdata, xysdata, by.x=c("X", "Y"), by.y=c("X", "Y"))
   if (verbose) cat("OK\n")
   controls <- which(is.na(ndfdata[["SIGNAL"]]))
-  ndfdata <- ndfdata[-controls,]
+  if (length(controls) > 0)
+    ndfdata <- ndfdata[-controls,]
   rm(controls)
   
   #######################################################################

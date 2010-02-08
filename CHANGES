@@ -102,3 +102,7 @@ Changes by BC in Feb-Mar 2009
 ** Updated dependencies on both pdInfoBuilder and template
 
 ** Updated NAMESPACE - template
+
+02-08-2010 - B Carvalho
+
+(1.11.3) added if (length(controls)>0) in builder for NGS Expression
