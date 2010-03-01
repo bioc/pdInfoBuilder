@@ -1,0 +1,20 @@
+        **************************************************
+        *                                                *
+        *              1.11.x SERIES NEWS                *
+        *                                                *
+        **************************************************
+
+USER VISIBLE CHANGES
+
+	o For Gene and Exon arrays, all PM probes are in
+	the pmfeature table (matching what happens with
+	expression arrays)
+
+	o Updated package template to require oligo (>= 1.11.18)
+
+NEW FEATURES
+
+
+BUG FIXES
+
+	o Fixed creation of indices for Gene arrays

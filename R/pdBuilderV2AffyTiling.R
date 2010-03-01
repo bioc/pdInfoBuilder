@@ -253,7 +253,6 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
                                 affyTilingMmFeatureSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
                               affyTilingBgFeatureSchema[["col2type"]], !quiet)
-            dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
@@ -263,6 +262,7 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             if (!is.null(parsedData[["mmFeatures"]]))
               dbCreateIndicesMm(conn, !quiet)
             
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -279,5 +279,5 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             save(pmSequence, file=pmSeqFile)
             if (!quiet) cat("Saving DataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) cat("Done.")
+            if (!quiet) cat("Done.\n")
           })

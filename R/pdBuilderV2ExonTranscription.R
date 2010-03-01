@@ -42,6 +42,8 @@ exonTranscriptionFeatureSetSchema <- list(col2type=c(
                                             type ="REFERENCES type_dict(type_id)"
                                             ))
 
+## merge both pmfeature schemes???
+## apparently fid in gene arrays can't be key?
 exonTranscriptionPmFeatureSchema <- list(col2type=c(
                                            fid="INTEGER",
                                            fsetid="INTEGER",
@@ -65,7 +67,17 @@ genePmFeatureSchema <- list(col2type=c(
                               ))
 
 
-## TODO: exonTranscriptionMmFeatureSchema
+exonTranscriptionMmFeatureSchema <- list(col2type=c(
+                                           fid="INTEGER",
+                                           fsetid="INTEGER",
+                                           atom="INTEGER",
+                                           x="INTEGER",
+                                           y="INTEGER"
+                                           ),
+                                         col2key=c(
+                                           fsetid="REFERENCES featureSet(fsetid)"
+                                           ))
+
 exonTranscriptionBgFeatureSchema <- list(col2type=c(
                                            fid="INTEGER",
                                            fsetid="INTEGER",
@@ -329,7 +341,7 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ##    ignoring strand
   ##    keeping atom to match with MM's
   pmFeatures <- subset(probes.table,
-                       pstype == "main" & substr(probes.table[["ptype"]], 1, 2) == "pm",
+                       substr(probes.table[["ptype"]], 1, 2) == "pm",
                        select=c("fid", "fsetid", "atom", "x", "y", "sequence"))
 
   pmSequence <- pmFeatures[, c("fid", "sequence")]
@@ -347,11 +359,18 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ##    ignoring strand
   ##    keeping atom to match with MM's
   ##    ADD sequence for MM
-  mmfeatures <- subset(probes.table, pstype=="main" & substr(ptype, 1, 2) =="mm",
-                       select=c("fid", "fsetid", "atom", "x", "y"))
-  if (nrow(mmfeatures) > 0)
-    stop("Add tables for MM")
-  rm(mmfeatures)
+  mmFeatures <- subset(probes.table, substr(ptype, 1, 2) =="mm",
+                       select=c("fid", "fsetid", "atom", "x", "y", "sequence"))
+  if (nrow(mmFeatures) > 0){
+    mmSequence <- mmFeatures[, c("fid", "sequence")]
+    mmFeatures[["sequence"]] <- NULL
+    mmSequence <- mmSequence[order(mmSequence[["fid"]]),]
+    mmSequence <- DataFrame(fid=mmSequence[["fid"]],
+                            sequence=DNAStringSet(mmSequence[["sequence"]]))
+  }else{
+    mmFeatures <- data.frame()
+    mmSequence <- data.frame()
+  }
 
   ## IMPORTANT: for the moment, bgfeature will contain everything (that is PM) but 'main'
   ## bgfeature table - Fields
@@ -360,17 +379,10 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ##  y
   ##  fs_type: featureSet type: genomic/antigenomic
   ##  f_type: pm/mm at/st
-  cols <- c("fid", "fsetid", "pstype", "ptype", "x", "y", "sequence")
-  bgFeatures <- subset(probes.table,
-                       pstype!="main" & substr(ptype, 1, 2) == "pm",
-                       select=cols)
-  names(bgFeatures) <- c("fid", "fsetid", "fs_type", "f_type", "x", "y", "sequence")
-  bgSequence <- bgFeatures[, c("fid", "sequence")]
-  bgFeatures[["sequence"]] <- NULL
-  bgSequence <-bgSequence[order(bgSequence[["fid"]]),]
-  bgSequence <- DataFrame(fid=bgSequence[["fid"]],
-                          sequence=DNAStringSet(bgSequence[["sequence"]]))
-  rm(cols, probes.table)
+  ## old code:
+  ## subset using cols
+  ## cols <- c("fid", "fsetid", "pstype", "ptype", "x", "y", "sequence")
+  rm(probes.table)
   
   core <- mpsParser(coreMps, verbose=verbose)
   if (!geneArray){
@@ -381,26 +393,22 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ## Here we should have the following tables available:
   ##  featureSet: fsetid, type
   ##  pmfeature: fid, fsetid, atom, x, y
-  ##  bgfeature: fid, fsetid, fs_type, f_type, x, y
+  ##  bgfeature: fid, fsetid, fs_type, f_type, x, y  - NOT ANYMORE
   ##  pmSequence: fid, sequence
-  ##  bgSequence: fid, sequence
+  ##  bgSequence: fid, sequence  - NOT ANYMORE
   ##  core, extended, full: meta_fsetid, trancript_cluster_id, fsetid
+  ##  mmfeatures/mmSequence
 
+  out <- list(featureSet=featureSet, pmFeatures=pmFeatures,
+              mmFeatures=mmFeatures, geometry=geom,
+              pmSequence=pmSequence, mmSequence=mmSequence,
+              chrom_dict=chrom_dict, level_dict=level_dict,
+              type_dict=type_dict, core=core)
   if (!geneArray){
-    out <- list(featureSet=featureSet, pmFeatures=pmFeatures,
-                bgFeatures=bgFeatures, geometry=geom,
-                pmSequence=pmSequence, bgSequence=bgSequence,
-                chrom_dict=chrom_dict, level_dict=level_dict,
-                type_dict=type_dict, core=core, extended=extended,
-                full=full)
-  }else{
-    out <- list(featureSet=featureSet, pmFeatures=pmFeatures,
-                bgFeatures=bgFeatures, geometry=geom,
-                pmSequence=pmSequence, bgSequence=bgSequence,
-                chrom_dict=chrom_dict, level_dict=level_dict,
-                type_dict=type_dict, core=core)
+    out[["extended"]] <- extended
+    out[["full"]] <- full
   }
-
+  
   return(out)
 }
 
@@ -524,21 +532,13 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               dbCreateTable(conn, "pmfeature",
                             genePmFeatureSchema[["col2type"]],
                             genePmFeatureSchema[["col2key"]])
-              dbCreateTable(conn,
-                            "bgfeature",
-                            geneBgFeatureSchema[["col2type"]],
-                            geneBgFeatureSchema[["col2key"]])
             }else{
               dbCreateTable(conn,
                             "pmfeature",
                             exonTranscriptionPmFeatureSchema[["col2type"]],
                             exonTranscriptionPmFeatureSchema[["col2key"]])
-              dbCreateTable(conn,
-                            "bgfeature",
-                            exonTranscriptionBgFeatureSchema[["col2type"]],
-                            exonTranscriptionBgFeatureSchema[["col2key"]])
             }
-            containsMm <- "mmFeatures" %in% names(parsedData)
+            containsMm <- nrow(parsedData[["mmFeatures"]]) > 0
             if (containsMm)
               dbCreateTable(conn,
                             "mmfeature",
@@ -567,29 +567,21 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             if (geneArray){
               dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                                 genePmFeatureSchema[["col2type"]], !quiet)
-              dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
-                                geneBgFeatureSchema[["col2type"]], !quiet)
             }else{
               dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                                 exonTranscriptionPmFeatureSchema[["col2type"]], !quiet)
-              dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
-                                exonTranscriptionBgFeatureSchema[["col2type"]], !quiet)
             }
             if (containsMm)
               dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
                                 exonTranscriptionMmFeatureSchema[["col2type"]], !quiet)
-            dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
             ## Create indices
             if (geneArray){
-              dbCreateIndex(conn, "idx_bgfsetid", "bgfeature", "fsetid", FALSE, verbose=!quiet)
-              dbCreateIndex(conn, "idx_bgfid", "bgfeature", "fid", FALSE, verbose=!quiet)
-              dbCreateIndex(conn, "idx_pmfsetid", "bgfeature", "fsetid", FALSE, verbose=!quiet)
-              dbCreateIndex(conn, "idx_pmfid", "bgfeature", "fid", FALSE, verbose=!quiet)
+              dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=!quiet)
+              dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", FALSE, verbose=!quiet)
             }else{
-              dbCreateIndicesBg(conn, !quiet)
               dbCreateIndicesPm(conn, !quiet)
             }
             dbCreateIndicesFs(conn, !quiet)
@@ -601,6 +593,13 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               dbCreateIndex(conn, "idx_extended_meta_fsetid", "extended_mps", "meta_fsetid", FALSE, verbose=!quiet)
               dbCreateIndex(conn, "idx_extended_fsetid", "extended_mps", "fsetid", FALSE, verbose=!quiet)
             }
+
+            if (containsMm){
+              dbCreateIndex(conn, "idx_mmfsetid", "mmfeature", "fsetid", FALSE, verbose=!quiet)
+              dbCreateIndex(conn, "idx_mmfid", "mmfeature", "fid", FALSE, verbose=!quiet)
+            }
+              
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -610,12 +609,14 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             datadir <- file.path(destDir, pkgName, "data")
             dir.create(datadir)
             pmSequence <- parsedData[["pmSequence"]]
-            bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
-            bgSeqFile <- file.path(datadir, "bgSequence.rda")
             if (!quiet) cat("Saving DataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving DataFrame object for BG.\n")
-            save(bgSequence, file=bgSeqFile)
+            if (containsMm){
+              mmSequence <- parsedData[["mmSequence"]]
+              mmSeqFile <- file.path(datadir, "mmSequence.rda")
+              if (!quiet) cat("Saving DataFrame object for MM.\n")
+              save(mmSequence, file=mmSeqFile)
+            }
             if (!quiet) cat("Done.\n")
           })

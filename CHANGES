@@ -106,3 +106,8 @@ Changes by BC in Feb-Mar 2009
 02-08-2010 - B Carvalho
 
 (1.11.3) added if (length(controls)>0) in builder for NGS Expression
+
+03-01-2010 - B Carvalho
+
+(1.11.5) removed unused C code
+(1.11.4) moved probes from bg to pmfeature table on exon/gene arrays

@@ -231,7 +231,6 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             if (containsBg)
               dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
                                 ngsExprBgFeatureSchema[["col2type"]], !quiet)
-            dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
@@ -241,7 +240,7 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             dbCreateIndicesPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
             
-            
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -262,5 +261,5 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
               bgSeqFile <- file.path(datadir, "bgSequence.rda")
               save(bgSequence, file=bgSeqFile)
             }
-            if (!quiet) cat("Done.")
+            if (!quiet) cat("Done.\n")
           })

@@ -184,13 +184,13 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
                               affySnpFeatureSetSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                               affySnpPmFeatureSchema[["col2type"]], !quiet)
-            dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
             ## Create indices
             dbCreateIndicesSnpPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -203,5 +203,5 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             if (!quiet) cat("Saving DataFrame object for SNPs / PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Done.")
+            if (!quiet) cat("Done.\n")
           })

@@ -374,7 +374,6 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
                                 tiledRegionMmFeatureSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
                               tiledRegionBgFeatureSchema[["col2type"]], !quiet)
-            dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
@@ -383,6 +382,7 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             dbCreateIndicesPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
             
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -399,5 +399,5 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             save(pmSequence, file=pmSeqFile)
             if (!quiet) cat("Saving DataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) cat("Done.")
+            if (!quiet) cat("Done.\n")
           })

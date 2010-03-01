@@ -279,7 +279,6 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             if (hasBG)
               dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
                                 affyHTExpressionBgFeatureSchema[["col2type"]], !quiet)
-            dbGetQuery(conn, "VACUUM")
 
             dbCreateTableInfo(conn, !quiet)
 
@@ -289,6 +288,7 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             dbCreateIndicesPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
             
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -307,5 +307,5 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
               if (!quiet) cat("Saving DataFrame object for BG.\n")
               save(bgSequence, file=bgSeqFile)
             }
-            if (!quiet) cat("Done.")
+            if (!quiet) cat("Done.\n")
           })

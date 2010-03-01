@@ -309,8 +309,6 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             dbInsertDataFrame(conn, "pmfeatureCNV", parsedData[["pmFeaturesCNV"]],
                               affyCnvPmFeatureSchema[["col2type"]], !quiet)
             
-            dbGetQuery(conn, "VACUUM")
-
             dbCreateTableInfo(conn, !quiet)
 
             ## Create indices
@@ -318,6 +316,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             dbCreateIndicesCnvPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
             
+            dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
             
             #######################################################################
@@ -334,5 +333,5 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             save(pmSequence, file=pmSeqFile)
             if (!quiet) cat("Saving DataFrame object for CNV / PM.\n")
             save(pmSequenceCNV, file=pmSeqFileCNV)
-            if (!quiet) cat("Done.")
+            if (!quiet) cat("Done.\n")
           })
