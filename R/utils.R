@@ -70,7 +70,8 @@ setupPackage <- function(object, pkgName, destDir, dbFileName, unlink, quiet){
     createPackage(pkgname=pkgName, destinationDir=destDir,
             originDir=templateDir, symbolValues=syms,
             unlink = unlink, quiet=quiet)
-    file.rename(file.path(destDir, pkgName, "man/template.Rd"), file.path(destDir, pkgName, "man", paste(pkgName, "Rd", sep=".")))
+    file.rename(file.path(destDir, pkgName, "man/template.Rd"),
+                file.path(destDir, pkgName, "man", paste(pkgName, "Rd", sep=".")))
 }              
 
 connectDb <- function(dbfile) {
@@ -86,3 +87,135 @@ connectDb <- function(dbfile) {
 closeDb <- function(db){
     dbDisconnect(db)
 }
+
+###################
+## create chrom dictionary
+## the function takes a vector with all chromosome
+## values and returns a data frame with an integer id
+## for each value.
+## The integer ID is used in the pmfeature-like tables
+##################
+createChrDict <- function(x){
+  possible <- as.character(na.omit(unique(x)))
+  possible <- gsub("chr([1-9])$", "chr0\\1", possible)
+  possible <- gsub("chr([1-9]_)", "chr0\\1", possible)
+  dataSplit <- strsplit(possible, "_")
+  len <- sapply(dataSplit, length)
+  idx <- which(len == 1)
+  basic <- unlist(dataSplit[idx])
+  if (length(idx) < length(len)){
+    suffixes <- sapply(dataSplit[-idx], function(x) paste(x[-1], collapse="_"))
+    suffixes <- sort(unique(suffixes))
+    out <- list()
+    out[[1]] <- basic
+    for (i in 1:length(suffixes))
+      out[[i+1]] <- paste(basic, suffixes[i], sep="_")
+    out <- unlist(out)
+  }else{
+    out <- sort(basic)
+  }
+  out <- gsub("chr0([1-9])", "chr\\1", out)
+  data.frame(chrom=as.integer(1:length(out)),
+             chrom_id=out,
+             stringsAsFactors=FALSE)
+}
+
+### helpers
+### table creation
+dbCreateTableInfo <- function(db, verbose=FALSE) {
+    tables <- dbListTables(db)
+    counts <- integer(length(tables))
+    sql <- "select count(*) from %s"
+    for (i in seq(along=counts)) {
+        if (verbose)
+          cat("Counting rows in", tables[i], "\b.\n")
+        counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
+    }
+
+    df <- data.frame(tbl=tables, row_count=counts,
+                     stringsAsFactors=FALSE)
+    dbWriteTable(db, "table_info", df, row.names=FALSE)
+}
+
+dbCreateTable <- function(conn, tablename, col2type, col2key){
+    col2type[names(col2key)] <- paste(col2type[names(col2key)], col2key, sep=" ")
+    sql <- paste(names(col2type), col2type, sep=" ")
+    sql <- paste(sql, collapse=", ")
+    sql <- paste("CREATE TABLE ", tablename, " (", sql, ")", sep="")
+    dbGetQuery(conn, sql)
+}
+
+dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
+  cols <- names(col2type)
+  if (!identical(sort(names(data)), sort(cols)))
+    stop("cols in data frame 'data' don't match cols in table \"", tablename, "\"")
+  values_template <- paste(paste(":", cols, sep=""), collapse=", ")
+  sql_template <- paste("INSERT INTO ", tablename, " VALUES (", values_template, ")", sep="")
+  if (verbose)
+    cat("Inserting ", nrow(data), " rows into table \"", tablename, "\"... ", sep="")
+  dbBeginTransaction(conn)
+  on.exit(dbCommit(conn))
+  dbGetPreparedQuery(conn, sql_template, bind.data=data)
+  if (verbose)
+    cat("OK\n")
+}
+
+dbCreateIndex <- function(conn, idxname, tblname, fieldname, unique=TRUE, verbose=TRUE){
+  if (verbose) cat("Creating index", idxname, "on", tblname, "... ")
+  sql <- paste("CREATE", ifelse(unique, "UNIQUE", ""),
+               "INDEX", idxname, "ON", tblname,
+               paste("(", fieldname, ")", sep=""))
+  dbGetQuery(conn, sql)
+  if (verbose) cat("OK\n")
+  NULL
+}
+
+dbCreateIndicesBg <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_bgfsetid", "bgfeature", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_bgfid", "bgfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesBgTiling <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_bgfid", "bgfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesPm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesMm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_mmfid", "mmfeature", "fid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_mmpmfid", "mmfeature", "fidpm", FALSE, verbose=verbose)
+}
+
+dbCreateIndicesSnpPm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfsetid", "pmfeature", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesCnvPm <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfsetidcnv", "pmfeatureCNV", "fsetid", FALSE, verbose=verbose)
+  dbCreateIndex(conn, "idx_pmfidcnv", "pmfeatureCNV", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesPmTiling <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_pmfid", "pmfeature", "fid", TRUE, verbose=verbose)
+}
+
+dbCreateIndicesFs <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_fsfsetid", "featureSet", "fsetid", TRUE, verbose=verbose)
+}
+
+## Messages
+
+msgParsingFile <- function(fname)
+  cat("Parsing file:", basename(fname), "... ")
+
+msgOK <- function() cat("OK\n")
+
+msgBar <- function(){
+  n <- options()[["width"]]
+  cat(paste(c(rep("=", n), "\n"), collapse=""))
+}
+

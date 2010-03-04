@@ -2,6 +2,10 @@
 \Rdversion{1.1}
 \alias{pmSequence}
 \alias{data:pmSequence}
+\alias{bgSequence}
+\alias{data:bgSequence}
+\alias{mmSequence}
+\alias{data:mmSequence}
 \docType{data}
 \title{
   Sequence data for PM probes.

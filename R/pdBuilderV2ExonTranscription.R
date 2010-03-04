@@ -114,31 +114,6 @@ mpsSchema <- list(col2type=c(
 #######################################################################
 ## SECTION B - Utils - Already done.
 #######################################################################
-createChrDict <- function(x){
-  possible <- as.character(na.omit(unique(x)))
-  possible <- gsub("chr([1-9])$", "chr0\\1", possible)
-  possible <- gsub("chr([1-9]_)", "chr0\\1", possible)
-  dataSplit <- strsplit(possible, "_")
-  len <- sapply(dataSplit, length)
-  idx <- which(len == 1)
-  basic <- unlist(dataSplit[idx])
-  if (length(idx) < length(len)){
-    suffixes <- sapply(dataSplit[-idx], function(x) paste(x[-1], collapse="_"))
-    suffixes <- sort(unique(suffixes))
-    out <- list()
-    out[[1]] <- basic
-    for (i in 1:length(suffixes))
-      out[[i+1]] <- paste(basic, suffixes[i], sep="_")
-    out <- unlist(out)
-  }else{
-    out <- sort(basic)
-  }
-  out <- gsub("chr0([1-9])", "chr\\1", out)
-  data.frame(chrom=as.integer(1:length(out)),
-             chrom_id=out,
-             stringsAsFactors=FALSE)
-}
-
 
 #######################################################################
 ## SECTION C - Parser specific for Affy Exon array

@@ -108,43 +108,6 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   rm(probeSeq)
   if (verbose) msgOK()
 
-  ## AFFX probes have sequence for only 1 probe of the probeset...
-  missSeq <- which(is.na(allProbes[["sequence"]]) & allProbes[["isPm"]])
-  if (length(missSeq) > 0){
-    if (verbose) cat("Getting sequence information for AFFX probes...")
-    missPS <- sort(unique(allProbes[missSeq, "fsetid"]))
-    for (i in missPS){
-      idx <- which(allProbes[["fsetid"]] == i & allProbes[["isPm"]])
-      seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm, sequence, drop=TRUE)
-      ##     seq <- subset(allProbes, fsetid == i & !is.na(sequence) & isPm)[, "sequence"]
-      ##     toGet <- (allProbes[["fsetid"]] == i) & (!is.na(allProbes[["sequence"]])) & (allProbes[["isPm"]])
-      ##     seq <- allProbes[toGet, "sequence"]
-      seq <- unique(seq)
-      stopifnot(length(seq) == 1)
-      allProbes[idx, "sequence"] <- seq
-      rm(idx, seq)
-    }
-    rm(missPS, i)
-  }
-  rm(missSeq)
-  
-  idx <- grep("nonspecific", tolower(allProbes[["man_fsetid"]]))
-  bgFeatures <- bgSequences <- NULL
-  if (length(idx) > 0){
-    bgFeatures <- allProbes[idx,]
-    allProbes <- allProbes[-idx,]
-    if (any(!bgFeatures[["isPm"]]))
-      warning("MM Background probes were ignored.")
-    bgFeatures <- bgFeatures[bgFeatures[["isPm"]],]
-    rm(idx)
-    bgSequence <- data.frame(fid=bgFeatures[["fid"]], sequence=bgFeatures[["sequence"]])
-    bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
-    bgSequence <- DataFrame(fid=bgSequence[["fid"]],
-                            sequence=bgSequence[["sequence"]])
-    bgFeatures <- bgFeatures[, c("fid", "fsetid", "x", "y")]
-    if (verbose) msgOK()
-  }
-
   if (verbose) cat("Getting PM probes and sequences... ")
   geometry <- paste(geometry, collapse=";")
   cols <- c("fid", "fsetid", "x", "y", "atom")
@@ -155,14 +118,20 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
   if (verbose) msgOK()
 
-  missSeq <- which(is.na(pmSequence[["sequence"]]))
-  if (any(is.na(pmSequence[["sequence"]])))
-    cat("Problem with sequences. Check pmSequence for missing values.")
+  if (any(naseq <- is.na(pmSequence[["sequence"]])))
+    warning("Probe sequences were not found for all PM probes. These probes will be removed from the pmSequence object.")
+  pmSequence <- pmSequence[!naseq,]
 
   pmSequence <- DataFrame(fid=pmSequence[["fid"]],
                           sequence=DNAStringSet(pmSequence[["sequence"]]))
+
   mmFeatures <- allProbes[-pmidx, cols]
-  rm(pmidx, allProbes)
+  mmSequence <- allProbes[-pmidx, cols2]
+  if (any(naseq <- is.na(mmSequence[["sequence"]])))
+    warning("Probe sequences were not found for all MM probes. These probes will be removed from the mmSequence object.")
+  mmSequence <- mmSequence[!naseq,]
+  
+  rm(pmidx, allProbes, naseq)
 
   cols1 <- c("fsetid", "atom")
   cols2 <- c("fsetid", "fid", "atom")
@@ -178,10 +147,9 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   return(list(featureSet=featureSet,
               pmSequence=pmSequence,
               pmFeatures=pmFeatures,
+              mmSequence=mmSequence,
               mmFeatures=mmFeatures,
-              geometry=geometry,
-              bgFeatures=bgFeatures,
-              bgSequence=bgSequence))
+              geometry=geometry))
 }
 
 #######################################################################
@@ -219,7 +187,7 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
                                            object@celFile,
                                            object@tabSeqFile,
                                            verbose=!quiet)
-            hasBG <- !is.null(parsedData[["bgFeatures"]])
+            hasMM <- nrow(parsedData[["mmFeatures"]]) > 0
             
             #######################################################################
             ## Part iii) Create package from template
@@ -259,32 +227,24 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
                           affyHTExpressionPmFeatureSchema[["col2type"]],
                           affyHTExpressionPmFeatureSchema[["col2key"]])
 
-            dbCreateTable(conn,
-                          "mmfeature",
-                          affyHTExpressionMmFeatureSchema[["col2type"]],
-                          affyHTExpressionMmFeatureSchema[["col2key"]])
-            if (hasBG)
+            if (hasMM)
               dbCreateTable(conn,
-                            "bgfeature",
-                            affyHTExpressionBgFeatureSchema[["col2type"]],
-                            affyHTExpressionBgFeatureSchema[["col2key"]])
+                            "mmfeature",
+                            affyHTExpressionMmFeatureSchema[["col2type"]],
+                            affyHTExpressionMmFeatureSchema[["col2key"]])
             
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
                               affyHTExpressionFeatureSetSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                               affyHTExpressionPmFeatureSchema[["col2type"]], !quiet)
-            dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
-                              affyHTExpressionMmFeatureSchema[["col2type"]], !quiet)
 
-            if (hasBG)
-              dbInsertDataFrame(conn, "bgfeature", parsedData[["bgFeatures"]],
-                                affyHTExpressionBgFeatureSchema[["col2type"]], !quiet)
+            if (hasMM)
+              dbInsertDataFrame(conn, "mmfeature", parsedData[["mmFeatures"]],
+                                affyHTExpressionMmFeatureSchema[["col2type"]], !quiet)
 
             dbCreateTableInfo(conn, !quiet)
 
             ## Create indices
-            if (hasBG)
-              dbCreateIndicesBg(conn, !quiet)
             dbCreateIndicesPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
             
@@ -298,14 +258,14 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             datadir <- file.path(destDir, pkgName, "data")
             dir.create(datadir)
             pmSequence <- parsedData[["pmSequence"]]
-            bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
-            bgSeqFile <- file.path(datadir, "bgSequence.rda")
             if (!quiet) cat("Saving DataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (hasBG){
-              if (!quiet) cat("Saving DataFrame object for BG.\n")
-              save(bgSequence, file=bgSeqFile)
+            if (hasMM){
+              mmSequence <- parsedData[["mmSequence"]]
+              mmSeqFile <- file.path(datadir, "mmSequence.rda")
+              if (!quiet) cat("Saving DataFrame object for MM.\n")
+              save(mmSequence, file=mmSeqFile)
             }
             if (!quiet) cat("Done.\n")
           })
