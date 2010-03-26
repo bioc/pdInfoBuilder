@@ -117,3 +117,7 @@ Changes by BC in Feb-Mar 2009
 (1.11.6) fixed format of NEWS
          fixed docs for sequence on template
          fixed affy expression ht
+
+03-26-2010 - B Carvalho
+
+(1.11.7) Added C code back (used old SNP chips)

@@ -1,3 +1,5 @@
+useDynLib("pdInfoBuilder")
+
 import("methods")
 import("Biobase")
 
