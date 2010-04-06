@@ -62,20 +62,38 @@ parseAnnotFile <- function(annotFile, snp=TRUE){
   return(annot)
 }
 
-parseProbeSequenceFile <- function(probeseqFile, snp=TRUE){
+parseProbeSequenceFile <- function(probeseqFile, snp=TRUE, axiom=FALSE){
   probeseqTab <- read.delim(probeseqFile, sep="\t", header=TRUE, stringsAsFactors=FALSE)
-  cols <- c("PROBESET_ID", "PROBE_X_POS", "PROBE_Y_POS", "PROBE_SEQUENCE")
-##   if (snp)
-##     cols <- c(cols, "ALLELE")
+  if (!axiom){
+    cols <- c("PROBESET_ID", "PROBE_X_POS", "PROBE_Y_POS", "PROBE_SEQUENCE")
+    colsOut <- c("man_fsetid", "x", "y", "sequence")
+  }else{
+    cols <- c("PROBESET_ID", "PROBE_SEQUENCE", "ALLELE_A", "ALLELE_B")
+    colsOut <- c("man_fsetid", "sequence", "allele_a", "allele_b")
+  }
   ok <- all(cols %in% names(probeseqTab))
   if (!ok)
     stop("Probe sequence file must have '", paste(cols, collapse="', '"), "' columns")
   probeseqTab <- probeseqTab[, cols]
-  rm(cols, ok)
-  colsOut <- c("man_fsetid", "x", "y", "sequence")
-##   if (snp)
-##     colsOut <- c(colsOut, "allele")
   names(probeseqTab) <- colsOut
+
+  ## Convert to proper IUPAC code
+  seq <- probeseqTab[["sequence"]]
+  seq <- gsub("\\[G\\/T\\]", "K", seq, ignore.case=TRUE)
+  seq <- gsub("\\[T\\/G\\]", "K", seq, ignore.case=TRUE)
+  seq <- gsub("\\[A\\/G\\]", "R", seq, ignore.case=TRUE)
+  seq <- gsub("\\[G\\/A\\]", "R", seq, ignore.case=TRUE)
+  seq <- gsub("\\[C\\/T\\]", "Y", seq, ignore.case=TRUE)
+  seq <- gsub("\\[C\\/T\\]", "Y", seq, ignore.case=TRUE)
+  seq <- gsub("\\[G\\/C\\]", "S", seq, ignore.case=TRUE)
+  seq <- gsub("\\[C\\/G\\]", "S", seq, ignore.case=TRUE)
+  seq <- gsub("\\[A\\/T\\]", "W", seq, ignore.case=TRUE)
+  seq <- gsub("\\[T\\/A\\]", "W", seq, ignore.case=TRUE)
+  seq <- gsub("\\[A\\/C\\]", "M", seq, ignore.case=TRUE)
+  seq <- gsub("\\[C\\/A\\]", "M", seq, ignore.case=TRUE)
+  probeseqTab[["sequence"]] <- seq
+  
+  rm(cols, ok, colsOut, seq)
   return(probeseqTab)
 }
 

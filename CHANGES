@@ -121,3 +121,8 @@ Changes by BC in Feb-Mar 2009
 03-26-2010 - B Carvalho
 
 (1.11.7) Added C code back (used old SNP chips)
+
+04-06-2010 - B Carvalho
+
+(1.11.8) Parser for tab seq file (Affymetrix) has a converter for IUPAC codes
+         for the case [X/Y] -> Z (SNPs)
