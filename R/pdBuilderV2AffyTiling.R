@@ -45,7 +45,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   if (verbose) msgParsingFile(bpmapFile)
   bpmap <- readBpmap(bpmapFile)
   if (verbose) msgOK()
-  if (verbose) cat("Getting geometry from CEL file... ")
+  if (verbose) simpleMessage("Getting geometry from CEL file... ")
   celHeader <- readCelHeader(celFile)
   if (verbose) msgOK()
 
@@ -73,7 +73,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   xy2i <- function(x, y, geom)
     as.integer(geom[1]*y+x+1)
 
-  if (verbose) cat("Getting PMs... ")
+  if (verbose) simpleMessage("Getting PMs... ")
   ## there are pmmm and pmonly
   idx <- which(sapply(experimental, getField, "mapping") == "onlypm")
   idx2 <- which(sapply(experimental, getField, "mapping") == "pmmm")
@@ -90,7 +90,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   if (verbose) msgOK()
 
   if (length(idx2) > 0){
-    if (verbose) cat("Getting MMs... ")
+    if (verbose) simpleMessage("Getting MMs... ")
     cols <- c("fid", "fidpm", "mmx", "mmy")
     mmFeatures <- lapply(experimental[idx2],
                          function(x){
@@ -104,7 +104,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   }
   rm(experimental, idx)
 
-  if (verbose) cat("Getting background probes... ")
+  if (verbose) simpleMessage("Getting background probes... ")
   cols <- c("fid", "pmx", "pmy", "probeseq")
   bgFeatures <- lapply(background,
                        function(x){
@@ -122,7 +122,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   pmFeatures[["chrom"]] <- match(pmFeatures[["chrom"]], chrom_dict[["chrom_id"]])
 
   ## Sequences
-  if (verbose) cat("Getting sequences...")
+  if (verbose) simpleMessage("Getting sequences... ")
   pmFeatures <- pmFeatures[order(pmFeatures[["fid"]]),]
   rownames(pmFeatures) <- NULL
   if (length(idx2) > 0){
@@ -167,9 +167,9 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
             msgBar()
-            cat("Building annotation package for Affymetrix Tiling array\n")
-            cat("BPMAP: ", basename(object@bpmapFile), "\n")
-            cat("CEL..: ", basename(object@celFile), "\n")
+            message("Building annotation package for Affymetrix Tiling array")
+            message("BPMAP: ", basename(object@bpmapFile))
+            message("CEL..: ", basename(object@celFile))
             msgBar()
             
             #######################################################################
@@ -275,9 +275,9 @@ setMethod("makePdInfoPackage", "AffyTilingPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) cat("Saving DataFrame object for PM.\n")
+            if (!quiet) message("Saving DataFrame object for PM.\n")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving DataFrame object for BG.\n")
+            if (!quiet) message("Saving DataFrame object for BG.\n")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) cat("Done.\n")
+            if (!quiet) message("Done.\n")
           })

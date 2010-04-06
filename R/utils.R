@@ -127,8 +127,7 @@ dbCreateTableInfo <- function(db, verbose=FALSE) {
     counts <- integer(length(tables))
     sql <- "select count(*) from %s"
     for (i in seq(along=counts)) {
-        if (verbose)
-          cat("Counting rows in", tables[i], "\b.\n")
+        if (verbose) message("Counting rows in", tables[i])
         counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
     }
 
@@ -152,21 +151,20 @@ dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
   values_template <- paste(paste(":", cols, sep=""), collapse=", ")
   sql_template <- paste("INSERT INTO ", tablename, " VALUES (", values_template, ")", sep="")
   if (verbose)
-    cat("Inserting ", nrow(data), " rows into table \"", tablename, "\"... ", sep="")
+    simpleMessage("Inserting ", nrow(data), " rows into table ", tablename, "... ")
   dbBeginTransaction(conn)
   on.exit(dbCommit(conn))
   dbGetPreparedQuery(conn, sql_template, bind.data=data)
-  if (verbose)
-    cat("OK\n")
+  if (verbose) msgOK()
 }
 
 dbCreateIndex <- function(conn, idxname, tblname, fieldname, unique=TRUE, verbose=TRUE){
-  if (verbose) cat("Creating index", idxname, "on", tblname, "... ")
+  if (verbose) simpleMessage("Creating index ", idxname, " on ", tblname, "... ")
   sql <- paste("CREATE", ifelse(unique, "UNIQUE", ""),
                "INDEX", idxname, "ON", tblname,
                paste("(", fieldname, ")", sep=""))
   dbGetQuery(conn, sql)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   NULL
 }
 
@@ -210,7 +208,7 @@ dbCreateIndicesFs <- function(conn, verbose=TRUE){
 ## Messages
 
 msgParsingFile <- function(fname)
-  cat("Parsing file:", basename(fname), "... ")
+  simpleMessage("Parsing file: ", basename(fname), "... ")
 
 msgOK <- function() cat("OK\n")
 

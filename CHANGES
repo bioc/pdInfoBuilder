@@ -126,3 +126,5 @@ Changes by BC in Feb-Mar 2009
 
 (1.11.8) Parser for tab seq file (Affymetrix) has a converter for IUPAC codes
          for the case [X/Y] -> Z (SNPs)
+
+(1.11.9) Replaced cat() by message()/simpleMessage()

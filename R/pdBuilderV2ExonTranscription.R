@@ -165,7 +165,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 ###################################################
   ## TABLES TO ADD
 ###################################################
-  if (verbose) cat("Creating dictionaries... ")
+  if (verbose) simpleMessage("Creating dictionaries... ")
   ## chromosome dictionary moved to after reading
   ##  the CSV file
   
@@ -234,7 +234,7 @@ parsePgfClf <- function(pgfFile, clfFile, verbose=TRUE){
   if (verbose) msgParsingFile(clfFile)
   clf <- readClf(clfFile)
   if (verbose) msgOK()
-  if (verbose) cat("Creating initial table for probes...")
+  if (verbose) simpleMessage("Creating initial table for probes... ")
   geom <- paste(clf[["dims"]], collapse=";")
   triplet <- probesetIdxToTripletIdx(pgf, 1:length(pgf[["probesetId"]]))
   fid <- pgf[["probeId"]][triplet[["probeIdx"]]]
@@ -406,14 +406,14 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             }
 
             msgBar()
-            cat(msg, "\n")
-            cat("PGF.........: ", basename(object@pgfFile), "\n")
-            cat("CLF.........: ", basename(object@clfFile), "\n")
-            cat("Probeset....: ", basename(object@probeFile), "\n")
-            cat("Core MPS....: ", basename(object@coreMps), "\n")
+            message(msg)
+            message("PGF.........: ", basename(object@pgfFile))
+            message("CLF.........: ", basename(object@clfFile))
+            message("Probeset....: ", basename(object@probeFile))
+            message("Core MPS....: ", basename(object@coreMps))
             if (!geneArray){
-              cat("Full MPS....: ", basename(object@fullMps), "\n")
-              cat("Extended MPS: ", basename(object@extendedMps), "\n")
+              message("Full MPS....: ", basename(object@fullMps))
+              message("Extended MPS: ", basename(object@extendedMps))
             }
             msgBar()
             
@@ -585,13 +585,13 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             dir.create(datadir)
             pmSequence <- parsedData[["pmSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
-            if (!quiet) cat("Saving DataFrame object for PM.\n")
+            if (!quiet) message("Saving DataFrame object for PM.")
             save(pmSequence, file=pmSeqFile)
             if (containsMm){
               mmSequence <- parsedData[["mmSequence"]]
               mmSeqFile <- file.path(datadir, "mmSequence.rda")
-              if (!quiet) cat("Saving DataFrame object for MM.\n")
+              if (!quiet) message("Saving DataFrame object for MM.")
               save(mmSequence, file=mmSeqFile)
             }
-            if (!quiet) cat("Done.\n")
+            if (!quiet) message("Done.")
           })

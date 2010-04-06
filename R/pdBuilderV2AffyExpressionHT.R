@@ -63,7 +63,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   strands <- ifelse(tolower(strands) == "sense",
                     as.integer(SENSE),
                     as.integer(ANTISENSE))
-  if (verbose) cat("Getting information for featureSet table... ")
+  if (verbose) simpleMessage("Getting information for featureSet table... ")
   featureSet <- data.frame(fsetid=1:length(strands),
                            man_fsetid=names(strands),
                            strand=strands,
@@ -92,15 +92,15 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   xy2i <- function(x, y, geom)
     as.integer(geom[1]*y+x+1)
 
-  if (verbose) cat("Getting information for pm/mm feature tables... ")
+  if (verbose) simpleMessage("Getting information for pm/mm feature tables... ")
   allProbes <- lapply(cdf, extractFromGroups)
   allProbes <- do.call("rbind", allProbes)
   allProbes[["fid"]] <- xy2i(allProbes[["x"]], allProbes[["y"]], geometry)
   allProbes[["fsetid"]] <- featureSet[match(allProbes[["man_fsetid"]],
                                             featureSet[["man_fsetid"]]),
                                       "fsetid"]
-  if (verbose) cat("OK\n")
-  if (verbose) cat("Combining probe information with sequence information... ")
+  if (verbose) msgOK()
+  if (verbose) simpleMessage("Combining probe information with sequence information... ")
   allProbes <- merge(allProbes, probeSeq,
                      by.x=c("x", "y"),
                      by.y=c("x", "y"),
@@ -108,7 +108,7 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   rm(probeSeq)
   if (verbose) msgOK()
 
-  if (verbose) cat("Getting PM probes and sequences... ")
+  if (verbose) simpleMessage("Getting PM probes and sequences... ")
   geometry <- paste(geometry, collapse=";")
   cols <- c("fid", "fsetid", "x", "y", "atom")
   cols2 <- c("fid", "sequence")

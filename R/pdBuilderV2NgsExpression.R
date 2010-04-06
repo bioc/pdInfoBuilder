@@ -55,9 +55,9 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   xysdata <- read.delim(xysFile, comment="#")
   if (verbose) msgOK()
   xysdata[["fid"]] <- 1:nrow(xysdata)
-  if (verbose) cat("Merging NDF and XYS files ...")
+  if (verbose) simpleMessage("Merging NDF and XYS files... ")
   ndfdata <- merge(ndfdata, xysdata, by.x=c("X", "Y"), by.y=c("X", "Y"))
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
   controls <- which(is.na(ndfdata[["SIGNAL"]]))
   if (length(controls) > 0)
     ndfdata <- ndfdata[-controls,]
@@ -67,7 +67,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ## Step 4: Prepare contents for featureSet table
   ## Fields featureSet: man_fsetid, chrom, start, end, type
   #######################################################################
-  if (verbose) cat("Preparing contents for featureSet table ...")
+  if (verbose) simpleMessage("Preparing contents for featureSet table... ")
   colsFS <- c("fsetid", "SEQ_ID")
   featureSet <- ndfdata[, colsFS]
   rm(colsFS)
@@ -75,7 +75,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ok <- which(!duplicated(featureSet[["man_fsetid"]]))
   featureSet <- featureSet[ok,]
   rm(ok)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   
   #######################################################################
@@ -99,7 +99,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ## FIX ME: Double check ordering
   ## FIX ME: This should be passed by function
 
-  if (verbose) cat("Preparing contents for bgfeature table ...")
+  if (verbose) simpleMessage("Preparing contents for bgfeature table... ")
   bgidx <- grep("RANDOM", features[["man_fsetid"]])
   bgFeatures <- bgSequence <- NULL
   if (length(bgidx) > 0){
@@ -111,9 +111,9 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
     features <- features[-bgidx,]
   }
   rm(bgidx)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
-  if (verbose) cat("Preparing contents for pmfeature table ...")
+  if (verbose) simpleMessage("Preparing contents for pmfeature table... ")
   pmidx <- which(features[["mismatch"]] == 0)
   pmFeatures <- features[pmidx, c("fid", "fsetid", "position", "x", "y")]
   pmSequence <- features[pmidx, c("fid", "sequence")]
@@ -122,7 +122,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
                           sequence=DNAStringSet(pmSequence[["sequence"]]))
   mmFeatures <- features[-pmidx,]
   rm(pmidx)
-  if (verbose) cat("OK\n")
+  if (verbose) msgOK()
 
   
   ## add mmSequence
@@ -150,9 +150,9 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
             msgBar()
-            cat("Building annotation package for Nimblegen Expression Array\n")
-            cat("NDF: ", basename(object@ndfFile), "\n")
-            cat("XYS: ", basename(object@xysFile), "\n")
+            message("Building annotation package for Nimblegen Expression Array")
+            message("NDF: ", basename(object@ndfFile))
+            message("XYS: ", basename(object@xysFile))
             msgBar()
             
             #######################################################################
@@ -250,16 +250,16 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             datadir <- file.path(destDir, pkgName, "data")
             dir.create(datadir)
 
-            if (!quiet) cat("Saving DataFrame object for PM.\n")
+            if (!quiet) message("Saving DataFrame object for PM.")
             pmSequence <- parsedData[["pmSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             save(pmSequence, file=pmSeqFile)
 
             if (containsBg){
-              if (!quiet) cat("Saving DataFrame object for BG.\n")
+              if (!quiet) message("Saving DataFrame object for BG.")
               bgSequence <- parsedData[["bgSequence"]]
               bgSeqFile <- file.path(datadir, "bgSequence.rda")
               save(bgSequence, file=bgSeqFile)
             }
-            if (!quiet) cat("Done.\n")
+            if (!quiet) message("Done.")
           })

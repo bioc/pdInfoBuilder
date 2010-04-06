@@ -25,11 +25,11 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   theTypes <- sapply(cdf, "[[", "unittype")
   
   ## SNP
-  if (verbose) cat("Getting SNP probes... ")
+  if (verbose) simpleMessage("Getting SNP probes... ")
   idx <- which(theTypes == "genotyping")
   if (verbose) msgOK()
   
-  if (verbose) cat("Organizing PM probes for SNPs... ")
+  if (verbose) simpleMessage("Organizing PM probes for SNPs... ")
   lens <- sapply(cdf[idx], function(x)
                  sum(sapply(x[["groups"]], function(y)
                             length(y[["indices"]]))))
@@ -50,7 +50,7 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   
   ## featureSet SNP
   ## columns: fsetid man_fsetid chr location rsid
-  if (verbose) cat("Getting SNP information... ")
+  if (verbose) simpleMessage("Getting SNP information... ")
   featureSetSNP <- data.frame(man_fsetid=pmfeatureSNP[["man_fsetid"]],
                               fsetid=pmfeatureSNP[["fsetid"]],
                               stringsAsFactors=FALSE)
@@ -62,12 +62,12 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   if (verbose) msgOK()
 
   ## Sequence files
-  if (verbose) cat("Getting sequences for SNPs... ")
+  if (verbose) simpleMessage("Getting sequences for SNPs... ")
   probeseqSNP <- parseProbeSequenceFile(probeseqFileSNP)
   if (verbose) msgOK()
   
   cols <- c("x", "y")
-  if (verbose) cat("Merging sequence information for SNPs... ")
+  if (verbose) simpleMessage("Merging sequence information for SNPs... ")
   pmSequenceSNP <- merge(pmfeatureSNP[, c(cols, "fid")],
                          probeseqSNP[, c(cols, "sequence")],
                          by.x=cols, by.y=cols)[, c("fid", "sequence")]
@@ -75,7 +75,7 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   if (verbose) msgOK()
   
   rm(cols, probeseqSNP)
-  if (verbose) cat("Creating Biostrings objects... ")
+  if (verbose) simpleMessage("Creating Biostrings objects... ")
   pmSequenceSNP <- DataFrame(fid=pmSequenceSNP[["fid"]],
                              sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
   if (verbose) msgOK()
@@ -84,7 +84,7 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   if (verbose) msgParsingFile(annotFileSNP)
   annotSNP <- parseAnnotFile(annotFileSNP)
   if (verbose) msgOK()
-  if (verbose) cat("Merging information... ")
+  if (verbose) simpleMessage("Merging information... ")
   featureSetSNP <- merge(featureSetSNP, annotSNP, all.x=TRUE)
   rm(annotSNP)
   if (verbose) msgOK()

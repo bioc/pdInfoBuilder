@@ -76,7 +76,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ## Step 3: Match POS and NDF
   ##         and update positional info
   #######################################################################
-  if (verbose) cat("Merging NDF and POS files... ")
+  if (verbose) simpleMessage("Merging NDF and POS files... ")
   ndfdata <- merge(ndfdata, posdata, by.x=c("SEQ_ID", "PROBE_ID"), by.y=c("SEQ_ID", "PROBE_ID"), all.x=TRUE)
   if (all(c("POSITION.x", "POSITION.y") %in% names(ndfdata))){
     ndfdata[["POSITION.x"]] <- ndfdata[["POSITION.y"]]
@@ -186,10 +186,10 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
             msgBar()
-            cat("Building annotation package for Nimblegen Tiling Array\n")
-            cat("NDF: ", basename(object@ndfFile), "\n")
-            cat("POS: ", basename(object@posFile), "\n")
-            cat("XYS: ", basename(object@xysFile), "\n")
+            message("Building annotation package for Nimblegen Tiling Array")
+            message("NDF: ", basename(object@ndfFile))
+            message("POS: ", basename(object@posFile))
+            message("XYS: ", basename(object@xysFile))
             msgBar()
             
             #######################################################################
@@ -289,9 +289,9 @@ setMethod("makePdInfoPackage", "NgsTilingPDInfoPkgSeed",
             bgSequence <- parsedData[["bgSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             bgSeqFile <- file.path(datadir, "bgSequence.rda")
-            if (!quiet) cat("Saving DataFrame object for PM.\n")
+            if (!quiet) message("Saving DataFrame object for PM.")
             save(pmSequence, file=pmSeqFile)
-            if (!quiet) cat("Saving DataFrame object for BG.\n")
+            if (!quiet) message("Saving DataFrame object for BG.")
             save(bgSequence, file=bgSeqFile)
-            if (!quiet) cat("Done.\n")
+            if (!quiet) message("Done.")
           })
