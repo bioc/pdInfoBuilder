@@ -71,9 +71,7 @@ parseProbeSequenceFile <- function(probeseqFile, snp=TRUE, axiom=FALSE){
     cols <- c("PROBESET_ID", "PROBE_SEQUENCE", "ALLELE_A", "ALLELE_B")
     colsOut <- c("man_fsetid", "sequence", "allele_a", "allele_b")
   }
-  ok <- all(cols %in% names(probeseqTab))
-  if (!ok)
-    stop("Probe sequence file must have '", paste(cols, collapse="', '"), "' columns")
+  checkFields(cols, names(probeseqTab))
   probeseqTab <- probeseqTab[, cols]
   names(probeseqTab) <- colsOut
 

@@ -128,3 +128,5 @@ Changes by BC in Feb-Mar 2009
          for the case [X/Y] -> Z (SNPs)
 
 (1.11.9) Replaced cat() by message()/simpleMessage()
+
+(1.11.10) Added checkFields function

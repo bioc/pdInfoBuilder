@@ -1,3 +1,10 @@
+checkFields <- function(needed, found){
+  if (!all(needed %in% found))
+    stop("Looking for fields '", paste(needed, sep="", collapse="', '"), "', but found '",
+         paste(found, sep="", collapse="', '"), "'.")
+  TRUE
+}
+
 #######################################################################
 ## SECTION A - Db Schema
 #######################################################################
@@ -54,8 +61,11 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
 
   if (verbose) msgParsingFile(probeFile)
   cols <- c("probe.x", "probe.y", "probe.sequence")
-  probeSeq <- read.delim(probeFile, stringsAsFactors=FALSE)[, cols]
-  rm(cols)
+  probeSeq <- read.delim(probeFile, stringsAsFactors=FALSE)
+  names(probeSeq) <- tolower(names(probeSeq))
+  ok <- checkFields(cols, names(probeSeq))
+  probeSeq <- probeSeq[, cols]
+  rm(cols, ok)
   names(probeSeq) <- c("x", "y", "sequence")
   if (verbose) msgOK()
 
@@ -119,7 +129,8 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   if (verbose) msgOK()
 
   if (any(naseq <- is.na(pmSequence[["sequence"]])))
-    warning("Probe sequences were not found for all PM probes. These probes will be removed from the pmSequence object.")
+    warning("Probe sequences were not found for all PM probes. ",
+            "These probes will be removed from the pmSequence object.")
   pmSequence <- pmSequence[!naseq,]
 
   pmSequence <- DataFrame(fid=pmSequence[["fid"]],
@@ -128,7 +139,8 @@ parseCdfCelProbe <- function(cdfFile, celFile, probeFile, verbose=TRUE){
   mmFeatures <- allProbes[-pmidx, cols]
   mmSequence <- allProbes[-pmidx, cols2]
   if (any(naseq <- is.na(mmSequence[["sequence"]])))
-    warning("Probe sequences were not found for all MM probes. These probes will be removed from the mmSequence object.")
+    warning("Probe sequences were not found for all MM probes. ",
+            "These probes will be removed from the mmSequence object.")
   mmSequence <- mmSequence[!naseq,]
   
   rm(pmidx, allProbes, naseq)
