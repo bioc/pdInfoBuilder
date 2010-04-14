@@ -59,7 +59,9 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ## Step 1: Parse NDF
   #######################################################################
   if (verbose) msgParsingFile(ndfFile)
-  ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE)
+  tmp <- read.delim(ndfFile, stringsAsFactors=FALSE, nrow=10)
+  ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE, colClasses=sapply(tmp, class))
+  rm(tmp)
   if (verbose) msgOK()
   ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
 
@@ -87,15 +89,6 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   rm(posdata)
   if (verbose) msgOK()
   
-##   keyNdf <- paste(ndfdata[["SEQ_ID"]], ndfdata[["PROBE_ID"]], sep=":::")
-##   keyPos <- paste(posdata[["SEQ_ID"]], posdata[["PROBE_ID"]], sep=":::")
-##   idx <- match(keyPos, keyNdf)
-##   rm(keyNdf, keyPos)
-##   ndfdata[idx, "POSITION"] <- posdata[["POSITION"]]
-##   ndfdata[["CHROMOSOME"]] <- NA
-##   ndfdata[idx, "CHROMOSOME"] <- posdata[["CHROMOSOME"]]
-##   rm(idx, posdata)
-
   #######################################################################
   ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
   #######################################################################

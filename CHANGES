@@ -130,3 +130,5 @@ Changes by BC in Feb-Mar 2009
 (1.11.9) Replaced cat() by message()/simpleMessage()
 
 (1.11.10) Added checkFields function
+
+(1.11.11) changed way to read NDF

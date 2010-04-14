@@ -44,7 +44,9 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ## Step 1: Parse NDF
   #######################################################################
   if (verbose) msgParsingFile(ndfFile)
-  ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE)
+  tmp <- read.delim(ndfFile, stringsAsFactors=FALSE, nrow=10)
+  ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE, colClasses=sapply(tmp, class))
+  rm(tmp)
   if (verbose) msgOK()
   ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
 
