@@ -13,8 +13,7 @@ tiledRegionFeatureSetSchema <- list(col2type=c(
                                       man_fsetid="TEXT",
                                       chrom="TEXT",
                                       start="INTEGER",
-                                      end="INTEGER",
-                                      type="TEXT"),
+                                      end="INTEGER"),
                                     col2key=c(
                                       fsetid="PRIMARY KEY"
                                       ))
@@ -23,8 +22,8 @@ tiledRegionPmFeatureSchema <- list(col2type=c(
                                      fsetid="INTEGER",
                                      position="INTEGER",
                                      x="INTEGER",
-                                     y="INTEGER"
-                                     ),
+                                     y="INTEGER",
+                                     type="TEXT"),
                                    col2key=c(
                                      fid="PRIMARY KEY"
                                      ))
@@ -63,12 +62,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE, colClasses=sapply(tmp, class))
   rm(tmp)
   if (verbose) msgOK()
-  ## fsetid must be SEQ_ID+CONTAINER?
-  ## ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
-  tmp <- paste(ndfdata[["SEQ_ID"]], ndfdata[["CONTAINER"]], sep=":::")
-  tmp2 <- as.factor(tmp)
-  rm(tmp)
-  ndfdata[["fsetid"]] <- as.integer(tmp2)
+  ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
   rm(tmp2)
 
   #######################################################################
@@ -87,10 +81,8 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   if (verbose) simpleMessage("Merging NDF and POS files... ")
   ndfdata <- merge(ndfdata, posdata, by.x=c("SEQ_ID", "PROBE_ID"), by.y=c("SEQ_ID", "PROBE_ID"), all.x=TRUE)
   if (all(c("POSITION.x", "POSITION.y") %in% names(ndfdata))){
-    ndfdata[["POSITION.x"]] <- ndfdata[["POSITION.y"]]
-    ndfdata[["POSITION.y"]] <- NULL
-    ndfdata[["POSITION"]] <- ndfdata[["POSITION.x"]]
-    ndfdata[["POSITION.x"]] <- NULL
+    ndfdata[["POSITION"]] <- ndfdata[["POSITION.y"]]
+    ndfdata[["POSITION.x"]] <- ndfdata[["POSITION.y"]] <- NULL
   }
   rm(posdata)
   if (verbose) msgOK()
@@ -119,10 +111,10 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   rm(theMin, theMax)
   dups <- duplicated(ndfdata[["SEQ_ID"]])
   featureSet <- merge(featureSet,
-                      ndfdata[!dups, c("SEQ_ID", "CHROMOSOME", "CONTAINER", "fsetid")],
+                      ndfdata[!dups, c("SEQ_ID", "CHROMOSOME", "fsetid")],
                       by.x="man_fsetid", by.y="SEQ_ID")
-  names(featureSet) <- c("man_fsetid", "start", "end", "chrom", "type", "fsetid")
-  featureSet <- featureSet[, c("fsetid", "man_fsetid", "chrom", "start", "end", "type")]
+  names(featureSet) <- c("man_fsetid", "start", "end", "chrom", "fsetid")
+  featureSet <- featureSet[, c("fsetid", "man_fsetid", "chrom", "start", "end")]
   rm(dups)
 
   #######################################################################
@@ -136,10 +128,13 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ##           but 'fid' is the PRIMARY KEY, and the table will be
   ##           ordered by that
   #######################################################################
-  features <- ndfdata[, c("X", "Y", "fsetid", "POSITION", "MISMATCH", "MATCH_INDEX",
-                          "CONTAINER", "CHROMOSOME", "PROBE_SEQUENCE", "fid", "PROBE_CLASS")]
+  features <- ndfdata[, c("X", "Y", "fsetid", "POSITION", "MISMATCH",
+                          "MATCH_INDEX", "CONTAINER", "CHROMOSOME",
+                          "PROBE_SEQUENCE", "fid", "PROBE_CLASS",
+                          "CONTAINER")]
   names(features) <- c("x", "y", "fsetid", "position", "mismatch",
-                       "match_index", "container", "chromosome", "sequence", "fid", "class")
+                       "match_index", "container", "chromosome",
+                       "sequence", "fid", "class", "type")
 
   geometry <- paste(max(ndfdata[["Y"]]), max(ndfdata[["X"]]), sep=";")
   rm(xysdata, ndfdata)
@@ -150,7 +145,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   experimentalIDs <- "experimental"
 
 
-  pmFeatures <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y")]
+  pmFeatures <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y", "type")]
   pmSequence <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "sequence")]
   pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
   pmSequence <- DataFrame(fid=pmSequence[["fid"]],
@@ -162,7 +157,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   if (nrow(mmFeatures) > 0)
     stop("Add methods for MMs")
   rm(mmFeatures)
-  bgFeatures <- subset(features, !(class %in% experimentalIDs))[, c("fid", "fsetid", "x", "y")]
+  bgFeatures <- subset(features, !(class %in% experimentalIDs))[, c("fid", "fsetid", "x", "y", "type")]
   bgSequence <- subset(features, !(class %in% experimentalIDs))[, c("fid", "sequence")]
   bgSequence <- bgSequence[order(bgSequence[["fid"]]),]
   bgSequence <- DataFrame(fid=bgSequence[["fid"]],

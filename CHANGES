@@ -132,3 +132,5 @@ Changes by BC in Feb-Mar 2009
 (1.11.10) Added checkFields function
 
 (1.11.11) changed way to read NDF
+
+(1.11.12) moved CONTAINER in NimbleGen Tiling from featureSet to (pm/bg)feature table
