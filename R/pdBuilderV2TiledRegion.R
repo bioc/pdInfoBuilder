@@ -32,7 +32,8 @@ tiledRegionBgFeatureSchema <- list(col2type=c(
                                      fid="INTEGER",
                                      fsetid="INTEGER",
                                      x="INTEGER",
-                                     y="INTEGER"
+                                     y="INTEGER",
+                                     type="INTEGER"
                                      ),
                                    col2key=c(
                                      fid="PRIMARY KEY"
@@ -63,7 +64,6 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   rm(tmp)
   if (verbose) msgOK()
   ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
-  rm(tmp2)
 
   #######################################################################
   ## Step 2: Parse POS
