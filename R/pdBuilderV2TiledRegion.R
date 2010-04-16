@@ -63,7 +63,13 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE, colClasses=sapply(tmp, class))
   rm(tmp)
   if (verbose) msgOK()
-  ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
+  ## fsetid must be SEQ_ID+CONTAINER?
+  ## ndfdata[["fsetid"]] <- as.integer(as.factor(ndfdata[["SEQ_ID"]]))
+  tmp <- paste(ndfdata[["SEQ_ID"]], ndfdata[["CONTAINER"]], sep=":::")
+  tmp2 <- as.factor(tmp)
+  rm(tmp)
+  ndfdata[["fsetid"]] <- as.integer(tmp2)
+  rm(tmp2)
 
   #######################################################################
   ## Step 2: Parse POS
