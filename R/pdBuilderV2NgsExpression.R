@@ -44,7 +44,10 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ## Step 1: Parse NDF
   #######################################################################
   if (verbose) msgParsingFile(ndfFile)
-  tmp <- read.delim(ndfFile, stringsAsFactors=FALSE, nrow=10)
+  optNrows <- getOptions("pdInfoBuilder_NROWS")
+  if (is.null(optNrows))
+    optNrows <- 1000
+  tmp <- read.delim(ndfFile, stringsAsFactors=FALSE, nrow=optNrows)
   ndfdata <- read.delim(ndfFile, stringsAsFactors=FALSE, colClasses=sapply(tmp, class))
   rm(tmp)
   if (verbose) msgOK()
