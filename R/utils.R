@@ -127,7 +127,7 @@ dbCreateTableInfo <- function(db, verbose=FALSE) {
     counts <- integer(length(tables))
     sql <- "select count(*) from %s"
     for (i in seq(along=counts)) {
-        if (verbose) message("Counting rows in", tables[i])
+        if (verbose) message("Counting rows in ", tables[i])
         counts[i] <- dbGetQuery(db, sprintf(sql, tables[i]))[[1]][1]
     }
 
