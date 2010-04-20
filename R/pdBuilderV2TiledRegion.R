@@ -59,7 +59,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ## Step 1: Parse NDF
   #######################################################################
   if (verbose) msgParsingFile(ndfFile)
-  optNrows <- getOptions("pdInfoBuilder_NROWS")
+  optNrows <- getOption("pdInfoBuilder_NROWS")
   if (is.null(optNrows))
     optNrows <- 1000
   tmp <- read.delim(ndfFile, stringsAsFactors=FALSE, nrow=optNrows)
