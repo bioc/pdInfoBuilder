@@ -205,6 +205,10 @@ dbCreateIndicesFs <- function(conn, verbose=TRUE){
   dbCreateIndex(conn, "idx_fsfsetid", "featureSet", "fsetid", TRUE, verbose=verbose)
 }
 
+dbCreateIndicesFsCnv <- function(conn, verbose=TRUE){
+  dbCreateIndex(conn, "idx_fscnvfsetid", "featureSetCNV", "fsetid", TRUE, verbose=verbose)
+}
+
 ## Messages
 
 msgParsingFile <- function(fname)

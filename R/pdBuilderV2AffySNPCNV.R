@@ -6,7 +6,8 @@ affySnpFeatureSetSchema <- list(col2type=c(
                                   fsetid="INTEGER",
                                   rsid="TEXT",
                                   chrom="TEXT",
-                                  position="INTEGER"),
+                                  position="INTEGER",
+                                  final="INTEGER"),
                                 col2key=c(
                                   fsetid="PRIMARY KEY"
                                   ))
@@ -23,15 +24,38 @@ affySnpPmFeatureSchema <- list(col2type=c(
                                  fid="PRIMARY KEY"
                                  ))
 
+## affyCnvPmFeatureSchema <- list(col2type=c(
+##                                  man_fsetid="TEXT",
+##                                  fid="INTEGER",
+##                                  strand="INTEGER",
+##                                  x="INTEGER",
+##                                  y="INTEGER",
+##                                  fsetid="INTEGER",
+##                                  chrom="TEXT",
+##                                  position="INTEGER",
+##                                  final="INTEGER"),
+##                                col2key=c(
+##                                  fid="PRIMARY KEY"
+##                                  ))
+
+
+## make chrom to be integer
+affyCnvFeatureSetSchema <- list(col2type=c(
+                                  man_fsetid="TEXT",
+                                  fsetid="INTEGER",
+                                  chrom="TEXT",
+                                  position="INTEGER",
+                                  strand="INTEGER",
+                                  final="INTEGER"),
+                                col2key=c(
+                                  fsetid="PRIMARY KEY"
+                                  ))
+
 affyCnvPmFeatureSchema <- list(col2type=c(
-                                 man_fsetid="TEXT",
-                                 fid="INTEGER",
-                                 strand="INTEGER",
-                                 x="INTEGER",
-                                 y="INTEGER",
                                  fsetid="INTEGER",
-                                 chrom="TEXT",
-                                 position="INTEGER"),
+                                 fid="INTEGER",
+                                 x="INTEGER",
+                                 y="INTEGER"),
                                col2key=c(
                                  fid="PRIMARY KEY"
                                  ))
@@ -45,9 +69,9 @@ parseAnnotFile <- function(annotFile, snp=TRUE){
   annot <- read.csv(annotFile, comment.char="#", stringsAsFactors=FALSE, na.strings="---")
   names(annot) <- gsub("\\.", "", tolower(names(annot)))
   if (snp){
-    cols <- c("probesetid", "dbsnprsid", "chromosome", "physicalposition")
+    cols <- c("probesetid", "dbsnprsid", "chromosome", "physicalposition", "infinallist")
   }else{
-    cols <- c("probesetid", "chromosome", "chromosomestart")
+    cols <- c("probesetid", "chromosome", "chromosomestart", "infinallist")
   }
   ok <- all(cols %in% names(annot))
   if (!ok)
@@ -55,10 +79,11 @@ parseAnnotFile <- function(annotFile, snp=TRUE){
   rm(ok)
   annot <- annot[, cols]
   if (snp){
-    names(annot) <- c("man_fsetid", "rsid", "chrom", "position")
+    names(annot) <- c("man_fsetid", "rsid", "chrom", "position", "final")
   }else{
-    names(annot) <- c("man_fsetid", "chrom", "position")
+    names(annot) <- c("man_fsetid", "chrom", "position", "final")
   }
+  annot[["final"]] <- as.integer(tolower(annot[["final"]]) == "yes")
   return(annot)
 }
 
@@ -91,7 +116,7 @@ parseProbeSequenceFile <- function(probeseqFile, snp=TRUE, axiom=FALSE){
   seq <- gsub("\\[C\\/A\\]", "M", seq, ignore.case=TRUE)
   probeseqTab[["sequence"]] <- seq
   
-  rm(cols, ok, colsOut, seq)
+  rm(cols, colsOut, seq)
   return(probeseqTab)
 }
 
@@ -219,9 +244,17 @@ parseCdfSeqAnnot <- function(cdfFile, probeseqFileSNP, probeseqFileCNV, annotFil
   pmfeatureCNV <- merge(pmfeatureCNV, annotCNV, all.x=TRUE)
   rm(annotCNV)
   if (verbose) msgOK()
+
+  if (verbose) simpleMessage("Creating featureSetCNV table... ")
+  featureSetCNV <- pmfeatureCNV[, c("man_fsetid", "fsetid", "chrom", "position", "strand", "final")]
+  featureSetCNV <- unique(featureSetCNV)
+  rownames(featureSetCNV) <- NULL
+  pmfeatureCNV <- pmfeatureCNV[, c("fsetid", "fid", "x", "y")]
+  if (verbose) msgOK()
   
   out <- list(featureSet=featureSetSNP,
               pmFeatures=pmfeatureSNP,
+              featureSetCNV=featureSetCNV,
               pmFeaturesCNV=pmfeatureCNV,
               pmSequenceSNP=pmSequenceSNP,
               pmSequenceCNV=pmSequenceCNV,
@@ -312,6 +345,10 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
                           affySnpFeatureSetSchema[["col2type"]],
                           affySnpFeatureSetSchema[["col2key"]])
             dbCreateTable(conn,
+                          "featureSetCNV",
+                          affyCnvFeatureSetSchema[["col2type"]],
+                          affyCnvFeatureSetSchema[["col2key"]])
+            dbCreateTable(conn,
                           "pmfeature",
                           affySnpPmFeatureSchema[["col2type"]],
                           affySnpPmFeatureSchema[["col2key"]])
@@ -322,6 +359,8 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
                               affySnpFeatureSetSchema[["col2type"]], !quiet)
+            dbInsertDataFrame(conn, "featureSetCNV", parsedData[["featureSetCNV"]],
+                              affyCnvFeatureSetSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                               affySnpPmFeatureSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "pmfeatureCNV", parsedData[["pmFeaturesCNV"]],
@@ -333,6 +372,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed2",
             dbCreateIndicesSnpPm(conn, !quiet)
             dbCreateIndicesCnvPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
+            dbCreateIndicesFsCnv(conn, !quiet)
             
             dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
