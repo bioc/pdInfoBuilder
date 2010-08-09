@@ -1,3 +1,11 @@
+CHANGES IN VERSION 1.13
+-----------------------
+
+BUG FIXES
+
+    o Added 'ZipData: no' to the template, which
+    caused problems on Windows systems.
+
 CHANGES IN VERSION 1.11
 -----------------------
 
