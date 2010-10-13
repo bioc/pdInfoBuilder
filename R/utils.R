@@ -247,3 +247,15 @@ seqToMat <- function(seq) {
     .Call("PIB_25mers_to_mat", seq, PACKAGE="pdInfoBuilder")
 }
 
+annot2fdata <- function(csv){
+    annot <- read.csv(csv, header=TRUE, comment.char="#",
+                      na.strings="---", stringsAsFactors=FALSE)
+    nms <- tolower(names(annot))
+    nms <- gsub("_", "", nms)
+    nms <- gsub("\\.", "", nms)
+    names(annot) <- nms
+    stopifnot('probesetid' %in% nms)
+    rownames(annot) <- annot[['probesetid']]
+    annot[['probeset_id']] <- NULL
+    new("AnnotatedDataFrame", data=annot)
+}

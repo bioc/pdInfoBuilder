@@ -76,10 +76,12 @@ setMethod("initialize", "AffyTilingPDInfoPkgSeed",
           })
   
 setMethod("initialize", "AffySTPDInfoPkgSeed",
-          function(.Object, pgfFile="ThePgfFile", clfFile="TheClfFile", probeFile="TheProbeFile", coreMps="coreMps", fullMps="fullMps", extendedMps="extendedMps", ...) {
+          function(.Object, pgfFile="ThePgfFile", clfFile="TheClfFile",
+          probeFile="TheProbeFile", transFile="TheTranscriptFile", coreMps="coreMps", fullMps="fullMps", extendedMps="extendedMps", ...) {
             .Object@pgfFile <- new("ScalarCharacter", pgfFile)
             .Object@clfFile <- new("ScalarCharacter", clfFile)
             .Object@probeFile <- new("ScalarCharacter", probeFile)
+            .Object@transFile <- new("ScalarCharacter", transFile)
             .Object@coreMps <- new("ScalarCharacter", coreMps)
             .Object@fullMps <- new("ScalarCharacter", fullMps)
             .Object@extendedMps <- new("ScalarCharacter", extendedMps)

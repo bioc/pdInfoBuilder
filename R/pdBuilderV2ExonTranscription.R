@@ -410,6 +410,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             message("PGF.........: ", basename(object@pgfFile))
             message("CLF.........: ", basename(object@clfFile))
             message("Probeset....: ", basename(object@probeFile))
+            message("Transcript..: ", basename(object@transFile))
             message("Core MPS....: ", basename(object@coreMps))
             if (!geneArray){
               message("Full MPS....: ", basename(object@fullMps))
@@ -593,5 +594,17 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               if (!quiet) message("Saving DataFrame object for MM.")
               save(mmSequence, file=mmSeqFile)
             }
+
+            
+            #######################################################################
+            ## Part vi) Save NetAffx Annotation to extdata
+            #######################################################################
+            if (!quiet) message("Saving NetAffx Annotation... ", appendLF=FALSE)
+            netaffxProbeset <- annot2fdata(object@probeFile)
+            save(netaffxProbeset, file=file.path(extdataDir, 'netaffxProbeset.rda'))
+            netaffxTranscript <- annot2fdata(object@transFile)
+            save(netaffxTranscript, file=file.path(extdataDir, 'netaffxTranscript.rda'))
+            if (!quiet) msgOK()
+            
             if (!quiet) message("Done.")
           })
