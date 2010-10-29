@@ -60,7 +60,9 @@ setClass("AffySNPPDInfoPkgSeed2",
          representation=representation(
            cdfFile="ScalarCharacter",
            csvAnnoFile="ScalarCharacter",
-           csvSeqFile="ScalarCharacter"))
+           csvSeqFile="ScalarCharacter",
+           axiom="logical"
+         ))
 
 setClass("AffySNPPDInfoPkgSeed",
          contains="AffySNPPDInfoPkgSeed2",

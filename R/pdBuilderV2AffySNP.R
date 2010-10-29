@@ -15,7 +15,8 @@
 ##             to be created in the db.
 #######################################################################
 
-parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=TRUE){
+parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP,
+                                axiom=FALSE, verbose=TRUE){
   if (verbose) msgParsingFile(cdfFile)
   cdf <- readCdf(cdfFile, readIndices=TRUE, stratifyBy="pm", readBases=FALSE)
   geometry <- paste(unlist(readCdfHeader(cdfFile)[c("nrows", "ncols")]),
@@ -26,7 +27,12 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   
   ## SNP
   if (verbose) simpleMessage("Getting SNP probes... ")
-  idx <- which(theTypes == "genotyping")
+
+  if (!axiom){
+      idx <- which(theTypes == "genotyping")
+  }else{
+      idx <- setdiff(1:length(cdf), grep("^AFFX", names(cdf)))
+  }
   if (verbose) msgOK()
   
   if (verbose) simpleMessage("Organizing PM probes for SNPs... ")
@@ -44,8 +50,24 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
   ## columns: x y fid fsetid allele strand
   cols <- c("man_fsetid", "fsetid", "indices", "x", "y", "strand", "allele", "atom")
   pmfeatureSNP <- pmfeatureSNP[, cols]
-  names(pmfeatureSNP) <- c("man_fsetid", "fsetid", "fid", "x", "y", "strand", "allele", "atom")
   rm(cols)
+  names(pmfeatureSNP) <- c("man_fsetid", "fsetid", "fid", "x", "y", "strand", "allele", "atom")
+
+  if (axiom){
+      g1 <- c('strand', 'allele', 'atom')
+      g2 <- setdiff(names(pmfeatureSNP), g1)
+      pmfeatureSNP <- aggregate(pmfeatureSNP[, g1],
+                                by=pmfeatureSNP[, g2], mean)
+      pmfeatureSNP <- pmfeatureSNP[order(pmfeatureSNP[['fsetid']],
+                                         pmfeatureSNP[['fid']],
+                                         pmfeatureSNP[['allele']]),]
+      rownames(pmfeatureSNP) <- NULL
+      easy <- which(pmfeatureSNP[['allele']] == .5)
+      pmfeatureSNP[easy, 'allele'] <- 2
+      rm(easy)
+      pmfeatureSNP[['allele']] <- as.integer(pmfeatureSNP[['allele']])
+  }
+  
   if (verbose) msgOK()
   
   ## featureSet SNP
@@ -63,26 +85,40 @@ parseCdfSeqAnnotSnp <- function(cdfFile, probeseqFileSNP, annotFileSNP, verbose=
 
   ## Sequence files
   if (verbose) simpleMessage("Getting sequences for SNPs... ")
-  probeseqSNP <- parseProbeSequenceFile(probeseqFileSNP)
+  probeseqSNP <- parseProbeSequenceFile(probeseqFileSNP, axiom=axiom)
   if (verbose) msgOK()
   
-  cols <- c("x", "y")
   if (verbose) simpleMessage("Merging sequence information for SNPs... ")
-  pmSequenceSNP <- merge(pmfeatureSNP[, c(cols, "fid")],
-                         probeseqSNP[, c(cols, "sequence")],
-                         by.x=cols, by.y=cols)[, c("fid", "sequence")]
+  if (!axiom){
+      cols <- c("x", "y")
+      pmSequenceSNP <- merge(pmfeatureSNP[, c(cols, "fid")],
+                             probeseqSNP[, c(cols, "sequence")],
+                             by.x=cols, by.y=cols)[, c("fid",
+                                        "sequence")]
+      rm(cols)
+  }else{
+      pmSequenceSNP <- merge(pmfeatureSNP[, c('fid', 'fsetid', 'allele')],
+                             merge(probeseqSNP, featureSetSNP))[,c('fid', 'sequence', 'count')]
+  }
   pmSequenceSNP <- pmSequenceSNP[order(pmSequenceSNP[["fid"]]),]
+  rownames(pmSequenceSNP) <- NULL
   if (verbose) msgOK()
   
-  rm(cols, probeseqSNP)
+  rm(probeseqSNP)
   if (verbose) simpleMessage("Creating Biostrings objects... ")
-  pmSequenceSNP <- DataFrame(fid=pmSequenceSNP[["fid"]],
-                             sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
+  if (!axiom){
+      pmSequenceSNP <- DataFrame(fid=pmSequenceSNP[["fid"]],
+                                 sequence=DNAStringSet(pmSequenceSNP[["sequence"]]))
+  }else{
+      pmSequenceSNP <- DataFrame(fid=pmSequenceSNP[["fid"]],
+                                 sequence=DNAStringSet(pmSequenceSNP[["sequence"]]),
+                                 count=pmSequenceSNP[['count']])
+  }
   if (verbose) msgOK()
   
   ## Annotation files
   if (verbose) msgParsingFile(annotFileSNP)
-  annotSNP <- parseAnnotFile(annotFileSNP)
+  annotSNP <- parseAnnotFile(annotFileSNP, snp=TRUE, axiom=axiom)
   if (verbose) msgOK()
   if (verbose) simpleMessage("Merging information... ")
   featureSetSNP <- merge(featureSetSNP, annotSNP, all.x=TRUE)
@@ -107,10 +143,11 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
 
             msgBar()
-            cat("Building annotation package for Affymetrix SNP Array\n")
-            cat("CDF...........: ", basename(object@cdfFile), "\n")
-            cat("SNP Annotation: ", basename(object@csvAnnoFile), "\n")
-            cat("SNP Sequence..: ", basename(object@csvSeqFile), "\n")
+            message("Building annotation package for Affymetrix SNP Array\n")
+            message("CDF...........: ", basename(object@cdfFile))
+            message("SNP Annotation: ", basename(object@csvAnnoFile))
+            message("SNP Sequence..: ", basename(object@csvSeqFile))
+            message("Axiom Chip....: ", object@axiom)
             msgBar()
             
             #######################################################################
@@ -122,11 +159,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
             if (pkgName %in% humanchips)
               warning("The package ", pkgName,
                       " *IS* available on BioConductor.",
-                      " This one does *NOT* provide the data required by CRLMM.",
-                      " If you have ", pkgName,
-                      " downloaded/installed directly from BioConductor,",
-                      " this one might overwrite the BioConductor one",
-                      " and CRLMM will fail to work.")
+                      " Use that instead.")
             
             extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
             dbFileName <- paste(pkgName, "sqlite", sep=".")
@@ -139,6 +172,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
             parsedData <- parseCdfSeqAnnotSnp(object@cdfFile,
                                               object@csvSeqFile,
                                               object@csvAnnoFile,
+                                              axiom=object@axiom,
                                               verbose=!quiet)
 
             #######################################################################
@@ -175,15 +209,30 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
                           "featureSet",
                           affySnpFeatureSetSchema[["col2type"]],
                           affySnpFeatureSetSchema[["col2key"]])
-            dbCreateTable(conn,
-                          "pmfeature",
-                          affySnpPmFeatureSchema[["col2type"]],
-                          affySnpPmFeatureSchema[["col2key"]])
-            
+##            if (!object@axiom){
+                dbCreateTable(conn,
+                              "pmfeature",
+                              affySnpPmFeatureSchema[["col2type"]],
+                              affySnpPmFeatureSchema[["col2key"]])
+##            }else{
+##                dbCreateTable(conn,
+##                              "pmfeature",
+##                              affyAxiomSnpPmFeatureSchema[["col2type"]],
+##                              affyAxiomSnpPmFeatureSchema[["col2key"]])
+##            }                
+
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
-                              affySnpFeatureSetSchema[["col2type"]], !quiet)
-            dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
-                              affySnpPmFeatureSchema[["col2type"]], !quiet)
+                              affySnpFeatureSetSchema[["col2type"]],
+                              !quiet)
+##            if (!object@axiom){
+                dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
+                                  affySnpPmFeatureSchema[["col2type"]],
+                                  !quiet)
+##            }else{
+##                dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
+##                                  affyAxiomSnpPmFeatureSchema[["col2type"]],
+##                                  !quiet)
+##            }
 
             dbCreateTableInfo(conn, !quiet)
 

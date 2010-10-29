@@ -7,7 +7,10 @@ affySnpFeatureSetSchema <- list(col2type=c(
                                   rsid="TEXT",
                                   chrom="TEXT",
                                   position="INTEGER",
-                                  final="INTEGER"),
+                                  final="INTEGER",
+                                  allelea="TEXT",
+                                  alleleb="TEXT",
+                                  count="INTEGER"),
                                 col2key=c(
                                   fsetid="PRIMARY KEY"
                                   ))
@@ -23,6 +26,16 @@ affySnpPmFeatureSchema <- list(col2type=c(
                                col2key=c(
                                  fid="PRIMARY KEY"
                                  ))
+
+## affyAxiomSnpPmFeatureSchema <- list(col2type=c(
+##                                     fsetid="INTEGER",
+##                                     fid="INTEGER",
+##                                     x="INTEGER",
+##                                     y="INTEGER",
+##                                     strand="INTEGER"),
+##                                     col2key=c(
+##                                     fid="PRIMARY KEY"
+##                                     ))
 
 ## affyCnvPmFeatureSchema <- list(col2type=c(
 ##                                  man_fsetid="TEXT",
@@ -65,11 +78,13 @@ affyCnvPmFeatureSchema <- list(col2type=c(
 ##             as everything in this section can be used on other cases
 #######################################################################
 
-parseAnnotFile <- function(annotFile, snp=TRUE){
+parseAnnotFile <- function(annotFile, snp=TRUE, axiom=FALSE){
   annot <- read.csv(annotFile, comment.char="#", stringsAsFactors=FALSE, na.strings="---")
   names(annot) <- gsub("\\.", "", tolower(names(annot)))
   if (snp){
-    cols <- c("probesetid", "dbsnprsid", "chromosome", "physicalposition", "infinallist")
+    cols <- c("probesetid", "dbsnprsid", "chromosome",
+              "physicalposition", "infinallist", "allelea", "alleleb", "probecount")
+    if (axiom) cols[5] <- 'inhapmap'
   }else{
     cols <- c("probesetid", "chromosome", "chromosomestart", "infinallist")
   }
@@ -79,7 +94,8 @@ parseAnnotFile <- function(annotFile, snp=TRUE){
   rm(ok)
   annot <- annot[, cols]
   if (snp){
-    names(annot) <- c("man_fsetid", "rsid", "chrom", "position", "final")
+    names(annot) <- c("man_fsetid", "rsid", "chrom", "position",
+                      "final", "allelea", "alleleb", "count")
   }else{
     names(annot) <- c("man_fsetid", "chrom", "position", "final")
   }
@@ -93,30 +109,38 @@ parseProbeSequenceFile <- function(probeseqFile, snp=TRUE, axiom=FALSE){
     cols <- c("PROBESET_ID", "PROBE_X_POS", "PROBE_Y_POS", "PROBE_SEQUENCE")
     colsOut <- c("man_fsetid", "x", "y", "sequence")
   }else{
-    cols <- c("PROBESET_ID", "PROBE_SEQUENCE", "ALLELE_A", "ALLELE_B")
-    colsOut <- c("man_fsetid", "sequence", "allele_a", "allele_b")
+    cols <- c("PROBESET_ID", "PROBE_SEQUENCE", "ALLELE_A", "ALLELE_B", "PROBE_COUNT")
+    colsOut <- c("man_fsetid", "sequence", "allelea", "alleleb", "count")
   }
   checkFields(cols, names(probeseqTab))
   probeseqTab <- probeseqTab[, cols]
   names(probeseqTab) <- colsOut
 
-  ## Convert to proper IUPAC code
-  seq <- probeseqTab[["sequence"]]
-  seq <- gsub("\\[G\\/T\\]", "K", seq, ignore.case=TRUE)
-  seq <- gsub("\\[T\\/G\\]", "K", seq, ignore.case=TRUE)
-  seq <- gsub("\\[A\\/G\\]", "R", seq, ignore.case=TRUE)
-  seq <- gsub("\\[G\\/A\\]", "R", seq, ignore.case=TRUE)
-  seq <- gsub("\\[C\\/T\\]", "Y", seq, ignore.case=TRUE)
-  seq <- gsub("\\[C\\/T\\]", "Y", seq, ignore.case=TRUE)
-  seq <- gsub("\\[G\\/C\\]", "S", seq, ignore.case=TRUE)
-  seq <- gsub("\\[C\\/G\\]", "S", seq, ignore.case=TRUE)
-  seq <- gsub("\\[A\\/T\\]", "W", seq, ignore.case=TRUE)
-  seq <- gsub("\\[T\\/A\\]", "W", seq, ignore.case=TRUE)
-  seq <- gsub("\\[A\\/C\\]", "M", seq, ignore.case=TRUE)
-  seq <- gsub("\\[C\\/A\\]", "M", seq, ignore.case=TRUE)
-  probeseqTab[["sequence"]] <- seq
+  if (axiom){
+      easy <- subset(probeseqTab, count == 1)
+      hard <- subset(probeseqTab, count == 2)
+      rm(probeseqTab)
+      easy[['sequence']] <- gsub("(.*)\\[.{1}\\/.{1}\\](.*)",
+                                 "\\1\\2", easy[['sequence']])
+      easy[['allele']] <- 2L
+      hp1 <- gsub("(.*)\\[.{1}\\/.{1}\\](.*)",
+                  "\\1", hard[['sequence']])
+      hp2 <- gsub("(.*)\\[.{1}\\/.{1}\\](.*)",
+                  "\\2", hard[['sequence']])
+      hardA <- hardB <- hard
+      hardA[['sequence']] <- paste(hp1, hard[['allelea']], hp2, sep='')
+      hardB[['sequence']] <- paste(hp1, hard[['alleleb']], hp2, sep='')
+      hardA[['allele']] <- ALLELE_A
+      hardB[['allele']] <- ALLELE_B
+      rm(hard)
+      probeseqTab <- rbind(hardA, hardB, easy)
+      rm(hardA, hardB, easy)
+      probeseqTab <- probeseqTab[order(probeseqTab[['man_fsetid']],
+                                       probeseqTab[['allele']]),]
+      rownames(probeseqTab) <- NULL
+  }
   
-  rm(cols, colsOut, seq)
+  rm(cols, colsOut)
   return(probeseqTab)
 }
 
