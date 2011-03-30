@@ -13,6 +13,8 @@ Objects can be created by calls of the form \code{new("AffySNPPDInfoPkgSeed2", c
 }
 \section{Slots}{
   \describe{
+    \item{\code{axiom}:}{Logical flag for experimental build of
+  annotation packages for Axiom arrays.}
     \item{\code{cdfFile}:}{CDF file for the design.}
     \item{\code{csvAnnoFile}:}{Affymetrix CSV Annotation file.}
     \item{\code{csvSeqFile}:}{Affymetrix Probe Sequence file.}

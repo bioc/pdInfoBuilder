@@ -87,6 +87,28 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   pmFeatures <- do.call("rbind", pmFeatures)
   names(pmFeatures) <- c("fid", "chrom", "position", "x", "y", "sequence")
   rownames(pmFeatures) <- NULL
+
+  iDups <- which(duplicated(pmFeatures[['fid']]))
+  fidDups <- unique(pmFeatures[iDups, 'fid'])
+  rm(iDups)
+  if (length(fidDups) > 0){
+      warning('Found at least one probe that maps to multiple locations (ignoring locations).',
+              immediate.=TRUE, call.=FALSE)
+      idxDups <- which(pmFeatures[['fid']] %in% fidDups)
+      good <- pmFeatures[-idxDups,]
+      bad <- pmFeatures[idxDups,]
+      rm(pmFeatures, idxDups)
+      bad <- aggregate(bad[, -1], by=list(fid=bad[['fid']]),
+                       function(x){
+                           uniq <- unique(x)
+                           ifelse(length(uniq) == 1, uniq, NA)
+                       })
+      pmFeatures <- rbind(good, bad)
+      rm(good, bad)
+      pmFeatures <- pmFeatures[order(pmFeatures[['fid']]),]
+      rownames(pmFeatures) <- NULL
+  }      
+
   if (verbose) msgOK()
 
   if (length(idx2) > 0){
