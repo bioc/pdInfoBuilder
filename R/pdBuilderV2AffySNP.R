@@ -251,6 +251,6 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed2",
             pmSequence <- parsedData[["pmSequenceSNP"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             if (!quiet) cat("Saving DataFrame object for SNPs / PM.\n")
-            save(pmSequence, file=pmSeqFile)
+            save(pmSequence, file=pmSeqFile, compress='xz')
             if (!quiet) cat("Done.\n")
           })

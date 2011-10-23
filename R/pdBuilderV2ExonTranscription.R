@@ -587,12 +587,12 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             pmSequence <- parsedData[["pmSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             if (!quiet) message("Saving DataFrame object for PM.")
-            save(pmSequence, file=pmSeqFile)
+            save(pmSequence, file=pmSeqFile, compress='xz')
             if (containsMm){
               mmSequence <- parsedData[["mmSequence"]]
               mmSeqFile <- file.path(datadir, "mmSequence.rda")
               if (!quiet) message("Saving DataFrame object for MM.")
-              save(mmSequence, file=mmSeqFile)
+              save(mmSequence, file=mmSeqFile, compress='xz')
             }
 
             
@@ -601,9 +601,11 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             #######################################################################
             if (!quiet) message("Saving NetAffx Annotation... ", appendLF=FALSE)
             netaffxProbeset <- annot2fdata(object@probeFile)
-            save(netaffxProbeset, file=file.path(extdataDir, 'netaffxProbeset.rda'))
+            save(netaffxProbeset, file=file.path(extdataDir,
+                                  'netaffxProbeset.rda'), compress='xz')
             netaffxTranscript <- annot2fdata(object@transFile)
-            save(netaffxTranscript, file=file.path(extdataDir, 'netaffxTranscript.rda'))
+            save(netaffxTranscript, file=file.path(extdataDir,
+                                    'netaffxTranscript.rda'), compress='xz')
             if (!quiet) msgOK()
             
             if (!quiet) message("Done.")

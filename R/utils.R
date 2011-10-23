@@ -259,3 +259,25 @@ annot2fdata <- function(csv){
     annot[['probeset_id']] <- NULL
     new("AnnotatedDataFrame", data=annot)
 }
+
+
+## insert in fragmentLengthTable
+
+insertInFragmentLengthTable <- function(db, tblTarget, fragCol,
+                                        manfsetid){
+    tblref <- ifelse(length(grep("CNV", tblTarget)) == 0,
+                     'featureSet', 'featureSetCNV')
+    ref <- dbGetQuery(db, paste('SELECT man_fsetid, fsetid FROM', tblref))
+    idx <- manfsetid %in% ref[['man_fsetid']]
+    manfsetid <- manfsetid[idx]
+    fragCol <- fragCol[idx]
+    idx <- match(manfsetid, ref[['man_fsetid']])
+    idx <- ref[idx, 'fsetid']
+    rm(ref)
+    flTable <- getFragmentLengthTable(fragCol, idx)
+    rm(idx)
+    dbInsertDataFrame(db, tablename=tblTarget, data=flTable,
+                      col2type=c(fsetid='INTEGER', enzyme='TEXT',
+                      length='INTEGER', start='INTEGER', stop='INTEGER'),
+                      verbose=TRUE)
+}

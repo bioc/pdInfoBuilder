@@ -69,37 +69,6 @@ readCdfUnitToMat.cnv.old <- function(u){
                   }))
 }
 
-snp6.loadUnits.cnv2 <- function(db, batch, isQc=FALSE) {
-  pmfeature <- "pmfeatureCNV_tmp"
-
-  ## Don't check PM/MM matching.
-  ## SNP 5/6 is PM-only
-  batchMat <- do.call(rbind, lapply(batch, readCdfUnitToMat.cnv))
-
-  snp6.loadUnitNames.cnv(db, names(batch))
-
-  ## Find internal featureSet IDs for these features
-  batchLens <- sapply(batch, function(x)
-                      sum(sapply(x$groups, function(y)
-                                 length(y$indices))))
-  sql <- paste("select fsetid from featureSetCNV where man_fsetid in (",
-               paste('"', names(batch), '"', sep="", collapse=","),
-               ") order by fsetid")
-
-  batchIds <- dbGetQuery(db, sql)[[1]]
-  batchIds <- rep(batchIds, batchLens)
-  batchMat <- cbind(batchMat, fsetid=batchIds)
-  
-  ## Insert pm 
-  isPm <- as.logical(batchMat[, "ispm"])
-  values <- "(:indices, :strand, :fsetid, :x, :y)"
-  sql <- paste("insert into", pmfeature, "values", values)
-  dbBeginTransaction(db)
-  rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
-  dbClearResult(rset)
-  dbCommit(db)
-}
-
 snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
   pmfeature <- "pmfeatureCNV_tmp"
 
@@ -122,7 +91,6 @@ snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
                  ") order by fsetid")
     batchIds <- c(batchIds, dbGetQuery(db, sql)[[1]])
   }
-##  batchIds <- dbGetQuery(db, sql)[[1]]
   batchIds <- rep(batchIds, batchLens)
   batchMat <- cbind(batchMat, fsetid=batchIds)
   
@@ -254,33 +222,14 @@ snp6.buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, csvFileCnv,
   
   t <- ST({
     seqMat <- createSeqMat(db)
-    save(seqMat, file=matFile, compress=TRUE)
+    save(seqMat, file=matFile, compress='xz')
     seqMatCnv <- createSeqMat(db)
-    save(seqMatCnv, file=matFileCnv, compress=TRUE)
+    save(seqMatCnv, file=matFileCnv, compress='xz')
   })
   printTime("sequence matrix", t[3])
   closeDb(db)
 }
 
-getFragLength.na29.old <- function(v){
-  tmp <- strsplit(v, " /// ")
-  t(sapply(tmp,
-           function(y){
-             at.snp <- strsplit(y, " // ")
-             n <- length(at.snp)
-             enzymes <- toupper(sapply(at.snp, "[[", 1))
-             if(all(c(n==2, enzymes == "---")))
-               stop("2 enzymes missing IDs")
-             out <- rep(NA, 2)
-             i <- grep("NSP", enzymes)
-             if (length(i) > 0) out[1] <- as.integer(at.snp[[i]][3])
-             i <- grep("STY", enzymes)
-             if (length(i) > 0) out[2] <- as.integer(at.snp[[i]][3])
-             i <- grep("---", enzymes)
-             if (length(i) > 0) out[1] <- as.integer(at.snp[[i]][3])
-             out
-           }))
-}
 
 getFragLength.na29 <- function(v){
   tmp <- strsplit(v, " /// ")
@@ -298,12 +247,35 @@ getFragLength.na29 <- function(v){
              if (length(i) > 0) out[1] <- mean(as.integer(sapply(at.snp[i], "[", 3)))
              i <- grep("STY", enzymes)
              if (length(i) > 0) out[2] <- mean(as.integer(sapply(at.snp[i], "[", 3)))
-
-###              i <- grep("---", enzymes)
-###              if (length(i) > 0) out[1] <- as.integer(mean(as.integer(sapply(at.snp[i], "[", 3))))
-
              out
            }))
+}
+
+getFragmentLengthTable <- function(v, nms=1:length(v)){
+    ## This function should get the column that refers to the fragment
+    ## length and return a data.frame with 5 columns:
+    ## OUTPUT: name | enzyme | length | start | stop
+    ## INPUT: (Enzyme // site // length // start // stop) /// \\1+
+
+    ## split the vector in a list with length == nrow(v)
+    lst <- strsplit(v, " /// ")
+    ids <- unlist(mapply(rep, nms, each=sapply(lst, length),
+                         SIMPLIFY=FALSE, USE.NAMES=FALSE),
+                         use.names=FALSE)
+    
+    tokenize <- function(elm, items=c(1, 3:5), sep=" // "){
+        if (length(elm) == 1)
+            if(is.na(elm))
+                return(rep(NA, length(items)))
+        do.call(rbind, strsplit(elm, sep))[, items]
+    }
+
+    out <- do.call(rbind, lapply(lst, tokenize))
+    data.frame(fsetid=ids, enzyme=out[,1],
+               length=as.integer(out[,2]),
+               start=as.integer(out[,3]),
+               stop=as.integer(out[,4]),
+               stringsAsFactors=FALSE)
 }
 
 
@@ -378,32 +350,29 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
   ## 27 - ( ) - OMIM
   wantedCols <- c(1:5, 7, 9:11, 14, 19:20)
   
-  df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
+  df <- read.table(con, sep=",", stringsAsFactors=FALSE,
                    na.strings="---", header=TRUE)[, wantedCols]
   header <- gsub(".", "_", names(df), fixed=TRUE)
   names(df) <- header
   df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
   df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
   df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-  
-  FRAG_COL <- "Fragment_Enzyme_Type_Length_Start_Stop"
-  df[[FRAG_COL]] <- as.character(df[[FRAG_COL]])
-  tmp.length <- getFragLength.na29(df[[FRAG_COL]])
-  
+
+  insertInFragmentLengthTable(db, 'fragmentLength',
+                              df[['Fragment_Enzyme_Type_Length_Start_Stop']],
+                              df[['Probe_Set_ID']])
+  df[['Fragment_Enzyme_Type_Length_Start_Stop']] <- NULL
+
   df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
-  df[["frag1"]] <- tmp.length[,1]
-  df[["frag2"]] <- tmp.length[,2]
-  df[[FRAG_COL]] <- NULL
 
   db_cols <- c("dbsnp_rs_id", "chrom", "physical_pos", "strand",
                "cytoband", "allele_a", "allele_b", "gene_assoc",
-               "dbsnp", "cnv", "fragment_length", "fragment_length2")
+               "dbsnp", "cnv")
 
   val_holders <- c(":dbSNP_RS_ID", ":Chromosome",
                    ":Physical_Position", ":Strand", ":Cytoband",
                    ":Allele_A", ":Allele_B", ":Associated_Gene",
-                   ":Strand_Versus_dbSNP", ":Copy_Number_Variation",
-                   ":frag1", ":frag2")
+                   ":Strand_Versus_dbSNP", ":Copy_Number_Variation")
 
   exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
   sql <- paste("update featureSet set ", exprs,
@@ -413,33 +382,6 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
   dbGetPreparedQuery(db, sql, bind.data=df)
   dbCommit(db)
 
-  ## Now do the rest in batches
-  done <- FALSE
-  while (!done) {
-    df <- read.table(con, sep=",", stringsAsFactors=FALSE,
-                     nrows=batch_size, na.strings="---",
-                     header=FALSE)[, wantedCols]
-    if (nrow(df) < batch_size) {
-      done <- TRUE
-      if (nrow(df) == 0)
-        break
-    }
-    names(df) <- header
-    df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
-    df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
-    df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-    
-    df[[FRAG_COL]] <- as.character(df[[FRAG_COL]])
-    tmp.length <- getFragLength.na29(df[[FRAG_COL]])
-    df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
-    df[["frag1"]] <- tmp.length[,1]
-    df[["frag2"]] <- tmp.length[,2]
-    
-    dbBeginTransaction(db)
-    dbGetPreparedQuery(db, sql, bind.data=df)
-    dbCommit(db)
-
-  }
 }
 
 snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
@@ -458,9 +400,28 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   ## CNV probes
   con <- file(csvFile, open="r")
   on.exit(close(con))
+
+### Columns in the CSV
+###  [1] (*) "Probe.Set.ID"                          
+###  [2] (*) "Chromosome"                            
+###  [3] (*) "Chromosome.Start"                      
+###  [4] (*) "Chromosome.Stop"                       
+###  [5] (*) "Strand"                                
+###  [6] (*) "ChrX.pseudo.autosomal.region.1"        
+###  [7] (*) "Cytoband"                              
+###  [8] (*) "Associated.Gene"                       
+###  [9] ( ) "Microsatellite"                        
+### [10] (*) "Fragment.Enzyme.Type.Length.Start.Stop"
+### [11] (*) "Copy.Number.Variation"                 
+### [12] ( ) "Probe.Count"                           
+### [13] (*) "ChrX.pseudo.autosomal.region.2"        
+### [14] ( ) "SNP.Interference"                      
+### [15] ( ) "X..GC"                                 
+### [16] ( ) "OMIM"                                  
+### [17] ( ) "In.Final.List"                         
   
   wantedCols <- c(1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 11)
-  df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
+  df <- read.table(con, sep=",", stringsAsFactors=FALSE,
                    na.strings="---", header=TRUE)[, wantedCols]
   header <- gsub(".", "_", names(df), fixed=TRUE)
   names(df) <- header
@@ -471,21 +432,20 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   
   df <- getPAR(df)
   df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
-  df[[FRAG_COL]] <- as.character(df[[FRAG_COL]])
-  tmp.length <- getFragLength.na29(df[[FRAG_COL]])
-  df[["frag1"]] <- tmp.length[,1]
-  df[["frag2"]] <- tmp.length[,2]
+
+  insertInFragmentLengthTable(db, 'fragmentLengthCNV',
+                              df[['Fragment_Enzyme_Type_Length_Start_Stop']],
+                              df[['Probe_Set_ID']])
+  df[['Fragment_Enzyme_Type_Length_Start_Stop']] <- NULL
 
   df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
 
-  
   db_cols <- c("chrom", "chrom_start", "chrom_stop", "strand",
-               "cytoband", "gene_assoc", "xpar", "fragment_length",
-               "fragment_length2", "cnv")
+               "cytoband", "gene_assoc", "xpar", "cnv")
   
   val_holders <- c(":Chromosome", ":Chromosome_Start",
                    ":Chromosome_Stop", ":Strand", ":Cytoband",
-                   ":Associated_Gene", ":XPAR", ":frag1", ":frag2",
+                   ":Associated_Gene", ":XPAR",
                    ":Copy_Number_Variation")
   
   exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
@@ -495,36 +455,6 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   dbBeginTransaction(db)
   dbGetPreparedQuery(db, sql, bind.data=df)
   dbCommit(db)
-
-  ## Now do the rest in batches
-  done <- FALSE
-  while (!done) {
-    df <- read.table(con, sep=",", stringsAsFactors=FALSE,
-                     nrows=batch_size, na.strings="---",
-                     header=FALSE)[, wantedCols]
-    if (nrow(df) < batch_size) {
-      done <- TRUE
-      if (nrow(df) == 0)
-        break
-    }
-    names(df) <- header
-    df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-
-    df <- getPAR(df)
-    df[["Strand"]] <- as.integer(ifelse(df[["Strand"]] == "+", SENSE, ANTISENSE))
-    df[[FRAG_COL]] <- as.character(df[[FRAG_COL]])
-    tmp.length <- getFragLength.na29(df[[FRAG_COL]])
-    df[["frag1"]] <- tmp.length[,1]
-    df[["frag2"]] <- tmp.length[,2]
-
-    df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
-
-    dbBeginTransaction(db)
-    dbGetPreparedQuery(db, sql, bind.data=df)
-    dbCommit(db)
-  }
-
-
 }
 
 snp6.loadAffySeqCsv.cnv <- function(db, csvFile, cdfFile, batch_size=5000) {

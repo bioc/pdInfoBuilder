@@ -69,7 +69,6 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
         qcunits <- readCdf(cdfFile, units=whQc, readGroupDirection=TRUE,
                            readIndices=TRUE, readIsPm=TRUE)
         loadUnits(db, qcunits, isQc=TRUE)
-##        unames <- unames[-whQc]
         offset <- max(whQc) + 1
     }
     extra <- (length(unames)-length(whQc)) %% batch_size
@@ -88,62 +87,6 @@ loadUnitsByBatch <- function(db, cdfFile, batch_size=10000,
         loadUnits(db, vvunits)
     }
 }
-
-
-loadAffyCsvNOCYTOBAND <- function(db, csvFile, batch_size=5000) {
-    con <- file(csvFile, open="r")
-    on.exit(close(con))
-
-    getFragLength <- function(v){
-      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[1]])
-      tmp[tmp == "---"] <- NA
-      as.integer(tmp)
-    }
-    
-    wantedCols <- c(1,2,3,4,7,8,12,13,17)
-    df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
-                     na.strings="---", header=TRUE)[, wantedCols]
-    header <- gsub(".", "_", names(df), fixed=TRUE)
-    names(df) <- header
-
-    FRAG_COL <- "Fragment_Length_Start_Stop"
-    df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
-
-    db_cols <- c("affy_snp_id", "dbsnp_rs_id", "chrom",
-                 "physical_pos", "strand", "allele_a",
-                 "allele_b", "fragment_length")
-
-    val_holders <- c(":Affy_SNP_ID", ":dbSNP_RS_ID", ":Chromosome",
-                     ":Physical_Position", ":Strand", ":Allele_A",
-                     ":Allele_B", ":Fragment_Length_Start_Stop")
-
-    exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
-    sql <- paste("update featureSet set ", exprs,
-                 "where man_fsetid = :Probe_Set_ID")
-
-    dbBeginTransaction(db)
-    dbGetPreparedQuery(db, sql, bind.data=df)
-    dbCommit(db)
-
-    ## Now do the rest in batches
-    done <- FALSE
-    while (!done) {
-        df <- read.table(con, sep=",", stringsAsFactors=FALSE,
-                         nrows=batch_size, na.strings="---",
-                         header=FALSE)[, wantedCols]
-        if (nrow(df) < batch_size) {
-            done <- TRUE
-            if (nrow(df) == 0)
-              break
-        }
-        names(df) <- header
-        df[ , FRAG_COL] <- getFragLength(df[ , FRAG_COL])
-        dbBeginTransaction(db)
-        dbGetPreparedQuery(db, sql, bind.data=df)
-        dbCommit(db)
-    }
-}
-
 
 loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
     cdfHeader <- readCdfHeader(cdfFile)
@@ -181,7 +124,6 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
         mmSql <- paste("select mm_fid, pm_fid from pm_mm where pm_fid in (",
                        paste(pmdf[["fid"]], collapse=","), ")")
         pairedIds <- dbGetQuery(db, mmSql)
-##        foundIdIdx <- match(pmdf[["fid"]], pairedIds[["pm_fid"]], 0)
         foundIdIdx <- match(pairedIds[["pm_fid"]], pmdf[["fid"]], 0)
         mmdf <- pmdf[foundIdIdx, ]
         mmdf[["fid"]] <-  pairedIds[["mm_fid"]]
@@ -241,27 +183,15 @@ buildPdInfoDb <- function(cdfFile, csvFile, csvSeqFile, dbFile, matFile,
 
     t <- ST({
         seqMat <- createSeqMat(db)
-        save(seqMat, file=matFile, compress=TRUE)
+        save(seqMat, file=matFile, compress='xz')
     })
     printTime("sequence matrix", t[3])
     closeDb(db)
 }
 
-# hacked by VC -- original code up above in loadAffyCsvNOCYTOBAND
-#
 loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     con <- file(csvFile, open="r")
     on.exit(close(con))
-
-    ## Affy changed the format^2... now gotta use [[3]]
-    getFragLength <- function(v){
-      v[is.na(v)] <- "--- // --- // --- // ---"
-      tmp <- sapply(strsplit(v, " // "), function(obj) obj[[3]])
-      tmp[tmp == "---"] <- NA
-      as.integer(tmp)
-    }
-    
-##    wantedCols <- c(1,2,3,4,7,8,10,12,13,14,17, 22, 23) # added 10/14
 
     ## This is the header of annotation files NA24
     ## The needed fields have (*)
@@ -338,9 +268,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     ## 27 - ( ) - OMIM
     wantedCols <- c(1:5, 7, 9:11, 14, 19:20)
 
-    ## BC: added 22/23 - above - dbSNP relation (50K/250K)
-    
-    df <- read.table(con, sep=",", stringsAsFactors=FALSE, nrows=10,
+    df <- read.table(con, sep=",", stringsAsFactors=FALSE,
                      na.strings="---", header=TRUE)[, wantedCols]
     header <- gsub(".", "_", names(df), fixed=TRUE)
     names(df) <- header
@@ -348,18 +276,18 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
     df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
 
-    ## Affy changed the same of the field
-    FRAG_COL <- "Fragment_Enzyme_Type_Length_Start_Stop"
-    df[[FRAG_COL]] <- getFragLength(df[[FRAG_COL]])
+    insertInFragmentLengthTable(db, 'fragmentLength',
+                                df[['Fragment_Enzyme_Type_Length_Start_Stop']],
+                                df[['Probe_Set_ID']])
+    df[['Fragment_Enzyme_Type_Length_Start_Stop']] <- NULL
 
     db_cols <- c("dbsnp_rs_id", "chrom", "physical_pos", "strand",
                  "cytoband", "allele_a", "allele_b", "gene_assoc",
-                 "fragment_length", "dbsnp", "cnv")
+                 "dbsnp", "cnv")
 
     val_holders <- c(":dbSNP_RS_ID", ":Chromosome",
                      ":Physical_Position", ":Strand", ":Cytoband",
                      ":Allele_A", ":Allele_B", ":Associated_Gene",
-                     ":Fragment_Enzyme_Type_Length_Start_Stop",
                      ":Strand_Versus_dbSNP", ":Copy_Number_Variation")
 
     exprs <- paste(db_cols, " = ", val_holders, sep="", collapse=", ")
@@ -369,26 +297,5 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     dbBeginTransaction(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)
-
-    ## Now do the rest in batches
-    done <- FALSE
-    while (!done) {
-        df <- read.table(con, sep=",", stringsAsFactors=FALSE,
-                         nrows=batch_size, na.strings="---",
-                         header=FALSE)[, wantedCols]
-        if (nrow(df) < batch_size) {
-            done <- TRUE
-            if (nrow(df) == 0)
-              break
-        }
-        names(df) <- header
-        df[["Strand_Versus_dbSNP"]] <- as.integer(df[["Strand_Versus_dbSNP"]] == "same")
-        df[["Copy_Number_Variation"]] <- as.character(df[["Copy_Number_Variation"]])
-        df[["Associated_Gene"]] <- as.character(df[["Associated_Gene"]])
-        df[[FRAG_COL]] <- getFragLength(df[[FRAG_COL]])
-        dbBeginTransaction(db)
-        dbGetPreparedQuery(db, sql, bind.data=df)
-        dbCommit(db)
-    }
 }
 

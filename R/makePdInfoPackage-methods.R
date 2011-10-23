@@ -46,7 +46,7 @@ setMethod("makePdInfoPackage", "AffySNPPDInfoPkgSeed",
                            PDINFOCLASS="AffySNPPDInfo",
                            GEOMETRY=geometry)
 
-              templateDir <- system.file("pd.PKG.template",
+              templateDir <- system.file("pd.PKG.template2",
                                          package="pdInfoBuilder")
               createPackage(pkgname=pkgName, destinationDir=destDir,
                             originDir=templateDir, symbolValues=syms,
@@ -90,7 +90,7 @@ setMethod("makePdInfoPackage", "AffySNPCNVPDInfoPkgSeed",
                            PDINFOCLASS="AffySNPCNVPDInfo",
                            GEOMETRY=geometry)
 
-              templateDir <- system.file("pd.PKG.template",
+              templateDir <- system.file("pd.PKG.template2",
                                          package="pdInfoBuilder")
               createPackage(pkgname=pkgName, destinationDir=destDir,
                             originDir=templateDir, symbolValues=syms,

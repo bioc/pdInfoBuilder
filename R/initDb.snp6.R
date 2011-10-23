@@ -11,16 +11,11 @@ snp6.initDb <- function(dbname) {
     dbGetQuery(db, sprintf(createSnpFeatureSql, "pmfeature_tmp"))
     dbGetQuery(db, sprintf(createCnvFeatureSql, "pmfeatureCNV_tmp"))
 
-##    dbGetQuery(db, sprintf(createSnpFeatureSql, "mmfeature_tmp"))
-
-##    dbGetQuery(db, sprintf(createSnpFeatureSql, "qcpmfeature"))
-##    dbGetQuery(db, sprintf(createSnpFeatureSql, "qcmmfeature"))
-
-##    dbGetQuery(db, sprintf(createSnpPm_MmSql, "pm_mm"))
-##    dbGetQuery(db, sprintf(createSnpPm_MmSql, "qcpm_qcmm"))
-
     dbGetQuery(db, createSnpSequenceSql)
     dbGetQuery(db, createCnvSequenceSql)
+
+    dbGetQuery(db, createSnpFragmentLengthSql)
+    dbGetQuery(db, createCnvFragmentLengthSql)
 
     ## Create index
     ## NOTE: might be more efficient to create this after loading,
@@ -66,7 +61,6 @@ snp6.createIndicesDb <- function(db) {
     ## Create DB indices and fix ordering
     makeIndex("pmf_idx_fsetid", "pmfeature", "fsetid")
     makeIndex("pmf_idx_fsetid_cnv", "pmfeatureCNV", "fsetid")
-##    makeIndex("mmf_idx_fsetid", "mmfeature", "fsetid")
 
     makeIndex("fset_idx_chrom", "featureSet", "chrom")
     makeIndex("fset_idx_chrom_cnv", "featureSetCNV", "chrom")

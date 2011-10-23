@@ -1,6 +1,21 @@
 \name{NEWS}
 \title{News for Package 'pdInfoBuilder'}
 
+\section{Changes in version 1.17}{
+  \subsection{USER VISIBLE CHANGES}{
+    \itemize{
+      \item The annotation packages for SNP chips no longer have a
+      'fragment_length*' column in the featureSet/featureSetCNV tables.
+      Fragment length now has its own table, 'fragmentLength' (for SNP probes)
+      and 'fragmentLengthCNV' (for CN probes).
+      \item Rda files available through annotation packages created by
+      pdInfoBuilder > 1.17 are compressed using 'xz'.
+      \item Fixed License field on the template.
+      \item Added an additional template for SNP arrays supported by CRLMM.
+    }
+  }
+}
+
 \section{Changes in version 1.15}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{

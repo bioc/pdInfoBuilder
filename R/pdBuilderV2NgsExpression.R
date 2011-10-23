@@ -258,13 +258,13 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             if (!quiet) message("Saving DataFrame object for PM.")
             pmSequence <- parsedData[["pmSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
-            save(pmSequence, file=pmSeqFile)
+            save(pmSequence, file=pmSeqFile, compress='xz')
 
             if (containsBg){
               if (!quiet) message("Saving DataFrame object for BG.")
               bgSequence <- parsedData[["bgSequence"]]
               bgSeqFile <- file.path(datadir, "bgSequence.rda")
-              save(bgSequence, file=bgSeqFile)
+              save(bgSequence, file=bgSeqFile, compress='xz')
             }
             if (!quiet) message("Done.")
           })

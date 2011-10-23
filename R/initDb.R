@@ -19,6 +19,7 @@ initDb <- function(dbname) {
     dbGetQuery(db, sprintf(createSnpPm_MmSql, "qcpm_qcmm"))
 
     dbGetQuery(db, createSnpSequenceSql)
+    dbGetQuery(db, createSnpFragmentLengthSql)
 
     ## Create index
     ## NOTE: might be more efficient to create this after loading,

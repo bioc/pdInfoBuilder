@@ -16,7 +16,7 @@ setClass("PDInfoPkgSeed",
            species="character"),
          prototype=prototype(
            version="0.0.1",
-           license="Artistic License, Version 2.0",
+           license="Artistic-2.0",
            author="My Name",
            email="my@email.com",
            biocViews="AnnotationData",

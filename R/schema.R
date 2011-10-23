@@ -25,7 +25,6 @@ create table featureSet (
     allele_a text,
     allele_b text,
     gene_assoc text,
-    fragment_length integer,
     dbsnp integer,
     cnv text)
 ')
@@ -43,8 +42,6 @@ create table featureSet (
     allele_a text,
     allele_b text,
     gene_assoc text,
-    fragment_length integer,
-    fragment_length2 integer,
     dbsnp integer,
     cnv text)
 ')
@@ -86,8 +83,6 @@ create table featureSetCNV (
     strand integer,
     cytoband text,
     gene_assoc text,
-    fragment_length integer,
-    fragment_length2 integer,
     xpar integer,
     cnv text)
 ')
@@ -102,8 +97,6 @@ create table featureSetCNV (
     strand integer,
     cytoband text,
     gene_assoc text,
-    fragment_length integer,
-    fragment_length2 integer,
     xpar integer,
     cnv text)
 ')
@@ -123,4 +116,22 @@ create table sequenceCNV (
     offset integer,
     tstrand text,
     seq text)
+')
+
+createSnpFragmentLengthSql <- ('
+create table fragmentLength (
+    fsetid integer not null references "featureSet" ("fsetid"),
+    enzyme text,
+    length integer,
+    start integer,
+    stop integer)
+')
+
+createCnvFragmentLengthSql <- ('
+create table fragmentLengthCNV (
+    fsetid integer not null references "featureSetCNV" ("fsetid"),
+    enzyme text,
+    length integer,
+    start integer,
+    stop integer)
 ')

@@ -272,12 +272,12 @@ setMethod("makePdInfoPackage", "AffyExpressionPDInfoPkgSeed",
             pmSequence <- parsedData[["pmSequence"]]
             pmSeqFile <- file.path(datadir, "pmSequence.rda")
             if (!quiet) cat("Saving DataFrame object for PM.\n")
-            save(pmSequence, file=pmSeqFile)
+            save(pmSequence, file=pmSeqFile, compress='xz')
             if (hasMM){
               mmSequence <- parsedData[["mmSequence"]]
               mmSeqFile <- file.path(datadir, "mmSequence.rda")
               if (!quiet) cat("Saving DataFrame object for MM.\n")
-              save(mmSequence, file=mmSeqFile)
+              save(mmSequence, file=mmSeqFile, compress='xz')
             }
             if (!quiet) cat("Done.\n")
           })
