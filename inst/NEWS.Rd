@@ -1,7 +1,7 @@
 \name{NEWS}
 \title{News for Package 'pdInfoBuilder'}
 
-\section{Changes in version 1.17}{
+\section{Changes in version 1.18}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{
       \item The annotation packages for SNP chips no longer have a
