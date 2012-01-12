@@ -1,6 +1,15 @@
 \name{NEWS}
 \title{News for Package 'pdInfoBuilder'}
 
+\section{Changes in version 1.20}{
+  \subsection{USER VISIBLE CHANGES}{
+    \itemize{
+      \item The annotation packages for Affymetrix Tiling arrays now
+      contain strand information (suggestion and implementation: Kristof De Beuf)
+    }
+  }
+}
+
 \section{Changes in version 1.18}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{

@@ -7,7 +7,8 @@ affyTilingPmFeatureSchema <- list(col2type=c(
                                     chrom="INTEGER",
                                     position="INTEGER",
                                     x="INTEGER",
-                                    y="INTEGER"),
+                                    y="INTEGER",
+                                    strand="INTEGER"),
                                   col2key=c(
                                     fid="PRIMARY KEY"
                                     ))
@@ -77,7 +78,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
   ## there are pmmm and pmonly
   idx <- which(sapply(experimental, getField, "mapping") == "onlypm")
   idx2 <- which(sapply(experimental, getField, "mapping") == "pmmm")
-  cols <- c("fid", "chrom", "startpos", "pmx", "pmy", "probeseq")
+  cols <- c("fid", "chrom", "startpos", "pmx", "pmy", "probeseq","strand")
   pmFeatures <- lapply(experimental,
                    function(x){
                      x[["chrom"]] <- x[["seqInfo"]][["name"]]
@@ -85,7 +86,7 @@ parseBpmapCel <- function(bpmapFile, celFile, verbose=TRUE){
                      as.data.frame(x[cols], stringsAsFactors=FALSE)
                    })
   pmFeatures <- do.call("rbind", pmFeatures)
-  names(pmFeatures) <- c("fid", "chrom", "position", "x", "y", "sequence")
+  names(pmFeatures) <- c("fid", "chrom", "position", "x", "y", "sequence","strand")
   rownames(pmFeatures) <- NULL
 
   iDups <- which(duplicated(pmFeatures[['fid']]))
