@@ -31,6 +31,7 @@ closeDb <- function() {
 }
 
 .onLoad <- function(libname, pkgname) {
+    require(SQLite, quietly=TRUE)
     globals$DB_PATH <- system.file("extdata", "@DBFILE@",
                                    package="@PKGNAME@",
                                    lib.loc=libname)
