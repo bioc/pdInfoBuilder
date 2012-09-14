@@ -161,32 +161,36 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   ## Variables
   SENSE <- as.integer(0)
   ANTISENSE <- as.integer(1)
-  
+
 ###################################################
   ## TABLES TO ADD
 ###################################################
   if (verbose) simpleMessage("Creating dictionaries... ")
   ## chromosome dictionary moved to after reading
   ##  the CSV file
-  
+
   ## level_schema
-  level_schema <- data.frame(level=as.integer(1:5),
-                             level_id=c("core", "extended", "full", "free", "ambiguous"),
-                             stringsAsFactors=FALSE)
-  
+  level_schema <- getLevelSchema()
+##   level_schema <- data.frame(level=as.integer(1:5),
+##                              level_id=c("core", "extended", "full", "free", "ambiguous"),
+##                              stringsAsFactors=FALSE)
+##
+
   ## type_schema
-  type_schema <- data.frame(type=as.integer(1:8),
-                            type_id=c("main", "control->affx",
-                                      "control->chip",
-                                      "control->bgp->antigenomic",
-                                      "control->bgp->genomic",
-                                      "normgene->exon",
-                                      "normgene->intron",
-                                      "rescue->FLmRNA->unmapped"),
-                            stringsAsFactors=FALSE)
+  type_schema <- getTypeSchema()
+##   type_schema <- data.frame(type=as.integer(1:8),
+##                             type_id=c("main", "control->affx",
+##                                       "control->chip",
+##                                       "control->bgp->antigenomic",
+##                                       "control->bgp->genomic",
+##                                       "normgene->exon",
+##                                       "normgene->intron",
+##                                       "rescue->FLmRNA->unmapped"),
+##                             stringsAsFactors=FALSE)
+
   if (verbose) msgOK()
-  
-  
+
+
   ## the "probesets" df is to be the featureSet table
   if (verbose) msgParsingFile(probeFile)
   probesets <- read.csv(probeFile, comment.char="#",
@@ -201,7 +205,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   rm(cols)
 
   chromosome_schema <- createChrDict(probesets[["seqname"]])
-  
+
   probesets[["chrom"]] <- match(probesets[["seqname"]], chromosome_schema[["chrom_id"]])
   probesets[["seqname"]] <- NULL
   probesets[["strand"]] <- ifelse(probesets[["strand"]] == "-", ANTISENSE, SENSE)
@@ -241,6 +245,7 @@ parsePgfClf <- function(pgfFile, clfFile, verbose=TRUE){
   i <- match(fid, pgf[["probeId"]])
   ii <- match(fid, clf[["id"]])
   probes.table <- data.frame(fid=fid,
+                             man_fsetid=pgf[["probesetName"]][triplet[["probesetIdx"]]],
                              fsetid=pgf[["probesetId"]][triplet[["probesetIdx"]]],
                              pstype=pgf[["probesetType"]][triplet[["probesetIdx"]]],
                              atom=pgf[["atomId"]][triplet[["atomIdx"]]],
@@ -277,8 +282,8 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ## id
   ## type_id
   type_dict <- probesetInfo[["type"]]
-  
-  
+
+
   ## featureSet table - Fields
   ## probeset_id
   ## strand
@@ -358,13 +363,13 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ## subset using cols
   ## cols <- c("fid", "fsetid", "pstype", "ptype", "x", "y", "sequence")
   rm(probes.table)
-  
+
   core <- mpsParser(coreMps, verbose=verbose)
   if (!geneArray){
     extended <- mpsParser(extendedMps, verbose=verbose)
     full <- mpsParser(fullMps, verbose=verbose)
   }
-  
+
   ## Here we should have the following tables available:
   ##  featureSet: fsetid, type
   ##  pmfeature: fid, fsetid, atom, x, y
@@ -383,7 +388,7 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
     out[["extended"]] <- extended
     out[["full"]] <- full
   }
-  
+
   return(out)
 }
 
@@ -395,7 +400,7 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
 ##             iv) dump the database
 #######################################################################
 
-setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",          
+setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
             geneArray <- object@geneArray
             stopifnot(is.logical(geneArray))
@@ -417,7 +422,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               message("Extended MPS: ", basename(object@extendedMps))
             }
             msgBar()
-            
+
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
             #######################################################################
@@ -439,7 +444,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
                                                     object@extendedMps,
                                                     verbose=!quiet,
                                                     geneArray=geneArray)
-            
+
             #######################################################################
             ## Part iii) Create package from template
             #######################################################################
@@ -498,7 +503,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
                             mpsSchema[["col2key"]])
             }
             ## end adding
-            
+
             dbCreateTable(conn,
                           "featureSet",
                           exonTranscriptionFeatureSetSchema[["col2type"]],
@@ -574,10 +579,10 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               dbCreateIndex(conn, "idx_mmfsetid", "mmfeature", "fsetid", FALSE, verbose=!quiet)
               dbCreateIndex(conn, "idx_mmfid", "mmfeature", "fid", FALSE, verbose=!quiet)
             }
-              
+
             dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
-            
+
             #######################################################################
             ## Part v) Save sequence DataFrames
             ## FIX ME: Fix ordering of the tables to match xxFeature tables
@@ -595,7 +600,7 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
               save(mmSequence, file=mmSeqFile, compress='xz')
             }
 
-            
+
             #######################################################################
             ## Part vi) Save NetAffx Annotation to extdata
             #######################################################################
@@ -607,6 +612,6 @@ setMethod("makePdInfoPackage", "AffySTPDInfoPkgSeed",
             save(netaffxTranscript, file=file.path(extdataDir,
                                     'netaffxTranscript.rda'), compress='xz')
             if (!quiet) msgOK()
-            
+
             if (!quiet) message("Done.")
           })

@@ -5,7 +5,7 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID. The database also incorporates featureSet-level
   annotation data. The products of this packages are used by the oligo pkg.
-Version: 1.21.0
+Version: 1.21.1
 Author: Seth Falcon, Benilton Carvalho with contributions by Vince Carey, Matt Settles and Kristof de Beuf
 Maintainer: Benilton Carvalho <Benilton.Carvalho@cancer.org.uk>
 LazyLoad: yes
@@ -39,4 +39,5 @@ Collate: AllClasses.R
          pdBuilderV2AffyExpressionHT.R
          pdBuilderV2AffySNP.R
          pdBuilderV2AffySNPCNV.R
+         pdBuilderV2miRNA.R
 biocViews: Annotation, Infrastructure
