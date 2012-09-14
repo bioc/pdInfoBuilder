@@ -25,13 +25,14 @@ getDb  <- function() {
 
 closeDb <- function() {
     ## FIXME: check for valid connection?
-    sapply(dbListResults(globals$dbCon), dbClearResult)
-    dbDisconnect(globals$dbCon)
+    if (isIdCurrent(globals$dbCon)){
+        sapply(dbListResults(globals$dbCon), dbClearResult)
+        dbDisconnect(globals$dbCon)
+    }
     remove(list="dbCon", envir=globals)
 }
 
-.onLoad <- function(libname, pkgname) {
-    require(SQLite, quietly=TRUE)
+.onAttach <- function(libname, pkgname) {
     globals$DB_PATH <- system.file("extdata", "@DBFILE@",
                                    package="@PKGNAME@",
                                    lib.loc=libname)

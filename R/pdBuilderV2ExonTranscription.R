@@ -261,6 +261,162 @@ parsePgfClf <- function(pgfFile, clfFile, verbose=TRUE){
 
 combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
                                       coreMps, fullMps, extendedMps,
+                                      geneArray=FALSE, WT=TRUE,
+                                      verbose=TRUE){
+    ## WT = Whole Transcript arrays (Gene/Exon ST)
+  tmp <- parsePgfClf(pgfFile=pgfFile, clfFile=clfFile, verbose=verbose)
+  probes.table <- tmp[["probes.table"]]
+  geom <- tmp[["geometry"]]
+  rm(tmp)
+
+  if (WT){
+      probesetInfo <- parseProbesetCSV(probeFile, verbose=verbose)
+
+      ## levels table
+      ## id
+      ## desc
+      level_dict <- probesetInfo[["level"]]
+
+      ## chromosome table
+      ## id
+      ## chrom_id
+      chrom_dict <- probesetInfo[["chromosome"]]
+
+      ## types table
+      ## id
+      ## type_id
+      type_dict <- probesetInfo[["type"]]
+
+
+      ## featureSet table - Fields
+      ## probeset_id
+      ## strand
+      ## start
+      ## stop
+      ## transcript_cluster_id
+      ## exon_id
+      ## crosshyb_type
+      ## level
+      ## chrom
+      ## type
+      featureSet <- probesetInfo[["probesets"]]
+      missFeatureSet <- setdiff(unique(probes.table[["fsetid"]]),
+                                unique(featureSet[["fsetid"]]))
+      if (length(missFeatureSet) > 0){
+          missFS = data.frame(fsetid=missFeatureSet)
+          cols <- names(featureSet)
+          cols <- cols[cols != "fsetid"]
+          for (i in cols)
+              missFS[[i]] <- NA
+          missFS <- missFS[, names(featureSet)]
+          featureSet <- rbind(featureSet, missFS)
+          rm(missFS, cols, i)
+      }
+      rm(missFeatureSet)
+  }else{
+    featureSet <- unique(probes.table[, c('fsetid', 'man_fsetid', 'pstype')])
+    type_dict <- getTypeSchema()
+    featureSet[['type']] <- match(tolower(featureSet[['pstype']]),
+                                  type_dict[['type_id']])
+    if (any(is.na(featureSet[['type']]))){
+        found <- paste('   ', sort(unique(featureSet$pstype)), collapse='\n')
+        expct <- paste('   ', sort(unique(type_dict$type_id)), collapse='\n')
+        txt <- paste('The type_dict template is incomplete.\nTemplate contains:\n', expct, '\n', 'Data contains:\n', found, sep='')
+        stop(txt)
+    }
+    featureSet[['pstype']] <- NULL
+  }
+
+  ## pmfeature table - Fields
+  ##  fid
+  ##  fsetid
+  ##  chr (NA)
+  ##  location (NA)
+  ##  x
+  ##  y
+  ## IMPORTANT:
+  ##    ignoring strand
+  ##    keeping atom to match with MM's
+  pmFeatures <- subset(probes.table,
+                       substr(probes.table[["ptype"]], 1, 2) == "pm",
+                       select=c("fid", "fsetid", "atom", "x", "y", "sequence"))
+
+  pmSequence <- pmFeatures[, c("fid", "sequence")]
+  pmFeatures[["sequence"]] <- NULL
+  pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
+  pmSequence <- DataFrame(fid=pmSequence[["fid"]],
+                          sequence=DNAStringSet(pmSequence[["sequence"]]))
+
+  ## mmfeature table - Fields
+  ##  fid
+  ##  fid of matching pm
+  ##  x
+  ##  y
+  ## IMPORTANT:
+  ##    ignoring strand
+  ##    keeping atom to match with MM's
+  ##    ADD sequence for MM
+  mmFeatures <- subset(probes.table, substr(ptype, 1, 2) =="mm",
+                       select=c("fid", "fsetid", "atom", "x", "y", "sequence"))
+  if (nrow(mmFeatures) > 0){
+    mmSequence <- mmFeatures[, c("fid", "sequence")]
+    mmFeatures[["sequence"]] <- NULL
+    mmSequence <- mmSequence[order(mmSequence[["fid"]]),]
+    mmSequence <- DataFrame(fid=mmSequence[["fid"]],
+                            sequence=DNAStringSet(mmSequence[["sequence"]]))
+  }else{
+    mmFeatures <- data.frame()
+    mmSequence <- data.frame()
+  }
+
+  ## IMPORTANT: for the moment, bgfeature will contain everything (that is PM) but 'main'
+  ## bgfeature table - Fields
+  ##  fid
+  ##  x
+  ##  y
+  ##  fs_type: featureSet type: genomic/antigenomic
+  ##  f_type: pm/mm at/st
+  ## old code:
+  ## subset using cols
+  ## cols <- c("fid", "fsetid", "pstype", "ptype", "x", "y", "sequence")
+  rm(probes.table)
+
+  if (WT){
+      core <- mpsParser(coreMps, verbose=verbose)
+      if (!geneArray){
+          extended <- mpsParser(extendedMps, verbose=verbose)
+          full <- mpsParser(fullMps, verbose=verbose)
+      }
+
+      ## Here we should have the following tables available:
+      ##  featureSet: fsetid, type
+      ##  pmfeature: fid, fsetid, atom, x, y
+      ##  bgfeature: fid, fsetid, fs_type, f_type, x, y  - NOT ANYMORE
+      ##  pmSequence: fid, sequence
+      ##  bgSequence: fid, sequence  - NOT ANYMORE
+      ##  core, extended, full: meta_fsetid, trancript_cluster_id, fsetid
+      ##  mmfeatures/mmSequence
+
+      out <- list(featureSet=featureSet, pmFeatures=pmFeatures,
+                  mmFeatures=mmFeatures, geometry=geom,
+                  pmSequence=pmSequence, mmSequence=mmSequence,
+                  chrom_dict=chrom_dict, level_dict=level_dict,
+                  type_dict=type_dict, core=core)
+      if (!geneArray){
+          out[["extended"]] <- extended
+          out[["full"]] <- full
+      }
+  }else{
+    out <- list(featureSet=featureSet, pmFeatures=pmFeatures,
+                mmFeatures=mmFeatures, geometry=geom,
+                pmSequence=pmSequence, mmSequence=mmSequence,
+                type_dict=type_dict)
+  }
+  return(out)
+}
+
+combinePgfClfProbesetsMps0 <- function(pgfFile, clfFile, probeFile,
+                                      coreMps, fullMps, extendedMps,
                                       geneArray=FALSE, verbose=TRUE){
   tmp <- parsePgfClf(pgfFile=pgfFile, clfFile=clfFile, verbose=verbose)
   probes.table <- tmp[["probes.table"]]

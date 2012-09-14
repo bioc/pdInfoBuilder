@@ -38,43 +38,13 @@ setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
             callNextMethod(.Object, ...)
           })
 
-#### setMethod("initialize", "AffySNPPDInfoPkgSeed",
-####           function(.Object, cdfFile, csvAnnoFile, csvSeqFile,
-####                    splineParamFile="", crlmmInfoFile="",
-####                    referenceDistFile="", ...) {
-####               .Object@cdfFile <- new("ScalarCharacter", cdfFile)
-####               .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
-####               .Object@csvSeqFile <- new("ScalarCharacter", csvSeqFile)
-####               .Object@splineParamFile <- new("ScalarCharacter", splineParamFile)
-####               .Object@crlmmInfoFile <- new("ScalarCharacter", crlmmInfoFile)
-####               .Object@referenceDistFile <- new("ScalarCharacter", referenceDistFile)
-####               .Object <- callNextMethod(.Object, ...)
-####               .Object
-####           })
-#### 
-#### setMethod("initialize", "AffySNPCNVPDInfoPkgSeed",
-####           function(.Object, cdfFile, csvAnnoFile, csvSeqFile, csvAnnoFileCnv, csvSeqFileCnv,
-####                    splineParamFile="", crlmmInfoFile="",
-####                    referenceDistFile="", ...) {
-####               .Object@cdfFile <- new("ScalarCharacter", cdfFile)
-####               .Object@csvAnnoFile <- new("ScalarCharacter", csvAnnoFile)
-####               .Object@csvSeqFile <- new("ScalarCharacter", csvSeqFile)
-####               .Object@csvAnnoFileCnv <- new("ScalarCharacter", csvAnnoFileCnv)
-####               .Object@csvSeqFileCnv <- new("ScalarCharacter", csvSeqFileCnv)
-####               .Object@splineParamFile <- new("ScalarCharacter", splineParamFile)
-####               .Object@crlmmInfoFile <- new("ScalarCharacter", crlmmInfoFile)
-####               .Object@referenceDistFile <- new("ScalarCharacter", referenceDistFile)
-####               .Object <- callNextMethod(.Object, ...)
-####               .Object
-####           })
-  
 setMethod("initialize", "AffyTilingPDInfoPkgSeed",
           function(.Object, bpmapFile="TheBpmapFile", celFile="TheCelFile", ...) {
               .Object@bpmapFile <- new("ScalarCharacter", bpmapFile)
               .Object@celFile <- new("ScalarCharacter", celFile)
               callNextMethod(.Object, ...)
           })
-  
+
 setMethod("initialize", "AffySTPDInfoPkgSeed",
           function(.Object, pgfFile="ThePgfFile", clfFile="TheClfFile",
           probeFile="TheProbeFile", transFile="TheTranscriptFile", coreMps="coreMps", fullMps="fullMps", extendedMps="extendedMps", ...) {
@@ -87,7 +57,16 @@ setMethod("initialize", "AffySTPDInfoPkgSeed",
             .Object@extendedMps <- new("ScalarCharacter", extendedMps)
             callNextMethod(.Object, ...)
           })
-  
+
+setMethod("initialize", "AffyMiRNAPDInfoPkgSeed",
+          function(.Object, pgfFile="ThePgfFile", clfFile="TheClfFile",
+          probeFile="TheProbeFile", transFile="TheTranscriptFile", coreMps="coreMps", fullMps="fullMps", extendedMps="extendedMps", ...) {
+            .Object@pgfFile <- new("ScalarCharacter", pgfFile)
+            .Object@clfFile <- new("ScalarCharacter", clfFile)
+            callNextMethod(.Object, ...)
+          })
+
+
 ########### Nimblegen Arrays ###############
 setMethod("initialize", "NgsExpressionPDInfoPkgSeed",
           function(.Object, ndfFile="TheNdfFile", xysFile="TheXysFile", ...) {

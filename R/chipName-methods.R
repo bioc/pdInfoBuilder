@@ -39,8 +39,14 @@ setMethod("chipName", "AffyTilingPDInfoPkgSeed",
               ## compute chip name from the CDF file
               readCelHeader(object@celFile)$chiptype
           })
-  
-setMethod("chipName", "AffySTPDInfoPkgSeed",
+
+## setMethod("chipName", "AffySTPDInfoPkgSeed",
+##           function(object) {
+##               ## compute chip name from the PGF file
+##               readPgfHeader(object@pgfFile)$header$chip_type[[1]]
+##           })
+
+setMethod("chipName", "AffyGeneric1PDInfoPkgSeed",
           function(object) {
               ## compute chip name from the PGF file
               readPgfHeader(object@pgfFile)$header$chip_type[[1]]

@@ -90,11 +90,15 @@ setClass("AffyTilingPDInfoPkgSeed",
            bpmapFile="ScalarCharacter",
            celFile="ScalarCharacter"))
 
-setClass("AffySTPDInfoPkgSeed",
+setClass("AffyGeneric1PDInfoPkgSeed",
          contains="AffymetrixPDInfoPkgSeed",
          representation=representation(
            pgfFile="ScalarCharacter",
-           clfFile="ScalarCharacter",
+           clfFile="ScalarCharacter"))
+
+setClass("AffySTPDInfoPkgSeed",
+         contains="AffyGeneric1PDInfoPkgSeed",
+         representation=representation(
            probeFile="ScalarCharacter",
            transFile="ScalarCharacter",
            coreMps="ScalarCharacter",
@@ -116,6 +120,9 @@ setClass("AffyExpressionPDInfoPkgSeed",
            cdfFile="ScalarCharacter",
            celFile="ScalarCharacter",
            tabSeqFile="ScalarCharacter"))
+
+setClass("AffyMiRNAPDInfoPkgSeed",
+         contains="AffyGeneric1PDInfoPkgSeed")
 
 #################################################################
 ## NimbleGen seeds
