@@ -148,12 +148,12 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   experimentalIDs <- "experimental"
 
 
-  pmFeatures <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y", "type")]
-  pmSequence <- subset(features, mismatch == 0 & class %in% experimentalIDs)[, c("fid", "sequence")]
+  pmFeatures <- subset(features, features$mismatch == 0 & class %in% experimentalIDs)[, c("fid", "fsetid", "position", "x", "y", "type")]
+  pmSequence <- subset(features, features$mismatch == 0 & class %in% experimentalIDs)[, c("fid", "sequence")]
   pmSequence <- pmSequence[order(pmSequence[["fid"]]),]
   pmSequence <- DataFrame(fid=pmSequence[["fid"]],
                           sequence=DNAStringSet(pmSequence[["sequence"]]))
-  mmFeatures <- subset(features, mismatch > 0 & class %in% experimentalIDs)
+  mmFeatures <- subset(features, features$mismatch > 0 & class %in% experimentalIDs)
   ## add mmSequence
   if (any(mmFeatures[["mismatch"]] >= 10000))
     stop("Control probe possibly identified as Experimental")

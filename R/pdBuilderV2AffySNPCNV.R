@@ -117,8 +117,8 @@ parseProbeSequenceFile <- function(probeseqFile, snp=TRUE, axiom=FALSE){
   names(probeseqTab) <- colsOut
 
   if (axiom){
-      easy <- subset(probeseqTab, count == 1)
-      hard <- subset(probeseqTab, count == 2)
+      easy <- subset(probeseqTab, probeseqTab$count == 1)
+      hard <- subset(probeseqTab, probeseqTab$count == 2)
       rm(probeseqTab)
       easy[['sequence']] <- gsub("(.*)\\[.{1}\\/.{1}\\](.*)",
                                  "\\1\\2", easy[['sequence']])
