@@ -8,6 +8,7 @@
 \alias{chipName,NimbleGenPDInfoPkgSeed-method}
 \alias{chipName,AffySNPCNVPDInfoPkgSeed2-method}
 \alias{chipName,AffySNPPDInfoPkgSeed2-method}
+\alias{chipName,AffyGeneric1PDInfoPkgSeed-method}
 
 \title{Return an Official Chip/Platform Name}
 \description{

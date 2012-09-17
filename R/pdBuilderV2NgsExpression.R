@@ -57,7 +57,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
   #######################################################################
   if (verbose) msgParsingFile(xysFile)
-  xysdata <- read.delim(xysFile, comment="#")
+  xysdata <- read.delim(xysFile, comment.char="#")
   if (verbose) msgOK()
   xysdata[["fid"]] <- 1:nrow(xysdata)
   if (verbose) simpleMessage("Merging NDF and XYS files... ")
@@ -67,7 +67,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   if (length(controls) > 0)
     ndfdata <- ndfdata[-controls,]
   rm(controls)
-  
+
   #######################################################################
   ## Step 4: Prepare contents for featureSet table
   ## Fields featureSet: man_fsetid, chrom, start, end, type
@@ -82,7 +82,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   rm(ok)
   if (verbose) msgOK()
 
-  
+
   #######################################################################
   ## Step 5: Prepare contents for pmfeature, mmfeature and bgfeature
   ## Fields pmfeature: fid, fsetid, position, x, y
@@ -129,7 +129,7 @@ parseNgsPair <- function(ndfFile, xysFile, verbose=TRUE){
   rm(pmidx)
   if (verbose) msgOK()
 
-  
+
   ## add mmSequence
   if (any(mmFeatures[["mismatch"]] >= 10000))
     stop("Control probe possibly identified as Experimental")
@@ -159,7 +159,7 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
             message("NDF: ", basename(object@ndfFile))
             message("XYS: ", basename(object@xysFile))
             msgBar()
-            
+
             #######################################################################
             ## Part i) get array info (chipName, pkgName, dbname)
             #######################################################################
@@ -244,10 +244,10 @@ setMethod("makePdInfoPackage", "NgsExpressionPDInfoPkgSeed",
               dbCreateIndicesBg(conn, !quiet)
             dbCreateIndicesPm(conn, !quiet)
             dbCreateIndicesFs(conn, !quiet)
-            
+
             dbGetQuery(conn, "VACUUM")
             dbDisconnect(conn)
-            
+
             #######################################################################
             ## Part v) Save sequence DataFrames
             ## FIX ME: Fix ordering of the tables to match xxFeature tables

@@ -219,7 +219,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 ## Add tables: core, extended, full
 mpsParser <- function(mpsFile, verbose=TRUE){
   if (verbose) msgParsingFile(mpsFile)
-  mps <- read.delim(mpsFile, comment="#", stringsAsFactors=FALSE, header=TRUE)
+  mps <- read.delim(mpsFile, comment.char="#", stringsAsFactors=FALSE, header=TRUE)
   cols <- c("probeset_id", "transcript_cluster_id", "probeset_list")
   mps <- mps[cols]
   psids <- lapply(strsplit(mps[["probeset_list"]], " "), as.integer)
@@ -356,7 +356,7 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
   ##    ignoring strand
   ##    keeping atom to match with MM's
   ##    ADD sequence for MM
-  mmFeatures <- subset(probes.table, substr(ptype, 1, 2) =="mm",
+  mmFeatures <- subset(probes.table, substr(probes.table$ptype, 1, 2) =="mm",
                        select=c("fid", "fsetid", "atom", "x", "y", "sequence"))
   if (nrow(mmFeatures) > 0){
     mmSequence <- mmFeatures[, c("fid", "sequence")]
@@ -495,7 +495,7 @@ combinePgfClfProbesetsMps0 <- function(pgfFile, clfFile, probeFile,
   ##    ignoring strand
   ##    keeping atom to match with MM's
   ##    ADD sequence for MM
-  mmFeatures <- subset(probes.table, substr(ptype, 1, 2) =="mm",
+  mmFeatures <- subset(probes.table, substr(probes.table$ptype, 1, 2) =="mm",
                        select=c("fid", "fsetid", "atom", "x", "y", "sequence"))
   if (nrow(mmFeatures) > 0){
     mmSequence <- mmFeatures[, c("fid", "sequence")]

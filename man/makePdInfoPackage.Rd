@@ -11,6 +11,7 @@
 \alias{makePdInfoPackage,AffyGenePDInfoPkgSeed-method}
 \alias{makePdInfoPackage,AffySNPCNVPDInfoPkgSeed2-method}
 \alias{makePdInfoPackage,AffySNPPDInfoPkgSeed2-method}
+\alias{makePdInfoPackage,AffyMiRNAPDInfoPkgSeed-method}
 
 \title{Create a Platform Design Info Package}
 \description{
@@ -59,7 +60,7 @@ csvAnno <- "Mapping250K_Nsp_annot.csv"
 csvSeq <- "Mapping250K_Nsp_probe_tab"
 
 \dontrun{
-pkg <- new("AffySNPPDInfoPkgSeed", 
+pkg <- new("AffySNPPDInfoPkgSeed",
            version="0.1.5",
            author="A.U. Thor", email="au@thor.net",
            biocViews="AnnotationData",
