@@ -94,7 +94,7 @@ parseNgsTrio <- function(ndfFile, posFile, xysFile, verbose=TRUE){
   ## Step 3.1: Get XYS files and remove all controls (ie, NA in XYS)
   #######################################################################
   if (verbose) msgParsingFile(xysFile)
-  xysdata <- read.delim(xysFile, comment="#")
+  xysdata <- read.delim(xysFile, comment.char="#")
   if (verbose) msgOK()
   xysdata[["fid"]] <- 1:nrow(xysdata)
   ndfdata <- merge(ndfdata, xysdata, by.x=c("X", "Y"), by.y=c("X", "Y"))
