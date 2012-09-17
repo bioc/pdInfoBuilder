@@ -9,14 +9,14 @@ Version: 1.21.4
 Author: Seth Falcon, Benilton Carvalho with contributions by Vince Carey, Matt Settles and Kristof de Beuf
 Maintainer: Benilton Carvalho <Benilton.Carvalho@cancer.org.uk>
 LazyLoad: yes
-Depends: R (>= 2.11.0),
+Depends: R (>= 2.15.0),
          methods,
-         Biobase (>= 2.5.5),
-         RSQLite (>= 0.7-1),
-         affxparser (>= 1.7.3),
-         oligo (>= 1.9.19)
-Imports: Biostrings (>= 2.13.50),
-         IRanges (>= 1.3.89)
+         Biobase (>= 2.17.7),
+         RSQLite (>= 0.11.1),
+         affxparser (>= 1.29.12),
+         oligo (>= 1.21.5)
+Imports: Biostrings (>= 2.25.12),
+         IRanges (>= 1.15.44)
 License: Artistic-2.0
 Collate: AllClasses.R
          AllGenerics.R
