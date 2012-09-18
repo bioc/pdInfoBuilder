@@ -1,7 +1,7 @@
 TOP=../../..
-RUNIT_DIR=$(pwd)
-INST_PATH=$(dirname "${RUNIT_DIR}")
-PKG_PATH=$(dirname "${INST_PATH}")
+RUNIT_DIR := '$(pwd)'
+INST_PATH := '$(dirname ${RUNIT_DIR})'
+PKG_PATH  := '$(dirname ${INST_PATH})'
 
 ifndef RCMD
 RCMD=R
