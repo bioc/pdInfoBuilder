@@ -1,6 +1,14 @@
 \name{NEWS}
 \title{News for Package 'pdInfoBuilder'}
 
+\section{Changes in version 1.22}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Removed dependency on RConverters.h (Prof Ripley)
+    }
+  }
+}
+
 \section{Changes in version 1.20}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{
