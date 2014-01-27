@@ -1,0 +1,10 @@
+%\VignetteIndexEntry{Building Annotation Packages with pdInfoBuilder for Use with the oligo Package}
+%\VignetteKeywords{Expression, Tiling, Exon, Gene, NimbleGen, Affymetrix}
+%\VignettePackage{pdInfoBuilder}
+
+%%% The real .Rnw is under inst/scripts.
+%%% It cannot be added here because it depends on external
+%%% data not yet available as a BioC package
+\documentclass{article}
+\begin{document}
+\end{document}

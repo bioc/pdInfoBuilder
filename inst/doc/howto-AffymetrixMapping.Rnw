@@ -1,0 +1,76 @@
+%\VignetteIndexEntry{PDInfo Package Building Affymetrix Mapping Chips}
+%\VignetteKeywords{SNP, Mapping}
+%\VignettePackage{pdInfoBuilder}
+\documentclass{article}
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textsf{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+
+\begin{document}
+\title{Building a PDInfo Package for an Affymetrix Mapping Chip}
+\date{November, 2006}
+\author{Seth Falcon \and Benilton Carvalho}
+\maketitle
+
+<<setup, echo=FALSE, results=hide>>=
+options(width=60)
+options(continue=" ")
+options(prompt="R> ")
+@ 
+
+\section{IMPORTANT!}
+
+Users are asked to download the packages for Affymetrix SNP chips from the BioConductor website!
+
+The contents of this vignette explain the essence of the builder for SNP chips.
+
+\section{What you will need}
+
+Aside from the \Rpackage{pdInfoBuilder} package and its dependencies,
+you will need the following files in order to follow along and build a
+``PDInfo'' package for the Affymetrix Mapping 250K NSP chip.
+
+\begin{itemize}
+\item \verb+Mapping250K_Nsp.cdf+: The binary CDF file from Affymetrix
+  containing feature-level annotation.
+
+\item \verb+Mapping250K_Nsp_annot.csv+: Delimited text file from
+  Affymetrix containing featureSet-level annotation.
+
+\item \verb+Mapping250K_Nsp_probe_tab+: Delimited text file from
+  Affymetrix containing probe sequence information for all PM probes.
+\end{itemize}
+
+\section{Building a PDInfo package}
+
+Assuming the source files described above are in your current working
+directory, the following commands will produce a PDInfo package.
+
+<<build1, eval=FALSE>>=
+library("pdInfoBuilder")
+cdfFile <- "Mapping250K_Nsp.cdf"
+csvAnno <- "Mapping250K_Nsp_annot.csv"
+csvSeq <- "Mapping250K_Nsp_probe_tab"
+
+pkg <- new("AffySNPPDInfoPkgSeed", 
+           version="0.1.5",
+           author="Seth Falcon", email="sfalcon@fhcrc.org",
+           biocViews="AnnotationData",
+           genomebuild="NCBI Build 35, May 2004",
+           cdfFile=cdfFile, csvAnnoFile=csvAnno, csvSeqFile=csvSeq)
+
+makePdInfoPackage(pkg, destDir=".")
+
+@ 
+
+We are able to complete the above step on a dual-CPU dual-core 3GHz
+Xeon box with 8GB RAM in about 20 minutes.  The only step that
+requires a significant amount of RAM is generating the coded sequence
+matrix.  I haven't yet looked carefully at it, but I think it should
+run on a 4GB system.
+
+\end{document}

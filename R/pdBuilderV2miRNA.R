@@ -9,14 +9,15 @@ miRNAFeatureSetSchema <- list(col2type=c(
 
 
 getTypeSchema <- function()
-    data.frame(type=as.integer(1:11),
-               type_id=c("main",
-               "control->affx", "control->chip",
-               "control->bgp->antigenomic",
-               "control->bgp->genomic", "normgene->exon",
-               "normgene->intron",
-               "rescue->FLmRNA->unmapped", "control->affx->bac_spike",
-               "oligo_spike_in", "r1_bac_spike_at"),
+    data.frame(type=as.integer(1:14),
+               type_id=c("main", "control->affx", "control->chip",
+                   "control->bgp->antigenomic",
+                   "control->bgp->genomic", "normgene->exon",
+                   "normgene->intron", "rescue->FLmRNA->unmapped",
+                   "control->affx->bac_spike", "oligo_spike_in",
+                   "r1_bac_spike_at", "control->affx->polya_spike",
+                   "control->affx->ercc",
+                   "control->affx->ercc->step"),
                stringsAsFactors=FALSE)
 
 getLevelSchema <- function()

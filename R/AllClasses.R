@@ -114,6 +114,10 @@ setClass("AffyGenePDInfoPkgSeed",
          contains="AffySTPDInfoPkgSeed",
          prototype=list(geneArray=TRUE))
 
+setClass("AffyHTAPDInfoPkgSeed",
+         contains="AffySTPDInfoPkgSeed",
+         prototype=list(geneArray=TRUE))
+
 setClass("AffyExpressionPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
