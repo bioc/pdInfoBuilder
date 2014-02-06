@@ -1,3 +1,39 @@
+## tables
+htaMpsSchema <- list(col2type=c(
+                         meta_fsetid="TEXT",
+                         transcript_cluster_id="TEXT",
+                         fsetid="INTEGER"
+                         ),
+                     col2key=c(
+                         fsetid="REFERENCES featureSet(fsetid)"
+                         ))
+
+
+htaFeatureSetSchema <- list(col2type=c(
+                                fsetid="INTEGER",
+                                man_fsetid="TEXT",
+                                strand="INTEGER",
+                                start="INTEGER",
+                                stop="INTEGER",
+                                transcript_cluster_id="INTEGER",
+                                exon_id="INTEGER",
+                                crosshyb_type="INTEGER",
+                                level="INTEGER",
+                                junction_start_edge="INTEGER",
+                                junction_stop_edge="INTEGER",
+                                junction_sequence="TEXT",
+                                has_cds="INTEGER",
+                                chrom="INTEGER",
+                                type="INTEGER"),
+                            col2key=c(
+                                fsetid="PRIMARY KEY",
+                                chrom="REFERENCES chrom_dict(chrom_id)",
+                                level="REFERENCES level_dict(level_id)",
+                                type ="REFERENCES type_dict(type_id)"
+                                ))
+
+###
+
 parseHtaProbesetCSV <- function(probeFile, verbose=TRUE){
   ## Variables
   SENSE <- as.integer(0)
@@ -36,6 +72,7 @@ parseHtaProbesetCSV <- function(probeFile, verbose=TRUE){
   cols[1] <- "man_fsetid"
   names(probesets) <- cols
   rm(cols)
+##  probesets$fsetid <- as.integer(factor(probesets$man_fsetid))
 
   chromosome_schema <- createChrDict(probesets[["seqname"]])
 
@@ -87,7 +124,10 @@ combinePgfClfProbesetsMpsHTA <- function(pgfFile, clfFile, probeFile,
     ## junction_sequence
     ## chrom
     ## type
-    featureSet <- probesetInfo[["probesets"]]
+    featureSet <- merge(probesetInfo[["probesets"]],
+                        unique(probes.table[, c('man_fsetid', 'fsetid')]),
+                        by='man_fsetid', all=TRUE)
+
     missFeatureSet <- setdiff(unique(probes.table[["man_fsetid"]]),
                               unique(featureSet[["man_fsetid"]]))
     if (length(missFeatureSet) > 0){
@@ -185,8 +225,6 @@ combinePgfClfProbesetsMpsHTA <- function(pgfFile, clfFile, probeFile,
 
 setMethod("makePdInfoPackage", "AffyHTAPDInfoPkgSeed",
           function(object, destDir=".", batch_size=10000, quiet=FALSE, unlink=FALSE) {
-            stopifnot(is.logical(geneArray))
-
             msgBar()
             message("Building annotation package for Affymetrix HTA Array")
             message("PGF.........: ", basename(object@pgfFile))
@@ -260,14 +298,14 @@ setMethod("makePdInfoPackage", "AffyHTAPDInfoPkgSeed",
                           typeDictTable[["col2key"]])
             dbCreateTable(conn,
                           "core_mps",
-                          mpsSchema[["col2type"]],
-                          mpsSchema[["col2key"]])
+                          htaMpsSchema[["col2type"]],
+                          htaMpsSchema[["col2key"]])
             ## end adding
 
             dbCreateTable(conn,
                           "featureSet",
-                          exonTranscriptionFeatureSetSchema[["col2type"]],
-                          exonTranscriptionFeatureSetSchema[["col2key"]])
+                          htaFeatureSetSchema[["col2type"]],
+                          htaFeatureSetSchema[["col2key"]])
 
             dbCreateTable(conn, "pmfeature",
                           genePmFeatureSchema[["col2type"]],
@@ -292,7 +330,7 @@ setMethod("makePdInfoPackage", "AffyHTAPDInfoPkgSeed",
             ## end inserting
 
             dbInsertDataFrame(conn, "featureSet", parsedData[["featureSet"]],
-                              exonTranscriptionFeatureSetSchema[["col2type"]], !quiet)
+                              htaFeatureSetSchema[["col2type"]], !quiet)
             dbInsertDataFrame(conn, "pmfeature", parsedData[["pmFeatures"]],
                               genePmFeatureSchema[["col2type"]], !quiet)
             if (containsMm)
