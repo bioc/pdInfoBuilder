@@ -18,6 +18,7 @@ ngsExprPmFeatureSchema <- list(col2type=c(
                                  fid="PRIMARY KEY"
                                  ))
 ## TODO: ngsExprMmFeatureSchema
+ngsExprMmFeatureSchema <- NULL
 ngsExprBgFeatureSchema <- list(col2type=c(
                                  fid="INTEGER",
                                  fsetid="INTEGER",

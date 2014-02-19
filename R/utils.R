@@ -75,7 +75,7 @@ setupPackage <- function(object, pkgName, destDir, dbFileName, unlink, quiet){
 }              
 
 connectDb <- function(dbfile) {
-    require("RSQLite")
+##    require("RSQLite")
     db <- dbConnect(SQLite(), dbname=dbfile, cache_size=6400, synchronous=0)
     sql <- ('
             pragma page_size = 8192;                

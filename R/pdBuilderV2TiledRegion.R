@@ -28,6 +28,7 @@ tiledRegionPmFeatureSchema <- list(col2type=c(
                                      fid="PRIMARY KEY"
                                      ))
 ## TODO: tiledRegionMmFeatureSchema
+tiledRegionMmFeatureSchema <- NULL
 tiledRegionBgFeatureSchema <- list(col2type=c(
                                      fid="INTEGER",
                                      fsetid="INTEGER",
