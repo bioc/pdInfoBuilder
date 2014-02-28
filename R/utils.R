@@ -107,7 +107,7 @@ createChrDict <- function(x){
     suffixes <- sapply(dataSplit[-idx], function(x) paste(x[-1], collapse="_"))
     suffixes <- sort(unique(suffixes))
     out <- list()
-    out[[1]] <- basic
+    out[[1]] <- sort(basic)
     for (i in 1:length(suffixes))
       out[[i+1]] <- paste(basic, suffixes[i], sep="_")
     out <- unlist(out)
