@@ -5,17 +5,21 @@ Description: Builds platform design information packages.
   data such as x, y position on chip and
   featureSet ID. The database also incorporates featureSet-level
   annotation data. The products of this packages are used by the oligo pkg.
-Version: 1.29.2
+Version: 1.27.9
 Author: Seth Falcon, Benilton Carvalho with contributions by Vince Carey, Matt Settles and Kristof de Beuf
 Maintainer: Benilton Carvalho <beniltoncarvalho@gmail.com>
 LazyLoad: yes
-Depends: R (>= 2.15.0),
+Depends: R (>= 3.1.0),
          methods,
          Biobase (>= 2.17.7),
-         RSQLite (>= 0.11.1),
+         RSQLite (>= 1.0.0),
          affxparser (>= 1.29.12),
          oligo (>= 1.27.3)
 Imports: Biostrings (>= 2.25.12),
+         BiocGenerics,
+         DBI,
+         IRanges,
+         oligoClasses,
          S4Vectors
 License: Artistic-2.0
 Collate: AllClasses.R

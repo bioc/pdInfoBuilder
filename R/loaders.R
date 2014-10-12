@@ -1,5 +1,5 @@
 loadUnitNames <- function(db, unames) {
-    dbBeginTransaction(db)
+    dbBegin(db)
     ## To use an auto-incrementing field via RSQLite, you need
     ## to be careful to pass integer NA's
     df <- data.frame(id=rep(as.integer(NA), length(unames)), name=unames)
@@ -37,7 +37,7 @@ loadUnits <- function(db, batch, isQc=FALSE) {
     isPm <- as.logical(batchMat[, "ispm"])
     values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y)"
     sql <- paste("insert into", pmfeature, "values", values)
-    dbBeginTransaction(db)
+    dbBegin(db)
     rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
     dbClearResult(rset)
 
@@ -49,7 +49,7 @@ loadUnits <- function(db, batch, isQc=FALSE) {
     ## Insert pm <--> mm link
     values <- "(:pmi, :mmi)"
     sql <- paste("insert into", pmmm, "values", values)
-    dbBeginTransaction(db)
+    dbBegin(db)
     rset <- dbSendPreparedQuery(db, sql,
                                 data.frame(pmi=batchMat[isPm, "indices"],
                                            mmi=batchMat[!isPm, "indices"]))
@@ -145,7 +145,7 @@ loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 
         values <- "(:fid, :offset, :tstrand, :tallele, :seq)"
         sql <- paste("insert into sequence values", values)
-        dbBeginTransaction(db)
+        dbBegin(db)
         dbGetPreparedQuery(db, sql, bind.data=pmdf)
         dbGetPreparedQuery(db, sql, bind.data=mmdf)
         dbCommit(db)
@@ -294,7 +294,7 @@ loadAffyCsv <- function(db, csvFile, batch_size=5000) {
     sql <- paste("update featureSet set ", exprs,
                  "where man_fsetid = :Probe_Set_ID")
 
-    dbBeginTransaction(db)
+    dbBegin(db)
     dbGetPreparedQuery(db, sql, bind.data=df)
     dbCommit(db)
 }

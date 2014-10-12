@@ -75,12 +75,11 @@ setupPackage <- function(object, pkgName, destDir, dbFileName, unlink, quiet){
 }              
 
 connectDb <- function(dbfile) {
-##    require("RSQLite")
     db <- dbConnect(SQLite(), dbname=dbfile, cache_size=6400, synchronous=0)
     sql <- ('
             pragma page_size = 8192;                
             ')
-    sqliteQuickSQL(db, sql)
+    dbGetQuery(db, sql)
     db
 }
 
@@ -152,7 +151,7 @@ dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
   sql_template <- paste("INSERT INTO ", tablename, " VALUES (", values_template, ")", sep="")
   if (verbose)
     simpleMessage("Inserting ", nrow(data), " rows into table ", tablename, "... ")
-  dbBeginTransaction(conn)
+  dbBegin(conn)
   on.exit(dbCommit(conn))
   dbGetPreparedQuery(conn, sql_template, bind.data=data)
   if (verbose) msgOK()

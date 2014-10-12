@@ -1,10 +1,50 @@
 useDynLib("pdInfoBuilder")
 
-import("methods")
-import("Biobase")
+importClassesFrom(Biobase, ScalarCharacter)
 
-importFrom("Biostrings", "DNAStringSet")
-import("S4Vectors")
+importClassesFrom(methods, character, logical)
+
+importMethodsFrom(BiocGenerics, mapply)
+
+importMethodsFrom(Biostrings, "%in%", as.data.frame, duplicated,
+                  intersect, match, nchar, order, setdiff, sort,
+                  substr, unlist)
+
+importMethodsFrom(DBI, dbDriver)
+
+importMethodsFrom(IRanges, aggregate, cbind, "colnames<-", gsub,
+                  lapply, mean, merge, nrow, paste, rbind,
+                  "rownames<-", split, sub, subset, t, table, tolower,
+                  toupper, unique, which, with)
+
+importMethodsFrom(methods, initialize)
+
+importMethodsFrom(oligoClasses, close)
+
+importMethodsFrom(RSQLite, dbBegin, dbClearResult, dbCommit, dbConnect,
+                  dbDisconnect, dbGetPreparedQuery, dbGetQuery,
+                  dbListTables, dbSendPreparedQuery, dbWriteTable)
+
+importMethodsFrom(S4Vectors, as.factor, do.call, ifelse, na.omit,
+                  sapply)
+
+importFrom(affxparser, readBpmap, readCdf, readCdfHeader,
+           readCdfUnitNames, readCelHeader, readClf, readClfHeader,
+           readPgf, readPgfHeader)
+
+importFrom(Biobase, createPackage)
+
+importFrom(Biostrings, DNAStringSet)
+
+importFrom(methods, callNextMethod, new, slot)
+
+importFrom(oligo, cleanPlatformName)
+
+importFrom(RSQLite, SQLite)
+
+importFrom(S4Vectors, DataFrame)
+
+importFrom(utils, installed.packages, read.csv, read.delim, read.table)
 
 exportClasses(
               "AffyExpressionPDInfoPkgSeed",

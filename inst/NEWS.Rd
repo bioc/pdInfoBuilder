@@ -1,6 +1,15 @@
 \name{NEWS}
 \title{News for Package 'pdInfoBuilder'}
 
+\section{Changes in version 1.28}{
+  \subsection{USER VISIBLE CHANGES}{
+    \itemize{
+      \item Changed dependency on RSQLite. Now, version >= 1.0.0 is required.
+      \item GenericArray is now available to support customized annotations.
+    }
+  }
+}
+
 \section{Changes in version 1.22}{
   \subsection{BUG FIXES}{
     \itemize{

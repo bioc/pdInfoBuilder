@@ -4,4 +4,4 @@ export(
        '@PDINFONAME@'
        )
 importFrom("Biostrings", "DNAStringSet")
-importFrom("S4Vectors", "DataFrame")
+importFrom("IRanges", "DataFrame")
