@@ -4,12 +4,12 @@ importClassesFrom(Biobase, ScalarCharacter)
 
 importMethodsFrom(DBI, dbDriver)
 
-importMethodsFrom(methods, initialize, callNextMethod, new, slot)
+importMethodsFrom(methods, initialize)
 
 importMethodsFrom(RSQLite, dbBegin, dbClearResult, dbCommit,
                   dbConnect, dbDisconnect, dbGetPreparedQuery,
                   dbGetQuery, dbListTables, dbSendPreparedQuery,
-                  dbWriteTable, SQLite)
+                  dbWriteTable)
 
 importFrom(affxparser, readBpmap, readCdf, readCdfHeader,
            readCdfUnitNames, readCelHeader, readClf, readClfHeader,
@@ -19,7 +19,11 @@ importFrom(Biobase, createPackage)
 
 importFrom(Biostrings, DNAStringSet)
 
+importFrom(methods, callNextMethod, new, slot)
+
 importFrom(oligo, cleanPlatformName)
+
+importFrom(RSQLite, SQLite)
 
 importFrom(S4Vectors, DataFrame)
 
