@@ -280,3 +280,16 @@ insertInFragmentLengthTable <- function(db, tblTarget, fragCol,
                       length='INTEGER', start='INTEGER', stop='INTEGER'),
                       verbose=TRUE)
 }
+
+
+## Conditional code to address issues due to the RSQLite 1.0.0 release
+
+dbBeginTransaction <- function(...){
+    if ("dbBeginTransaction" %in% getNamespaceExports("RSQLite")){
+         do.call("dbBeginTransaction", as.list(...), envir=getNamespace("RSQLite"))
+    }else{
+         do.call("dbBegin", as.list(...), envir=getNamespace("RSQLite"))
+    }
+}
+
+dbBegin <- function(...) dbBeginTransaction(...)
