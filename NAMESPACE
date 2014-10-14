@@ -6,7 +6,7 @@ importMethodsFrom(DBI, dbDriver)
 
 importMethodsFrom(methods, initialize)
 
-importMethodsFrom(RSQLite, dbBegin, dbClearResult, dbCommit,
+importMethodsFrom(RSQLite, dbBeginTransaction, dbClearResult, dbCommit,
                   dbConnect, dbDisconnect, dbGetPreparedQuery,
                   dbGetQuery, dbListTables, dbSendPreparedQuery,
                   dbWriteTable)

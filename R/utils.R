@@ -151,7 +151,7 @@ dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
   sql_template <- paste("INSERT INTO ", tablename, " VALUES (", values_template, ")", sep="")
   if (verbose)
     simpleMessage("Inserting ", nrow(data), " rows into table ", tablename, "... ")
-  dbBegin(conn)
+  dbBeginTransaction(conn)
   on.exit(dbCommit(conn))
   dbGetPreparedQuery(conn, sql_template, bind.data=data)
   if (verbose) msgOK()
@@ -280,16 +280,3 @@ insertInFragmentLengthTable <- function(db, tblTarget, fragCol,
                       length='INTEGER', start='INTEGER', stop='INTEGER'),
                       verbose=TRUE)
 }
-
-
-## Conditional code to address issues due to the RSQLite 1.0.0 release
-
-dbBeginTransaction <- function(...){
-    if ("dbBeginTransaction" %in% getNamespaceExports("RSQLite")){
-         do.call("dbBeginTransaction", as.list(...), envir=getNamespace("RSQLite"))
-    }else{
-         do.call("dbBegin", as.list(...), envir=getNamespace("RSQLite"))
-    }
-}
-
-dbBegin <- function(...) dbBeginTransaction(...)

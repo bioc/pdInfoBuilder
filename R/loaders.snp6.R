@@ -1,5 +1,5 @@
 snp6.loadUnitNames <- function(db, unames) {
-    dbBegin(db)
+    dbBeginTransaction(db)
     ## To use an auto-incrementing field via RSQLite, you need
     ## to be careful to pass integer NA's
     df <- data.frame(id=rep(as.integer(NA), length(unames)), name=unames)
@@ -10,7 +10,7 @@ snp6.loadUnitNames <- function(db, unames) {
 }
 
 snp6.loadUnitNames.cnv <- function(db, unames) {
-    dbBegin(db)
+    dbBeginTransaction(db)
     ## To use an auto-incrementing field via RSQLite, you need
     ## to be careful to pass integer NA's
     df <- data.frame(id=rep(as.integer(NA), length(unames)), name=unames)
@@ -44,7 +44,7 @@ snp6.loadUnits.snp <- function(db, batch, isQc=FALSE) {
   isPm <- as.logical(batchMat[, "ispm"])
   values <- "(:indices, :strand, :allele, :fsetid, :indexpos, :x, :y)"
   sql <- paste("insert into", pmfeature, "values", values)
-  dbBegin(db)
+  dbBeginTransaction(db)
   rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
   dbClearResult(rset)
   dbCommit(db)
@@ -98,7 +98,7 @@ snp6.loadUnits.cnv <- function(db, batch, isQc=FALSE) {
   isPm <- as.logical(batchMat[, "ispm"])
   values <- "(:indices, :strand, :fsetid, :x, :y)"
   sql <- paste("insert into", pmfeature, "values", values)
-  dbBegin(db)
+  dbBeginTransaction(db)
   rset <- dbSendPreparedQuery(db, sql, as.data.frame(batchMat[isPm, ]))
   dbClearResult(rset)
   dbCommit(db)
@@ -182,7 +182,7 @@ snp6.loadAffySeqCsv <- function(db, csvFile, cdfFile, batch_size=5000) {
 
         values <- "(:fid, :offset, :tstrand, :tallele, :seq)"
         sql <- paste("insert into sequence values", values)
-        dbBegin(db)
+        dbBeginTransaction(db)
         dbGetPreparedQuery(db, sql, bind.data=pmdf)
         dbCommit(db)
     }
@@ -378,7 +378,7 @@ snp6.loadAffyCsv <- function(db, csvFile, batch_size=5000) {
   sql <- paste("update featureSet set ", exprs,
                "where man_fsetid = :Probe_Set_ID")
 
-  dbBegin(db)
+  dbBeginTransaction(db)
   dbGetPreparedQuery(db, sql, bind.data=df)
   dbCommit(db)
 
@@ -452,7 +452,7 @@ snp6.loadAffyCsv.cnv <- function(db, csvFile, batch_size=5000) {
   sql <- paste("update featureSetCNV set ", exprs,
                "where man_fsetid = :Probe_Set_ID")
 
-  dbBegin(db)
+  dbBeginTransaction(db)
   dbGetPreparedQuery(db, sql, bind.data=df)
   dbCommit(db)
 }
@@ -495,7 +495,7 @@ snp6.loadAffySeqCsv.cnv <- function(db, csvFile, cdfFile, batch_size=5000) {
         N <- nrow(pmdf)
         values <- "(:fid, :offset, :tstrand, :seq)"
         sql <- paste("insert into sequenceCNV values", values)
-        dbBegin(db)
+        dbBeginTransaction(db)
         dbGetPreparedQuery(db, sql, bind.data=pmdf)
         dbCommit(db)
     }
