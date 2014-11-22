@@ -124,6 +124,22 @@ combinePgfClfProbesetsMpsHTA <- function(pgfFile, clfFile, probeFile,
     ## junction_sequence
     ## chrom
     ## type
+
+    ## Starting with the MTA 2.0 array, there are (811) PSR and JUC probesets
+    ## that are part of the design, but because they are targeting regions that
+    ## are too repetitive to synthesize a probe, or too short for a probe (25-mer) to fit
+    ## they don't actually have these probesets on the array. But they kept them in the
+    ## design, so they show up in the csv files. This causes problems when we create the featureSet
+    ## data.frame, because we are doing a merge with all = TRUE, so we get NA values for the
+    ## fsetids that don't exist, but for which we do have man_fsetids. These NA values
+    ## are problematic when we insert into the database, as the fsetids have to be unique.
+    ## So we remove them here.
+
+    if(any(!probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid)){
+        ind <- probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid
+        probesetInfo[["probesets"]] <- probesetInfo[["probesets"]][ind,]
+    }
+
     featureSet <- merge(probesetInfo[["probesets"]],
                         unique(probes.table[, c('man_fsetid', 'fsetid')]),
                         by='man_fsetid', all=TRUE)

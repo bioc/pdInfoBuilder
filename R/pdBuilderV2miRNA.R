@@ -9,8 +9,9 @@ miRNAFeatureSetSchema <- list(col2type=c(
 
 
 getTypeSchema <- function()
-    data.frame(type=as.integer(1:14),
-               type_id=c("main", "control->affx", "control->chip",
+    data.frame(type=as.integer(1:17),
+               type_id=c("main","main->junctions", "main->psrs",
+                   "main->rescue",  "control->affx", "control->chip",
                    "control->bgp->antigenomic",
                    "control->bgp->genomic", "normgene->exon",
                    "normgene->intron", "rescue->FLmRNA->unmapped",
