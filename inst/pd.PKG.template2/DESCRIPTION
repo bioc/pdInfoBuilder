@@ -11,7 +11,7 @@ Depends: R (>= 3.1.0),
          RSQLite (>= 0.11.4),
          oligoClasses (>= 1.27.2),
          oligo (>= 1.29.1),
-         DBI (>= 0.3.1.9000),
+         DBI (>= 0.3.1),
          IRanges (>= 1.99.31),
          S4Vectors (>= 0.2.5)
 License: @LIC@
