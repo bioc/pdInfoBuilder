@@ -41,7 +41,7 @@ setClass("GenericPDInfoPkgSeed",
          contains="PDInfoPkgSeed",
          representation=representation(
              table='data.frame',
-             pkgname='character'
+             pkgName='character'
              ))
 
 #################################################################

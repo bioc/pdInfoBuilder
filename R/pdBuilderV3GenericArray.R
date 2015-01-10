@@ -173,7 +173,7 @@ setMethod("makePdInfoPackage", "GenericPDInfoPkgSeed",
               #######################################################################
               ## Part i) get array info (chipName, pkgName, dbname)
               #######################################################################
-              pkgName <- object@pkgname
+              pkgName <- object@pkgName
               extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
               dbFileName <- paste(pkgName, "sqlite", sep=".")
               dbFilePath <- file.path(extdataDir, dbFileName)
@@ -190,9 +190,6 @@ setMethod("makePdInfoPackage", "GenericPDInfoPkgSeed",
               rm(fsetTbls, probeTbls)
               allSchema <- getSchemaAndKeys(toSQL)
 
-##              tblsProbes <- grep('feature$', names(toSQL), value=TRUE)
-##              geometry <- paste(apply(do.call(rbind, lapply(toSQL[tblsProbes], function(tbl) apply(tbl[, c('x', 'y')], 2, max))), 2, max), collapse=';')
-              
               #######################################################################
               ## Part iii) Create package from template
               #######################################################################
