@@ -173,7 +173,7 @@ setMethod("makePdInfoPackage", "GenericPDInfoPkgSeed",
               #######################################################################
               ## Part i) get array info (chipName, pkgName, dbname)
               #######################################################################
-              pkgName <- object@pkgName
+              pkgName <- object@pkgname
               extdataDir <- file.path(destDir, pkgName, "inst", "extdata")
               dbFileName <- paste(pkgName, "sqlite", sep=".")
               dbFilePath <- file.path(extdataDir, dbFileName)

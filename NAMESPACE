@@ -47,3 +47,6 @@ exportMethods(
               "getGeometry",
               "makePdInfoPackage"
               )
+
+
+export('cdf2table', 'sequenceParser')
