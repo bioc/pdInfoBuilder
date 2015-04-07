@@ -24,8 +24,7 @@ getDb  <- function() {
 }
 
 closeDb <- function() {
-    ## FIXME: check for valid connection?
-    if (isIdCurrent(globals$dbCon)){
+    if (dbIsValid(globals$dbCon)){
         sapply(dbListResults(globals$dbCon), dbClearResult)
         dbDisconnect(globals$dbCon)
     }

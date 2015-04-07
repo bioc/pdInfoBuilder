@@ -5,15 +5,15 @@ Version: @VERSION@
 Author: @AUTHOR@
 Maintainer: @AUTHOR@ <@AUTHOREMAIL@>
 LazyLoad: yes
-Depends: R (>= 3.1.0),
-	 Biostrings (>= 2.33.14),
+Depends: R (>= 3.2.0),
+	 Biostrings (>= 2.35.12),
          methods,
          RSQLite (>= 1.0.0),
-         oligoClasses (>= 1.27.2),
-         oligo (>= 1.29.1),
+         oligoClasses (>= 1.29.6),
+         oligo (>= 1.31.5),
          DBI (>= 0.3.1),
-         IRanges (>= 1.99.31),
-         S4Vectors (>= 0.2.5)
+         IRanges (>= 2.1.43),
+         S4Vectors (>= 0.5.22)
 License: @LIC@
-biocViews: AnnotationData
+biocViews: AnnotationData, oligo
 ZipData: no

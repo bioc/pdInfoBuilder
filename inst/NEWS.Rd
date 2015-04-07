@@ -1,6 +1,19 @@
 \name{NEWS}
 \title{News for Package 'pdInfoBuilder'}
 
+\section{Changes in version 1.32}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fixed dependency changes for RSQLite 1.0.0
+     }
+   }
+   \subsection{USER VISIBLE CHANGES}{
+      \itemize{
+         \item GenericArray is now available to accommodate oligo support for custom CDFs
+      }
+    }
+}
+
 \section{Changes in version 1.28}{
   \subsection{USER VISIBLE CHANGES}{
     \itemize{
