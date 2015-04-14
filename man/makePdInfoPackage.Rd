@@ -13,6 +13,7 @@
 \alias{makePdInfoPackage,AffySNPPDInfoPkgSeed2-method}
 \alias{makePdInfoPackage,AffyMiRNAPDInfoPkgSeed-method}
 \alias{makePdInfoPackage,AffyHTAPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,GenericPDInfoPkgSeed-method}
 
 \title{Create a Platform Design Info Package}
 \description{
