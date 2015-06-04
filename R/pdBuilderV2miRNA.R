@@ -8,18 +8,13 @@ miRNAFeatureSetSchema <- list(col2type=c(
                               ))
 
 
-getTypeSchema <- function()
-    data.frame(type=as.integer(1:17),
-               type_id=c("main","main->junctions", "main->psrs",
-                   "main->rescue",  "control->affx", "control->chip",
-                   "control->bgp->antigenomic",
-                   "control->bgp->genomic", "normgene->exon",
-                   "normgene->intron", "rescue->FLmRNA->unmapped",
-                   "control->affx->bac_spike", "oligo_spike_in",
-                   "r1_bac_spike_at", "control->affx->polya_spike",
-                   "control->affx->ercc",
-                   "control->affx->ercc->step"),
-               stringsAsFactors=FALSE)
+getTypeSchema <- function(probesets) {
+     tab <- table(probesets[["probeset_type"]])
+     mainloc <- grep("main", names(tab))
+     data.frame(type = seq_len(length(tab)),
+                type_id = names(tab)[c(mainloc, seq_len(length(tab))[-mainloc])],
+                stringsAsFactors = FALSE)
+ }
 
 getLevelSchema <- function()
     data.frame(level=as.integer(1:5),

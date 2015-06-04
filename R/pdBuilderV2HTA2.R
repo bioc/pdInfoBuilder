@@ -50,8 +50,8 @@ parseHtaProbesetCSV <- function(probeFile, verbose=TRUE){
   level_schema <- getLevelSchema()
 
   ## type_schema
-  type_schema <- getTypeSchema()
-
+  ## type_schema <- getTypeSchema()
+  ## do this on the fly, below
   if (verbose) msgOK()
 
 
@@ -73,6 +73,9 @@ parseHtaProbesetCSV <- function(probeFile, verbose=TRUE){
   names(probesets) <- cols
   rm(cols)
 ##  probesets$fsetid <- as.integer(factor(probesets$man_fsetid))
+
+  ## type_schema
+  type_schema <- getTypeSchema(probesets)
 
   chromosome_schema <- createChrDict(probesets[["seqname"]])
 

@@ -177,7 +177,8 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 ##
 
   ## type_schema
-  type_schema <- getTypeSchema()
+  ##type_schema <- getTypeSchema()
+  ## do this on the fly, below
 ##   type_schema <- data.frame(type=as.integer(1:8),
 ##                             type_id=c("main", "control->affx",
 ##                                       "control->chip",
@@ -203,6 +204,10 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
   cols[1] <- "fsetid"
   names(probesets) <- cols
   rm(cols)
+
+  ## type_schema
+  type_schema <- getTypeSchema(probesets)
+               
 
   chromosome_schema <- createChrDict(probesets[["seqname"]])
 
