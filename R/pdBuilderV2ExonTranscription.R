@@ -207,7 +207,7 @@ parseProbesetCSV <- function(probeFile, verbose=TRUE){
 
   ## type_schema
   type_schema <- getTypeSchema(probesets)
-               
+
 
   chromosome_schema <- createChrDict(probesets[["seqname"]])
 
@@ -320,7 +320,7 @@ combinePgfClfProbesetsMps <- function(pgfFile, clfFile, probeFile,
       rm(missFeatureSet)
   }else{
     featureSet <- unique(probes.table[, c('fsetid', 'man_fsetid', 'pstype')])
-    type_dict <- getTypeSchema()
+    type_dict <- getTypeSchema(probes.table)
     featureSet[['type']] <- match(tolower(featureSet[['pstype']]),
                                   type_dict[['type_id']])
     if (any(is.na(featureSet[['type']]))){
