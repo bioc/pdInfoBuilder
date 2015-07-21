@@ -8,18 +8,16 @@ miRNAFeatureSetSchema <- list(col2type=c(
                               ))
 
 
-getTypeSchema <- function()
-    data.frame(type=as.integer(1:17),
-               type_id=c("main","main->junctions", "main->psrs",
-                   "main->rescue",  "control->affx", "control->chip",
-                   "control->bgp->antigenomic",
-                   "control->bgp->genomic", "normgene->exon",
-                   "normgene->intron", "rescue->FLmRNA->unmapped",
-                   "control->affx->bac_spike", "oligo_spike_in",
-                   "r1_bac_spike_at", "control->affx->polya_spike",
-                   "control->affx->ercc",
-                   "control->affx->ercc->step"),
-               stringsAsFactors=FALSE)
+getTypeSchema <- function(probesets) {
+    nam <- grep("probeset_type|pstype", names(probesets), value = TRUE)
+    if(length(nam) !=1) stop("Error creating type_schema!/n", .call = FALSE)
+    tab <- table(probesets[[nam]])
+    mainloc <- grep("main", names(tab))
+    data.frame(type = seq_len(length(tab)),
+               type_id = names(tab)[c(mainloc, seq_len(length(tab))[-mainloc])],
+               stringsAsFactors = FALSE)
+ }
+
 
 getLevelSchema <- function()
     data.frame(level=as.integer(1:5),
@@ -96,7 +94,7 @@ setMethod("makePdInfoPackage", "AffyMiRNAPDInfoPkgSeed",
                           "pmfeature",
                           genePmFeatureSchema[["col2type"]],
                           genePmFeatureSchema[["col2key"]])
-            
+
             containsMm <- nrow(parsedData[["mmFeatures"]]) > 0
             if (containsMm)
                 dbCreateTable(conn,
@@ -104,7 +102,7 @@ setMethod("makePdInfoPackage", "AffyMiRNAPDInfoPkgSeed",
                               genePmFeatureSchema[["col2type"]],
                               genePmFeatureSchema[["col2key"]])
             ## end creating tables
-            
+
 
             ## Inserting data in new tables
             dbInsertDataFrame(conn, "type_dict", parsedData[["type_dict"]],
