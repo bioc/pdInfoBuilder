@@ -137,10 +137,19 @@ combinePgfClfProbesetsMpsHTA <- function(pgfFile, clfFile, probeFile,
     ## fsetids that don't exist, but for which we do have man_fsetids. These NA values
     ## are problematic when we insert into the database, as the fsetids have to be unique.
     ## So we remove them here.
+    ## As of the na35 build of probeset csv files, Affy is mixing fsetid and man_fsetid
+    ## IDs in the probeset csv file (at least for the HTA arrays), so we have to account for that
+   
 
     if(any(!probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid)){
-        ind <- probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid
-        probesetInfo[["probesets"]] <- probesetInfo[["probesets"]][ind,]
+        ## probesets in probesetInfo that are not in probes.table man_fsetid col
+        ind1 <- !probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid
+        ## probesets in probsetInfo that are not in probes.table fsetid col
+        ind2 <- !probesetInfo$probesets$man_fsetid %in% probes.table$fsetid
+        ## look for probesets that are not in either man_fsetid or fsetid col of probes.table
+        ## this is a real kludge, and is probably really fragile
+        if(sum(ind1 & ind2) > 0)
+        probesetInfo[["probesets"]] <- probesetInfo[["probesets"]][!ind1,]
     }
 
     featureSet <- merge(probesetInfo[["probesets"]],
