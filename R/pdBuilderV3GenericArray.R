@@ -182,7 +182,11 @@ setMethod("makePdInfoPackage", "GenericPDInfoPkgSeed",
               ## Part ii) parse data. This should return a list of data.frames.
               ##          The names of the elements in the list are table names.
               #######################################################################
-              geometry <- apply(object@table[, c('x', 'y')], 2, max)
+              ## Fix by Robert Castello
+              zerobased <- apply(object@table[, c('x', 'y')], 2, min) == 0
+              geometry <- apply(object@table[, c('x', 'y')], 2, max) + as.integer(zerobased)
+              
+##              geometry <- apply(object@table[, c('x', 'y')], 2, max)
               geometry <- paste(geometry, collapse=';')
               fsetTbls <- getAllFSetMpsTables(object@table)
               probeTbls <- getUniqueProbesTables(object@table)
