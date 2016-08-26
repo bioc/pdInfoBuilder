@@ -227,7 +227,7 @@ mpsParser <- function(mpsFile, verbose=TRUE){
   mps <- read.delim(mpsFile, comment.char="#", stringsAsFactors=FALSE, header=TRUE)
   cols <- c("probeset_id", "transcript_cluster_id", "probeset_list")
   mps <- mps[cols]
-  psids <- lapply(strsplit(mps[["probeset_list"]], " "), as.integer)
+  psids <- lapply(strsplit(as.character(mps[["probeset_list"]]), " "), as.integer)
   psids <- cbind(mps[rep(1:nrow(mps),
                          sapply(psids, length)), 1:2],
                  item=unlist(psids))

@@ -138,6 +138,9 @@ setClass("AffyExpressionPDInfoPkgSeed",
 setClass("AffyMiRNAPDInfoPkgSeed",
          contains="AffyGeneric1PDInfoPkgSeed")
 
+setClass("AffyClariomSPDInfoPkgSeed",
+         contains="AffySTPDInfoPkgSeed")
+
 #################################################################
 ## NimbleGen seeds
 #################################################################

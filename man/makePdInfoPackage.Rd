@@ -14,6 +14,7 @@
 \alias{makePdInfoPackage,AffyMiRNAPDInfoPkgSeed-method}
 \alias{makePdInfoPackage,AffyHTAPDInfoPkgSeed-method}
 \alias{makePdInfoPackage,GenericPDInfoPkgSeed-method}
+\alias{makePdInfoPackage,AffyClariomSPDInfoPkgSeed-method}
 
 \title{Create a Platform Design Info Package}
 \description{
