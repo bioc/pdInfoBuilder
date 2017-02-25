@@ -26,7 +26,7 @@ setMethod("makePdInfoPackage", "AffyClariomSPDInfoPkgSeed",
 
     ## Affy is mixing up the man_fsetid and fsetids, so fix
     mps <- mpsParser(object@coreMps)
-    matcher <- match(mps$fsetid, parsedData$featureSet$fsetid, mps$fsetid)
+    matcher <- match(mps$fsetid, parsedData$featureSet$fsetid)
     parsedData$featureSet$man_fsetid[matcher] <- mps$transcript_cluster_id
     
 

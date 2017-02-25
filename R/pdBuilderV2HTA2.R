@@ -1,3 +1,23 @@
+## code to fix mis-matches between man_fsetid columns in what will become featureSet and pmfeature tables
+fixManFsetid <- function(prbInfo, prb.table){
+    tmp <- prb.table[,c("man_fsetid","fsetid")]
+    tmp <- tmp[!duplicated(tmp$man_fsetid),]
+    if(!all(prbInfo$man_fsetid %in% tmp$man_fsetid)){
+        ind <- prbInfo$man_fsetid %in% tmp$fsetid
+        matcher <- match(prbInfo$man_fsetid[ind], tmp$fsetid)
+        prbInfo$man_fsetid[ind] <- tmp[matcher,"man_fsetid"]
+    }
+    if(nrow(tmp) > nrow(prbInfo)){
+        stillMiss <- tmp[!tmp$man_fsetid %in% prbInfo$man_fsetid,]
+        toadd <- data.frame(stillMiss$man_fsetid, matrix(NA, nrow(stillMiss), ncol(prbInfo)-1))
+        names(toadd) <- names(prbInfo)
+        prbInfo <- rbind(prbInfo, toadd)
+    }
+    if(nrow(tmp) < nrow(prbInfo)) stop("The pgf file has fewer probesets than the probeset csv file.", call. = FALSE)
+    prbInfo
+}
+
+
 ## tables
 htaMpsSchema <- list(col2type=c(
                          meta_fsetid="TEXT",
@@ -139,36 +159,16 @@ combinePgfClfProbesetsMpsHTA <- function(pgfFile, clfFile, probeFile,
     ## So we remove them here.
     ## As of the na35 build of probeset csv files, Affy is mixing fsetid and man_fsetid
     ## IDs in the probeset csv file (at least for the HTA arrays), so we have to account for that
+    
    
-
-    if(any(!probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid)){
-        ## probesets in probesetInfo that are not in probes.table man_fsetid col
-        ind1 <- !probesetInfo$probesets$man_fsetid %in% probes.table$man_fsetid
-        ## probesets in probsetInfo that are not in probes.table fsetid col
-        ind2 <- !probesetInfo$probesets$man_fsetid %in% probes.table$fsetid
-        ## look for probesets that are not in either man_fsetid or fsetid col of probes.table
-        ## this is a real kludge, and is probably really fragile
-        if(sum(ind1 & ind2) > 0)
-        probesetInfo[["probesets"]] <- probesetInfo[["probesets"]][!ind1,]
-    }
-
+    probesetInfo$probesets <- fixManFsetid(probesetInfo$probesets, probes.table)
+    
+        
     featureSet <- merge(probesetInfo[["probesets"]],
                         unique(probes.table[, c('man_fsetid', 'fsetid')]),
                         by='man_fsetid', all=TRUE)
 
-    missFeatureSet <- setdiff(unique(probes.table[["man_fsetid"]]),
-                              unique(featureSet[["man_fsetid"]]))
-    if (length(missFeatureSet) > 0){
-        missFS = data.frame(man_fsetid=missFeatureSet)
-        cols <- names(featureSet)
-        cols <- cols[cols != "man_fsetid"]
-        for (i in cols)
-            missFS[[i]] <- NA
-        missFS <- missFS[, names(featureSet)]
-        featureSet <- rbind(featureSet, missFS)
-        rm(missFS, cols, i)
-    }
-    rm(missFeatureSet)
+
     
     ## pmfeature table - Fields
     ##  fid
