@@ -10,8 +10,8 @@ pragma synchronous = OFF;
 ')
 
 increaseDbPerformance <- function(conn){
-  dbGetQuery(conn, setPageSizeSql)
-  dbGetQuery(conn, setSyncOff)
+  dbExecute(conn, setPageSizeSql)
+  dbExecute(conn, setSyncOff)
 }
 
 
@@ -79,7 +79,7 @@ connectDb <- function(dbfile) {
     sql <- ('
             pragma page_size = 8192;                
             ')
-    dbGetQuery(db, sql)
+    dbExecute(db, sql)
     db
 }
 
@@ -140,7 +140,7 @@ dbCreateTable <- function(conn, tablename, col2type, col2key){
     sql <- paste(names(col2type), col2type, sep=" ")
     sql <- paste(sql, collapse=", ")
     sql <- paste("CREATE TABLE ", tablename, " (", sql, ")", sep="")
-    dbGetQuery(conn, sql)
+    dbExecute(conn, sql)
 }
 
 dbInsertDataFrame <- function(conn, tablename, data, col2type, verbose=FALSE){
@@ -163,7 +163,7 @@ dbCreateIndex <- function(conn, idxname, tblname, fieldname, unique=TRUE, verbos
   sql <- paste("CREATE", ifelse(unique, "UNIQUE", ""),
                "INDEX", idxname, "ON", tblname,
                paste("(", fieldname, ")", sep=""))
-  dbGetQuery(conn, sql)
+  dbExecute(conn, sql)
   if (verbose) msgOK()
   NULL
 }
@@ -248,13 +248,35 @@ seqToMat <- function(seq) {
 }
 
 annot2fdata <- function(csv){
-    annot <- read.csv(csv, header=TRUE, comment.char="#",
+  the.delim <- detect_delimiter(csv)
+  message("Identified the following delimiter: ", the.delim)
+  if (the.delim == "comma"){
+    use.delim = ","
+  } else if (the.delim == "tab"){
+    use.delim = "\t"
+  } else if (the.delim == "semicolon"){
+    use.delim = ";"
+  } else if (the.delim == "pipe"){
+    use.delim = "|"
+  } else {
+    error("Can't identify the field delimiter in ", basename(csv))
+  }
+    # annot <- read.csv(csv, header=TRUE, comment.char="#",
+    #                   na.strings="---", stringsAsFactors=FALSE)
+    annot <- read.delim(csv, header=TRUE, comment.char="#", sep = use.delim,
                       na.strings="---", stringsAsFactors=FALSE)
     nms <- tolower(names(annot))
     nms <- gsub("_", "", nms)
     nms <- gsub("\\.", "", nms)
     names(annot) <- nms
     stopifnot('probesetid' %in% nms)
+    dups <- which(duplicated(annot[['probesetid']]))
+    if (length(dups) > 0){
+      psetids.dups <- which(annot[['probesetid']] %in% annot[['probesetid']][dups])
+      annot <- annot[-psetids.dups,]
+      annot <- annot[!is.na(annot[['probesetid']]), ]
+      warning("NetAffx File contains duplicated probesetids. It's important to avoid this. Check the file.")
+    }
     rownames(annot) <- annot[['probesetid']]
     annot[['probeset_id']] <- NULL
     new("AnnotatedDataFrame", data=annot)
@@ -280,4 +302,34 @@ insertInFragmentLengthTable <- function(db, tblTarget, fragCol,
                       col2type=c(fsetid='INTEGER', enzyme='TEXT',
                       length='INTEGER', start='INTEGER', stop='INTEGER'),
                       verbose=TRUE)
+}
+
+detect_delimiter <- function(file_path) {
+  first_line <- readLines(file_path, n = 1)
+  
+  count_delim <- function(delim, vec){
+    this.search <- as.integer(gregexpr(delim, vec)[[1]])
+    ## not found?
+    if (length(this.search) == 1 && this.search == -1){
+      n <- 0L
+    } else {
+      n <- length(this.search)
+    }
+    return(n)
+  }
+  
+
+  # Count common delimiters
+  delimiter_counts <- sapply(c(",", "\t", ";", "\\|"), count_delim, first_line)
+  names(delimiter_counts) <- c("comma", "tab", "semicolon", "pipe")
+
+  # Add space as a delimiter if no other delimiter is found
+  if (all(delimiter_counts == 0)) {
+    delimiter_counts["space"] <- length(gregexpr(" ", first_line)[[1]])
+  }
+  
+  # Determine the most frequent delimiter
+  most_frequent <- names(delimiter_counts)[which.max(delimiter_counts)]
+  
+  return(most_frequent)
 }

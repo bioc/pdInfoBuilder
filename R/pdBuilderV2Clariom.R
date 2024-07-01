@@ -115,7 +115,7 @@ setMethod("makePdInfoPackage", "AffyClariomSPDInfoPkgSeed",
     ##            dbCreateIndicesMm(conn, !quiet)
     dbCreateIndicesFs(conn, !quiet)
 
-    dbGetQuery(conn, "VACUUM")
+    dbExecute(conn, "VACUUM")
     dbDisconnect(conn)
 
     #######################################################################
